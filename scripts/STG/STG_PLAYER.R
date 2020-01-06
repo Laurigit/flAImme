@@ -1,0 +1,5 @@
+#STG_PLAYER
+
+required_data(c("SRC_PLAYER"))
+
+STG_PLAYER <- SRC_PLAYER

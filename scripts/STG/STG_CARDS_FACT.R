@@ -1,0 +1,5 @@
+#STG_CARDS_FACT
+
+required_data(c("SRC_CARDS_FACT"))
+
+STG_CARDS_FACT <- SRC_CARDS_FACT

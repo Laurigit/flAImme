@@ -1,0 +1,5 @@
+#STG_MOVE_FACT
+
+required_data(c("SRC_MOVE_FACT"))
+
+STG_MOVE_FACT <- SRC_MOVE_FACT

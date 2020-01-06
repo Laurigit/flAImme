@@ -1,0 +1,5 @@
+#STG_CYCLER
+
+required_data(c("SRC_CYCLER"))
+
+STG_CYCLER <- SRC_CYCLER
