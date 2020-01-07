@@ -7,7 +7,8 @@ apply_slipstream <- function(game_state) {
   potential_cyclers <- game_state[PIECE_ATTRIBUTE != "M" & CYCLER_ID > 0, .N, by = GAME_SLOT_ID][order(-GAME_SLOT_ID)]
   potential_cyclers[, diff := GAME_SLOT_ID - shift(GAME_SLOT_ID )]
 
-  slipstreamer_slots <- potential_cyclers[diff == -2, .(GAME_SLOT_ID = min(GAME_SLOT_ID))]
+  #move last 1 or 2 first
+  slipstreamer_slots <- suppressWarnings(potential_cyclers[diff == -2, .(GAME_SLOT_ID = min(GAME_SLOT_ID))])
 
   if (nrow(slipstreamer_slots) > 0) {
     slip_cyclers <- game_state[CYCLER_ID > 0 & GAME_SLOT_ID == slipstreamer_slots[, GAME_SLOT_ID], CYCLER_ID]

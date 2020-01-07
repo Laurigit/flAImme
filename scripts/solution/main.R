@@ -1,4 +1,4 @@
-# required_data("STG_CYCLER")
+# required_data(c("STG_CYCLER", "STG_TRACK"))
 # input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6),
 #                                  PLAYER_ID = c(1,1,2,2,3,3),
 #                                  exhaust = c(0, 0, 0, 0, 0, 0),
@@ -16,7 +16,7 @@ deck_status <- create_decks(input_STARTUP_DATA[, CYCLER_ID], ADM_CYCLER_DECK)
 cyclers <- input_STARTUP_DATA[, CYCLER_ID]
 game_id <- 1
 #draw phase
-for(turn_id in 1:20) {
+for(turn_id in 1:2) {
 #print(turn_id)
 
 for(loop in cyclers) {

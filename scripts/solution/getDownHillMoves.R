@@ -5,7 +5,7 @@ getDownHillMoves <- function(game_state, cycler_id) {
 if (length(possible_downhill_landings) == 0) {
   result <- 0
 } else {
-    result <- possible_downhill_landings
+    result <- unique(possible_downhill_landings)
 }
   return(result)
 }

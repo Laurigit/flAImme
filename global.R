@@ -24,6 +24,7 @@ sourcelist[, kansio := ifelse(str_sub(kansio, -2, -1) == ".R", "root", kansio)]a
 
 input_kansio_list <- c("utility",
                        "solution_functions",
+                       "solution",
                        "UID")
 for(input_kansio in input_kansio_list) {
   dir_list <- sourcelist[kansio == input_kansio, polku]

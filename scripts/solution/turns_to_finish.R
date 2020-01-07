@@ -1,9 +1,10 @@
-#cycler_id <- 1
+#cycler_id <- 2
 #game_state <- game_status
 turns_to_finish <- function(game_state, deck_status, strategy, cycler_id) {
 
 
-
+  temp_state[CYCLER_ID > 0]
+  deck_status[CYCLER_ID == cycler_id]
   winner_state <- NULL
    temp_state <- game_state[1 != 0, .(PIECE_ATTRIBUTE, FINISH, GAME_SLOT_ID, SQUARE_ID, CYCLER_ID)]
    card_options <- simulate_get_card_options(deck_status, cycler_id)
