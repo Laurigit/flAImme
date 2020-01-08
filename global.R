@@ -13,6 +13,7 @@ library(magick)
 library(dragulaR)
 library(lubridate)
 library(readxl)
+library(zoo)
 options(shiny.trace=FALSE)
 
 
