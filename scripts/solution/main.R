@@ -36,9 +36,24 @@ pelatut_kortit[CYCLER_ID == 4, CARD_ID := card_selector_by_stat(game_status, dec
 pelatut_kortit[CYCLER_ID == 4, MOVEMENT := CARD_ID]
 pelatut_kortit[CYCLER_ID == 5, CARD_ID := card_selector_by_stat(game_status, deck_status[CYCLER_ID == 5 & Zone == "Hand"], 5, "MAX",  aim_downhill = FALSE)[, MOVEMENT]]
 pelatut_kortit[CYCLER_ID == 5, MOVEMENT := CARD_ID]
-pelatut_kortit[CYCLER_ID == 6, CARD_ID := card_selector_by_stat(game_status, deck_status[CYCLER_ID == 6 & Zone == "Hand"], 6, "MAX",  aim_downhill = TRUE)[, MOVEMENT]]
-pelatut_kortit[CYCLER_ID == 6, MOVEMENT := CARD_ID]
-
+#pelatut_kortit[CYCLER_ID == 6, CARD_ID := card_selector_by_stat(game_status, deck_status[CYCLER_ID == 6 & Zone == "Hand"], 6, "MAX",  aim_downhill = TRUE)[, MOVEMENT]]
+#pelatut_kortit[CYCLER_ID == 6, MOVEMENT := CARD_ID]
+#action_data <- data.table(CYCLER_ID = c(1,2,3,4,5,6), MOVEMENT = c(2,3,2,5,4,3), move_order = c(1,2,3,4,5,6), TEAM_ID = c(1,1,2,2,3,3))
+action_data3 <- pelatut_kortit[,. (CYCLER_ID, MOVEMENT)]
+CYCLER_ORDER <- game_status[CYCLER_ID > 0][order(-SQUARE_ID)][, .(CYCLER_ID, move_order = seq_len(.N))]
+action_data2 <- CYCLER_ORDER[action_data3, on = "CYCLER_ID"]
+ss_team <- STG_CYCLER[, .(CYCLER_ID, TEAM_ID)]
+action_data1 <- ss_team[action_data2, on = "CYCLER_ID"]
+#cycler 6 hand
+my_hand <- deck_status[CYCLER_ID == 6 & Zone == "Hand"]
+best_move <- NULL
+for (best_loop in my_hand[, .N, by = MOVEMENT][, MOVEMENT]) {
+pos_score <- score_position(game_status, deck_status, action_data1, ADM_AI_CONF)
+my_score <- pos_score[CYCLER_ID == 6, sum(Score)]
+enemy_score <- pos_score[CYCLER_ID != 6, sum(Score), by = CYCLER_ID][, mean(V1)]
+row_data <- data.table(tot_score = my_score - enemy_score, MOVEMENT = best_loop)
+best_move < rbind(best_move, row_data)
+}
 #
 #print("Start moving")
 for(loop_move in cyclers) {
@@ -58,6 +73,8 @@ cyclers <- setdiff(cyclers, winner_state[, CYCLER_ID])
 game_status <- clear_finishers(game_status,winner_state[, CYCLER_ID])
 #game_status[CYCLER_ID > 0][order(-GAME_SLOT_ID)]
 #deck_status[, .N, by = .(CYCLER_ID, Zone)][order(Zone, CYCLER_ID)]
+
 }
+zoom(game_status)
 winner_state
 winner_state

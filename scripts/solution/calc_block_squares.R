@@ -48,7 +48,7 @@ calc_block_squares <- function(current_game_status, cycler_id, movement) {
     block_amount <- full_movement - actual_movement
   #if (block_amount > 0) {
     #deliver honor to blockers
-    blocking_squares <- current_game_status[GAME_SLOT_ID <= full_movement & GAME_SLOT_ID > actual_movement & CYCLER_ID > 0, .(BLOCKING_CYCLER_ID = CYCLER_ID, CYCLER_ID = cycler_id) ]
+    blocking_squares <- current_game_status[GAME_SLOT_ID <= full_movement & GAME_SLOT_ID > actual_movement & CYCLER_ID > 0, .(CYCLER_ID, Score = 1, Setting = "Block_someone") ]
 
 
   result <- NULL

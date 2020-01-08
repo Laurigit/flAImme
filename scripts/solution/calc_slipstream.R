@@ -1,5 +1,10 @@
 calc_slipstream <- function(game_state, SR_DATA = NULL) {
-  #game_state<-move_cycler(game_state,1,12, slipstream = TRUE)
+
+  if(is.null(SR_DATA)) {
+    SR_DATA <- data.table( CYCLER_ID = numeric(), SLIP_ROWS = numeric(), slip_instance = numeric (), SR_GIVER_CYCLER_ID = numeric())
+  }
+
+  #game_state<-move_cycler(game_state,5, 1, slipstream = TRUE)
   #game_state[PIECE_ATTRIBUTE != "M" & CYCLER_ID > 0]
   potential_cyclers <- game_state[PIECE_ATTRIBUTE != "M" & CYCLER_ID > 0, .N, by = GAME_SLOT_ID][order(-GAME_SLOT_ID)]
   potential_cyclers[, diff := GAME_SLOT_ID - shift(GAME_SLOT_ID )]
@@ -24,7 +29,7 @@ calc_slipstream <- function(game_state, SR_DATA = NULL) {
       join_sr[, key_col := NULL]
       SR_DATA <- rbind(SR_DATA, join_sr)
 
-       print(paste0("SLIPSTREAM CYCLER ", slip_loop))
+      # print(paste0("SLIPSTREAM CYCLER ", slip_loop))
     }
     SR_DATA <- calc_slipstream(game_state, SR_DATA)
   }
