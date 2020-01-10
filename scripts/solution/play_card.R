@@ -11,10 +11,11 @@
 # cycler_id <- 2
 # card_id <- 9
 play_card <- function(cycler_id, card_id, current_decks, game_id, turn_id, con = FALSE, card_row_id = NULL) {
+
   if (is.null(card_row_id)) {
     card_played <- current_decks[CARD_ID == card_id & CYCLER_ID == cycler_id & Zone == "Hand", max(row_id)]
   } else {
-    card_player <- card_row_id
+    card_played <- card_row_id
   }
 
   current_decks[row_id == card_played, Zone := "Removed"]

@@ -64,4 +64,6 @@ tracki <- data.table(TRACK_ID = 2,
                      TRACK_NAME = "OMA",
                      TRACK_PIECE_VECTOR = paste0("a,", "b,", "c,", "d,", "e,", "F,",
                                             "g,", "h,", "i,", "j,", "k,", "l,", "m,", "N,", "o,", "p,", "q,", "r,", "s,", "t,", "u"))
+#tracki <- data.table(read_excel("./external_files/track_pieces.xlsx", sheet = "Sheet2"))[!is.na(TRACK_PIECE_VECTOR)]
+
 #dbWriteTable(con, "TRACK", tracki, row.names = FALSE, append = TRUE)

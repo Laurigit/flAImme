@@ -1,7 +1,8 @@
 #ADM_AI_CONF
 #rm(STG_AI_CONF)
 #rm(SRC_AI_CONF)
-required_data(c("STG_AI_CONF", "STG_CYCLER"))
+required_data(c("SRC_AI_CONF"), force_update = TRUE)
+required_data(c("STG_AI_CONF", "STG_CYCLER"), force_update = TRUE)
 temp <- STG_AI_CONF
 temp[, KEY := 1]
 

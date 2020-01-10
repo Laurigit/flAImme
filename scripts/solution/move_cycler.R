@@ -13,7 +13,8 @@
 #movement <- 4
 #move_cycler
 
-move_cycler <- function(current_game_status, cycler_id, movement, slipstream = FALSE, ignore_block = FALSE) {
+move_cycler <- function(current_game_status_diff_name, cycler_id, movement, slipstream = FALSE, ignore_block = FALSE, ignore_end_of_track = FALSE) {
+  current_game_status <- current_game_status_diff_name[1 != 0]
   current_position_info <- current_game_status[cycler_id == CYCLER_ID, .(GAME_SLOT_ID, PIECE_ATTRIBUTE)]
   current_position <- current_position_info[, GAME_SLOT_ID]
   #check if started from ascend
@@ -34,9 +35,12 @@ move_cycler <- function(current_game_status, cycler_id, movement, slipstream = F
 
   #cant go out of track in finish
   is_finish <- current_game_status[GAME_SLOT_ID >= current_position & GAME_SLOT_ID <= (current_position + adjusted_movement), sum(FINISH)]
-  if (is_finish > 0) {
+
+  if (is_finish > 0 & ignore_end_of_track == FALSE) {
+
+
     #check max movement available
-    last_slot <- current_game_status[, max(GAME_SLOT_ID)]
+    last_slot <- current_game_status[is.na(EXTRA), max(GAME_SLOT_ID)]
     max_movement <- last_slot - current_position
     adjusted_movement <- min(max_movement, adjusted_movement)
   }

@@ -16,6 +16,7 @@ card_selector_by_stat <- function(game_state, turn_options, cycler_id, strategy,
     }
 
     #if on downhill, use it if it useful
+
     if (min_move > turn_options[, min(MOVEMENT)]) {
 
       turn_options <- turn_options[MOVEMENT == turn_options[, min(MOVEMENT)]]

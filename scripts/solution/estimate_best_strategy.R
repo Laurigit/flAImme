@@ -1,6 +1,6 @@
 #cycler_id <- 2
 #game_state <- game_status
-turns_to_finish <- function(game_state, deck_status, strategy, cycler_id) {
+estimate_best_strategy <- function(game_state, deck_status, strategy, cycler_id) {
 
 
   #temp_state[CYCLER_ID > 0]
@@ -31,13 +31,13 @@ turns_to_finish <- function(game_state, deck_status, strategy, cycler_id) {
 
    if (KPI_max < prev_KPI) {
    best_stat <- "MAX"
-   best_actions <- maxRes$actions
+   best_actions <- maxRes
    } else {
      best_stat <- "SMART_MAX"
-     best_actions <- result_prev$actions
+     best_actions <- result_prev
    }
 
-  speed_pct <-  best_actions[, .(speed = sum(actual_movement)/sum(max_move), strategy = best_stat, dh_count = dh_counter, CYCLER_ID = cycler_id)]
+  speed_pct <-  cbind(best_actions$score[, .(row_over_finish, finish_square, TURN_ID)], best_actions$actions[, .(speed = sum(actual_movement)/sum(max_move), strategy = best_stat, dh_count = dh_counter, CYCLER_ID = cycler_id)])
 
 
 return(speed_pct)

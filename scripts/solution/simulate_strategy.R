@@ -27,7 +27,7 @@ simulate_strategy <- function(game_state, deck_status, cycler_id, strategy, aim_
 
     action_row <- cbind(selected_card, STRAT_ID = strategy, downhill_start = orig_dh_start)
     actions <- rbind(actions, action_row)
-    print(actions)
+   #a print(actions)
     card_options <- card_options[row_id != action_row[, row_id]]
     temp_state <- move_cycler(temp_state, cycler_id, action_row[, MOVEMENT], ignore_block = TRUE)
     winner_state <- check_winner(temp_state, winner_state, turn_id = simul_turn, game_id = 1)

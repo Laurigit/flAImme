@@ -7,77 +7,93 @@ score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF) {
                                             GAME_SLOT_ID,
                                             LANE_NO,
                                             SQUARE_ID,
-                                            CYCLER_ID)]
+                                            CYCLER_ID,
+                                            EXTRA,
+                                            turns_out_of_mountain)]
 
-  BLOCK_ROWS <- NULL
-  BLOCKER_HONOR <- NULL
-  for (move_loop in action_data[, move_order]) {
-    move_data <- action_data[move_order == move_loop]
-    move_amount <- move_data[, MOVEMENT]
-    move_cycler_id <- move_data[, CYCLER_ID]
-    block_info <-  calc_block_squares(temp_game_status, move_cycler_id, move_amount)
-    block_data <- data.table(CYCLER_ID = move_cycler_id, Score = block_info$block_amount, Setting = "Get_blocked")
-    block_honor_row <- cbind(block_info$block_cycler)
-    BLOCKER_HONOR <- rbind(BLOCKER_HONOR, block_honor_row)
-    BLOCK_ROWS <- rbind(BLOCK_ROWS, block_data)
-    temp_game_status <- move_cycler(temp_game_status, move_cycler_id, move_amount, slipstream = FALSE, ignore_block = FALSE)
-  }
+
+
+
+  #MOVEMENT gained phase one. k posisck orig positions
+  orig_posits <- temp_game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, turns_out_of_mountain), by = CYCLER_ID]
+
+
+    #blocks not needed most likely
+  # BLOCK_ROWS <- NULL
+  # BLOCKER_HONOR <- NULL
+   for (move_loop in action_data[, move_order]) {
+     move_data <- action_data[move_order == move_loop]
+     move_amount <- move_data[, MOVEMENT]
+     move_cycler_id <- move_data[, CYCLER_ID]
+  #   block_info <-  calc_block_squares(temp_game_status, move_cycler_id, move_amount)
+  #   block_data <- data.table(CYCLER_ID = move_cycler_id, Score = block_info$block_amount, Setting = "Get_blocked")
+  #   block_honor_row <- cbind(block_info$block_cycler)
+  #   BLOCKER_HONOR <- rbind(BLOCKER_HONOR, block_honor_row)
+  #   BLOCK_ROWS <- rbind(BLOCK_ROWS, block_data)
+     temp_game_status <- move_cycler(temp_game_status, move_cycler_id, move_amount, slipstream = FALSE, ignore_block = FALSE, ignore_end_of_track = TRUE)
+   }
 
   #cycler order
   CYCLER_ORDER <- game_status[CYCLER_ID > 0][order(-SQUARE_ID)][, .(CYCLER_ID, Score = seq_len(.N), Setting = "Move_order")]
 
   #SLIPSTREAM
+  #most likely not needed
+  # SLIPSTREAM <- calc_slipstream(temp_game_status)
+  # slip_get_temp <- SLIPSTREAM[, .(Score = mean(SLIP_ROWS)), by = .(CYCLER_ID, slip_instance)]
+  # SLIPSTREAM_GET <- slip_get_temp[,.(Score = sum(Score)), by = .(CYCLER_ID)]
+  # SLIPSTREAM_GET[, Setting := "Getslipstream"]
+  # slip_give_temp <- SLIPSTREAM[, .(Score = mean(SLIP_ROWS)), by = .(SR_GIVER_CYCLER_ID, slip_instance)]
+  # SLIPSTREAM_GIVE <- slip_give_temp[, .(Score = sum(Score)), by = .(CYCLER_ID = SR_GIVER_CYCLER_ID)]
+  # SLIPSTREAM_GIVE[, Setting := "Give_slipstream"]
 
-  SLIPSTREAM <- calc_slipstream(temp_game_status)
-  slip_get_temp <- SLIPSTREAM[, .(Score = mean(SLIP_ROWS)), by = .(CYCLER_ID, slip_instance)]
-  SLIPSTREAM_GET <- slip_get_temp[,.(Score = sum(Score)), by = .(CYCLER_ID)]
-  SLIPSTREAM_GET[, Setting := "Getslipstream"]
-  slip_give_temp <- SLIPSTREAM[, .(Score = mean(SLIP_ROWS)), by = .(SR_GIVER_CYCLER_ID, slip_instance)]
-  SLIPSTREAM_GIVE <- slip_give_temp[, .(Score = sum(Score)), by = .(CYCLER_ID = SR_GIVER_CYCLER_ID)]
-  SLIPSTREAM_GIVE[, Setting := "Give_slipstream"]
-  #MOVE DRIVERS
+   #MOVE DRIVERS
   temp_game_status <- apply_slipstream(temp_game_status)
 
 
 
-  #exhaust
-
-  exhaust_amount_temp <- calc_exhaust(temp_game_status)
-  EXHAUST_AMOUONT <- exhaust_amount_temp[,.(CYCLER_ID, Score = EXHAUST, Setting = "Get_exhaust")]
-  #DEAL EXHAUST ACTUALLY
-  deck_status <- apply_exhaustion(deck_status, temp_game_status)
 
 
 
 
   #TRACK_POSITION
+
   leader <- temp_game_status[CYCLER_ID > 0, max(GAME_SLOT_ID)]
-  TRACK_POSITION <- temp_game_status[CYCLER_ID > 0, .(Score = leader - GAME_SLOT_ID), by = CYCLER_ID]
+  #compare_slot
+  track_posis <- temp_game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, KEY = "1"), by = CYCLER_ID]
+  cross_join <- merge(x=track_posis, y=track_posis, by = "KEY", allow.cartesian = TRUE)
+  aggr <- cross_join[CYCLER_ID.x != CYCLER_ID.y,  .(COMPARE_GAME_SLOT_ID = quantile(GAME_SLOT_ID.y, 0.75)), by = .(CYCLER_ID = CYCLER_ID.x,
+                                                                                                                   GAME_SLOT_ID = GAME_SLOT_ID.x)]
+
+  TRACK_POSITION <- aggr[, .(Score =  GAME_SLOT_ID - COMPARE_GAME_SLOT_ID), by = CYCLER_ID]
   TRACK_POSITION[, Setting := "Track_position"]
 
   #TRACK_LEFT
   finish <- temp_game_status[FINISH == 1, max(GAME_SLOT_ID)]
-  distance_left <- 1 - leader/finish
-  TRACK_POSITION[, Score := Score / (distance_left)]
+  distance_left <-   1 - leader/finish
+  #care track position after halfway
+  TRACK_POSITION[, Score := Score * (0.6 - min(0.5, distance_left))]
+
+  #exhaust
+
+  exhaust_amount_temp <- calc_exhaust(temp_game_status)
+  #less exhaust care after halfway
+
+  EXHAUST_AMOUONT <- exhaust_amount_temp[,.(CYCLER_ID, Score = EXHAUST * distance_left, Setting = "Get_exhaust")]
+  #DEAL EXHAUST ACTUALLY
+  deck_status <- apply_exhaustion(deck_status, temp_game_status)
+
+
+
+#MOVEMENT GAINED PHASE 2
+
+  new_posits <- temp_game_status[CYCLER_ID > 0, .(GAME_SLOT_ID_NEW = GAME_SLOT_ID, turns_out_of_mountain_new = turns_out_of_mountain), by = CYCLER_ID]
+
+  MOVEMENT_GAINED <- orig_posits[new_posits, on = "CYCLER_ID"][, .(Score = GAME_SLOT_ID_NEW - GAME_SLOT_ID, CYCLER_ID, Setting = "Movement_gained")]
 
   #distance between team members
   join_team <- TRACK_POSITION[action_data, on = "CYCLER_ID"]
   team_penalty_temp  <- join_team[, .(Score = abs(Score - mean(Score)), CYCLER_ID), by = .(TEAM_ID)]
   TEAM_PENALTY <- team_penalty_temp[, .(CYCLER_ID, Score, Setting = "Cycler_distance")]
-  #increased mountain turns length
-  cyclers <- game_state[CYCLER_ID > 0, CYCLER_ID]
-  MOUNTAIN_TURNS <- data.table(CYCLER_ID = cyclers, orig_length = 0, new_length = 0)
-
-  for(cycler_loop in cyclers) {
-    result_orig <- slots_out_of_mountains(game_state, cycler_loop)
-    result_new <- slots_out_of_mountains(temp_game_status, cycler_loop)
-    if (is.null(result_new)) {
-      result_new <- 0
-    }
-    MOUNTAIN_TURNS[CYCLER_ID == cycler_loop,':=' (orig_length = result_orig, new_length = result_new)]
-  }
-  MOUNTAIN_TURNS[, mountain_turn_change := ifelse(new_length > 0, ceiling(new_length / 5) - ceiling(orig_length / 5) + 1, 0)]
-  MOUNTAIN_TURNS_SCORE <- MOUNTAIN_TURNS[, .(CYCLER_ID, Score = mountain_turn_change, Setting = "Extra_mountain_turn")]
 
 #potential draws next turn
   DH_POTENTIAL <- NULL
@@ -189,7 +205,7 @@ ascend_row_bool <- temp_game_status[CYCLER_ID > 0, .(CYCLER_ID, ASCEND = ifelse(
 POTENTIAL_DRAWS_WITH_ODDS[, ascend_advantage := pmax(5 - MOVEMENT, 0)]
 join_ascpot <- ascend_row_bool[POTENTIAL_DRAWS_WITH_ODDS, on = .(CYCLER_ID)]
 
-EXPECTED_ASCEND_ADVANTAGE <- join_ascpot[, .(Score = sum(HAND_CONTAINS_X_OR_SMALLER * ascend_advantage )), by = CYCLER_ID]
+EXPECTED_ASCEND_ADVANTAGE <- join_ascpot[, .(Score = pmin(((sum(HAND_CONTAINS_X_OR_SMALLER * ascend_advantage * ASCEND ))), 3)), by = CYCLER_ID]
 EXPECTED_ASCEND_ADVANTAGE[, Setting := "Dh_square"]
 #EXPECTED probability to hit ASCEND next turn
 
@@ -201,21 +217,27 @@ if (nrow(temp_expected_dh_odds) == 0) {
 EXPECTED_ASCEND_HIT_BONUS <- temp_expected_dh_odds[, .(CYCLER_ID, Score = DRAW_ODDS_MIN_ONE, Setting = "Dh_option")]
 }
 
+#increased mountain turns length
+mountain_score <- orig_posits[new_posits, on = "CYCLER_ID"][, .(Score =  turns_out_of_mountain - turns_out_of_mountain_new, CYCLER_ID, Setting = "Extra_mountain_turn")]
+mountain_score_odds <- POTENTIAL_DRAWS_WITH_ODDS[mountain_score, on = "CYCLER_ID"][MOVEMENT %in% c(5, 6, 7)]
+MOUNTAIN_TURNS_SCORE <- mountain_score_odds[, .(Score = Score * max(HAND_CONTAINS_X_OR_HIGHER)), by = .(CYCLER_ID, Setting)]
 #cost of card spent
 COST_OF_CARD_SPENT <- action_data[,. (CYCLER_ID, Score = MOVEMENT, Setting = "Card_spent")]
 
 position_score <- rbind(
-BLOCKER_HONOR,
-BLOCK_ROWS,
-SLIPSTREAM_GET,
-SLIPSTREAM_GIVE,
+#BLOCKER_HONOR,
+#BLOCK_ROWS,
+#SLIPSTREAM_GET,
+#SLIPSTREAM_GIVE,
+EXHAUST_AMOUONT,
 TEAM_PENALTY,
 TRACK_POSITION,
 MOUNTAIN_TURNS_SCORE,
 EXPECTED_ASCEND_ADVANTAGE,
 EXPECTED_ASCEND_HIT_BONUS,
 COST_OF_CARD_SPENT,
-CYCLER_ORDER)
+CYCLER_ORDER,
+MOVEMENT_GAINED)
 
 #join score
 POSITION_SCORE <- ADM_AI_CONF[position_score, on = .(Setting,  CYCLER_ID)]
