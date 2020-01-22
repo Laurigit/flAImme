@@ -10,14 +10,14 @@ simulate_get_card_options <- function(deck_status, cycler_id) {
   turn <- 0
   turn_total <- NULL
   if (full_hands > 0) {
-  for(hand_loop in full_hands) {
-    turn <- turn + 1
-    turn_cards <- cbind(deck_status[CYCLER_ID == cycler_id & Zone == "Deck", .(row_id, MOVEMENT)], turn_simulate = turn)
-    turn_total <- rbind(turn_total, turn_cards)
-  }
+    for(hand_loop in full_hands) {
+      turn <- turn + 1
+      turn_cards <- cbind(deck_status[CYCLER_ID == cycler_id & Zone == "Deck", .(row_id, MOVEMENT, CYCLER_ID)], turn_simulate = turn)
+      turn_total <- rbind(turn_total, turn_cards)
+    }
   }
   #rest of turns after shuffle
-  final_cards <- cbind(deck_status[CYCLER_ID == cycler_id & Zone != "Removed", .(row_id, MOVEMENT)], turn_simulate = 0)
+  final_cards <- cbind(deck_status[CYCLER_ID == cycler_id & Zone != "Removed", .(row_id, MOVEMENT, CYCLER_ID)], turn_simulate = 0)
   turn_total <- rbind(turn_total, final_cards)
   #if not, allow every card and note the odds
   return(turn_total)

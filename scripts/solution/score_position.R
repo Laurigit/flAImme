@@ -1,6 +1,6 @@
-score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF) {
+score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF, orig_speed) {
   #action_data <- data.table(CYCLER_ID = c(1,2,3,4,5,6), MOVEMENT = c(2,3,2,5,4,3), move_order = c(1,2,3,4,5,6), TEAM_ID = c(1,1,2,2,3,3))
-
+  temp_deck_status <- deck_status[1 != 0, .(CYCLER_ID, CARD_ID, Zone, MOVEMENT, row_id)]
   #make moves
   temp_game_status <- game_status[1 != 0, .(PIECE_ATTRIBUTE,
                                             FINISH,
@@ -18,6 +18,8 @@ score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF) {
   orig_posits <- temp_game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, turns_out_of_mountain), by = CYCLER_ID]
 
 
+
+  best_speed <- orig_speed[, .(Speed = min(TURN_ID * 10 - row_over_finish)), by = CYCLER_ID]
     #blocks not needed most likely
   # BLOCK_ROWS <- NULL
   # BLOCKER_HONOR <- NULL
@@ -25,6 +27,7 @@ score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF) {
      move_data <- action_data[move_order == move_loop]
      move_amount <- move_data[, MOVEMENT]
      move_cycler_id <- move_data[, CYCLER_ID]
+     temp_deck_status <- play_card(move_cycler_id, card_id = move_amount, temp_deck_status, 1, 1)
   #   block_info <-  calc_block_squares(temp_game_status, move_cycler_id, move_amount)
   #   block_data <- data.table(CYCLER_ID = move_cycler_id, Score = block_info$block_amount, Setting = "Get_blocked")
   #   block_honor_row <- cbind(block_info$block_cycler)
@@ -50,7 +53,12 @@ score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF) {
   temp_game_status <- apply_slipstream(temp_game_status)
 
 
+#new speed
 
+  new_speed <- turns_to_finish(temp_game_status, deck_status)
+  best_speed_new <- new_speed[, .(Speed_new =  min(TURN_ID * 10 - row_over_finish + 10)), by = CYCLER_ID]
+
+  SPEED_CHANGE <- best_speed[best_speed_new, on = "CYCLER_ID"][, .(Score = Speed - Speed_new , CYCLER_ID, Setting = "Speed_change")]
 
 
 
@@ -210,17 +218,18 @@ EXPECTED_ASCEND_ADVANTAGE[, Setting := "Dh_square"]
 #EXPECTED probability to hit ASCEND next turn
 
 dh_ss <- DH_POTENTIAL[, .(.N), by = .(CYCLER_ID, MOVEMENT)]
-temp_expected_dh_odds <- dh_ss[POTENTIAL_DRAWS_WITH_ODDS, on = .(CYCLER_ID, MOVEMENT)][!is.na(N),. (CYCLER_ID, DRAW_ODDS_MIN_ONE)]
+temp_expected_dh_odds <- dh_ss[POTENTIAL_DRAWS_WITH_ODDS, on = .(CYCLER_ID, MOVEMENT)][!is.na(N),. (CYCLER_ID, DRAW_ODDS_MIN_ONE, MOVEMENT)]
 if (nrow(temp_expected_dh_odds) == 0) {
   EXPECTED_ASCEND_HIT_BONUS <-  data.table(CYCLER_ID = numeric(), Score = numeric(), Setting = character())
 } else {
-EXPECTED_ASCEND_HIT_BONUS <- temp_expected_dh_odds[, .(CYCLER_ID, Score = DRAW_ODDS_MIN_ONE, Setting = "Dh_option")]
+EXPECTED_ASCEND_HIT_BONUS <- temp_expected_dh_odds[, .(Score = max(DRAW_ODDS_MIN_ONE)), by = .( CYCLER_ID)][, Setting := "Dh_option"]
 }
 
 #increased mountain turns length
+
 mountain_score <- orig_posits[new_posits, on = "CYCLER_ID"][, .(Score =  turns_out_of_mountain - turns_out_of_mountain_new, CYCLER_ID, Setting = "Extra_mountain_turn")]
 mountain_score_odds <- POTENTIAL_DRAWS_WITH_ODDS[mountain_score, on = "CYCLER_ID"][MOVEMENT %in% c(5, 6, 7)]
-MOUNTAIN_TURNS_SCORE <- mountain_score_odds[, .(Score = Score * max(HAND_CONTAINS_X_OR_HIGHER)), by = .(CYCLER_ID, Setting)]
+MOUNTAIN_TURNS_SCORE <- mountain_score_odds[, .(Score =  max(Score *HAND_CONTAINS_X_OR_HIGHER)), by = .(CYCLER_ID, Setting)]
 #cost of card spent
 COST_OF_CARD_SPENT <- action_data[,. (CYCLER_ID, Score = MOVEMENT, Setting = "Card_spent")]
 
@@ -237,7 +246,8 @@ EXPECTED_ASCEND_ADVANTAGE,
 EXPECTED_ASCEND_HIT_BONUS,
 COST_OF_CARD_SPENT,
 CYCLER_ORDER,
-MOVEMENT_GAINED)
+MOVEMENT_GAINED,
+SPEED_CHANGE)
 
 #join score
 POSITION_SCORE <- ADM_AI_CONF[position_score, on = .(Setting,  CYCLER_ID)]

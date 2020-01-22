@@ -1,5 +1,5 @@
 
-# required_data(c("STG_TRACK_PIECE", "STG_TRACK"))
+# required_data(c("STG_TRACK_PIECE", "STG_TRACK", "))
 # input_track <- 2
 create_track_table <- function(input_track, STG_TRACK_PIECE, STG_TRACK) {
 
@@ -17,7 +17,7 @@ create_track_table <- function(input_track, STG_TRACK_PIECE, STG_TRACK) {
                  order = NULL)]
 
   row_rep <- joinaa[rep(1:.N,LANES)][,LANE_NO:=1:.N,by=GAME_SLOT_ID]
- # kaadettu <- dcast.data.table(row_rep, TRACK_PIECE_ID + PIECE_ATTRIBUTE + START + FINISH + GAME_SLOT_ID ~ Indx, value.var = "dcast_value")
+  # kaadettu <- dcast.data.table(row_rep, TRACK_PIECE_ID + PIECE_ATTRIBUTE + START + FINISH + GAME_SLOT_ID ~ Indx, value.var = "dcast_value")
   #colnames(kaadettu)[(length(kaadettu) - max_lanes + 1):length(kaadettu)] <- laneCols
   sort <- row_rep[order(GAME_SLOT_ID, -LANE_NO)]
   sort[, ':=' (TRACK_PIECE_ID = NULL,

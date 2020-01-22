@@ -24,7 +24,7 @@ cycl <- data.table(CYCLER_ID =
 
 tiimi <- data.table(  TEAM_ID = 1:6,
                       TEAM_COLOR = c("Red", "Red", "Blue", "Blue", "Black", "Black", "Green", "Green",
-                                    "Purple", "Purple", "White", "White"))
+                                     "Purple", "Purple", "White", "White"))
 
 #dbWriteTable(con, "TEAM", tiimi, row.names = FALSE, append = TRUE)
 
@@ -63,7 +63,7 @@ GAME <- data.table(  GAME_ID = c(1, 1, 1, 1, 1, 1),
 tracki <- data.table(TRACK_ID = 2,
                      TRACK_NAME = "OMA",
                      TRACK_PIECE_VECTOR = paste0("a,", "b,", "c,", "d,", "e,", "F,",
-                                            "g,", "h,", "i,", "j,", "k,", "l,", "m,", "N,", "o,", "p,", "q,", "r,", "s,", "t,", "u"))
+                                                 "g,", "h,", "i,", "j,", "k,", "l,", "m,", "N,", "o,", "p,", "q,", "r,", "s,", "t,", "u"))
 #tracki <- data.table(read_excel("./external_files/track_pieces.xlsx", sheet = "Sheet2"))[!is.na(TRACK_PIECE_VECTOR)]
 
 #dbWriteTable(con, "TRACK", tracki, row.names = FALSE, append = TRUE)

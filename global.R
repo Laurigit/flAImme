@@ -1,3 +1,4 @@
+library(adagio)
 library(shiny)
 library(data.table)
 library(stringr)
@@ -14,6 +15,7 @@ library(dragulaR)
 library(lubridate)
 library(readxl)
 library(zoo)
+library(lpSolve)
 options(shiny.trace=FALSE)
 
 
@@ -21,7 +23,7 @@ sourcelist <- data.table(polku = c(dir("./scripts/", recursive = TRUE)))
 sourcelist[, rivi := seq_len(.N)]
 sourcelist[, kansio := strsplit(polku, split = "/")[[1]][1], by = rivi]
 sourcelist <- sourcelist[!grep("load_scripts.R", polku)]
-sourcelist[, kansio := ifelse(str_sub(kansio, -2, -1) == ".R", "root", kansio)]a
+sourcelist[, kansio := ifelse(str_sub(kansio, -2, -1) == ".R", "root", kansio)]
 
 input_kansio_list <- c("utility",
                        "solution_functions",
@@ -42,6 +44,6 @@ for(input_kansio in input_kansio_list) {
 #con <- connDB(con)
 #rm(con)
 con <- connDB(con, "flaimme")
-
+#rm(con)
 dbSendQuery(con, 'SET NAMES utf8')
 dbQ("SHOW TABLES", con)

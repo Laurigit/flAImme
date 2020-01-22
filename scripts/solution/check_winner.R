@@ -3,9 +3,8 @@
 
 check_winner <- function(game_state, winner_state = NULL, turn_id, game_id) {
   if (is.null(winner_state)) {
-    default_row <- data.table(TURN_ID = numeric(), CYCLER_ID = numeric(), POSITION = numeric(), GAME_ID = numeric(),
+    winner_state <- data.table(TURN_ID = numeric(), CYCLER_ID = numeric(), POSITION = numeric(), GAME_ID = numeric(),
                               row_over_finish = numeric(), finish_square = numeric())
-    return(default_row)
   }
 
   finish_lane <-game_state[FINISH == 1, max(GAME_SLOT_ID)]
