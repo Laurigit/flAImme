@@ -1,8 +1,9 @@
 
 
-#aggr_to_slots <- aggr_to_slots[1:30]
-cycler_id <- 1
-optaimal_moves_to_finish <- function(cycler_id, game_status, deck_status)
+# #aggr_to_slots <- aggr_to_slots[1:30]
+# cycler_id <- 1
+# optaimal_moves_to_finish(1, game_status, deck_status)
+optaimal_moves_to_finish <- function(cycler_id, game_status, deck_status) {
 
 temp_game_status_for_debugging <- game_status[1 != 0 , .(GAME_SLOT_ID,
                                                          PIECE_ATTRIBUTE,
@@ -18,7 +19,7 @@ temp_game_status_for_debugging <- game_status[1 != 0 , .(GAME_SLOT_ID,
 cycler_pos <- temp_game_status_for_debugging[CYCLER_ID == cycler_id, GAME_SLOT_ID]
 
 
-aggr_to_slots <- temp_game_status_for_debugging[is.na(EXTRA) &
+aggr_to_slots <- temp_game_status_for_debugging[
                                                 # GAME_SLOT_ID <= game_status[FINISH == 1, GAME_SLOT_ID] #&
                                                   GAME_SLOT_ID >= cycler_pos
                                                 , .N, by = .(GAME_SLOT_ID, PIECE_ATTRIBUTE, FINISH)]
@@ -33,6 +34,8 @@ aggr_to_slots[, start_of_restricted_movement := ifelse(shift(mountain_row == 1, 
                                                          shift(mountain_row == 1, n = 6, type = "lead") | mountain_row == 1, 1, 0)]
 aggr_to_slots[, start_of_restricted_movement := ifelse(is.na(start_of_restricted_movement), 0, start_of_restricted_movement)]
 aggr_to_slots[, key := "1"]
+
+finish_slot <- aggr_to_slots[FINISH ==1, GAME_SLOT_ID]
 
 restricted_v <- aggr_to_slots[, start_of_restricted_movement] == 1
 ascend_v <- aggr_to_slots[, PIECE_ATTRIBUTE == "A"]
@@ -85,7 +88,8 @@ model <- MILPModel() %>%
   set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
   set_bounds(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), ub = 0, boundi_filtteri(i, j, kortit[k], restricted_v, ascend_v)) %>%
  add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit)) # %>%
-  #add_constraint(ruudut[i, j] * x[i, j, k] <= y[k] * kortit[k], j = 1:rivi_lkm, i = 1:rivi_lkm , k = 1:20) %>%
+
+#add_constraint(ruudut[i, j] * x[i, j, k] <= y[k] * kortit[k], j = 1:rivi_lkm, i = 1:rivi_lkm , k = 1:20) %>%
   #tätä ei tarvi, koska se on jo boundeissa
   #model %>% add_constraint(colwise(ruudut[i, j] * x[i, j, k] <=  kortit[k], j = 1:rivi_lkm, i = 1:rivi_lkm , k = 1:length(kortit)) #%>%
 
@@ -93,13 +97,12 @@ model <- MILPModel() %>%
   res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
   #eka sarake alotettava
    add_constraint(sum_expr(x[i, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == 1, i = 1:1) %>%
-  #ruudussa voi käydä vaan kerran
-  add_constraint(sum_expr(x[i, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) <= 1, i = 1:rivi_lkm)  %>%
+
   #jatka siitä mihin jäit
-  add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(rivi_lkm - 1)) %>%
+  add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(finish_slot - 1)) %>%
   # add_constraint(x[i, j, k]  <= sum_expr(x[i + kortit[k], j, k], i = 1:7, j = 1:length(kortit), k = 1:5) , i = 1:10, j = 1:10, k = 1:5) %>%# )
   #maaliin on päästävä
-  add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, k = 1:length(kortit)) == 1, j = rivi_lkm) %>%
+  add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, k = 1:length(kortit), j = finish_slot:rivi_lkm) == 1) %>%
 
   #add_constraint(sum_expr(x[i, j], i = length(kortit)) == 1, j = 1:n) %>%
   solve_model(with_ROI(solver = "symphony", verbosity = 1)) %>%
@@ -109,69 +112,15 @@ model <- MILPModel() %>%
 
 
 dtres <- data.table(res)
-alkup_kortit <- kortit_Dt[, .(MOVEMENT, seq_len(.N))]
-join_kortit <- dtres[alkup_kortit, on = .(k = V2)]
+return(dtres)
+}
+# alkup_kortit <- kortit_Dt[, .(MOVEMENT, seq_len(.N))]
+# join_kortit <- dtres[alkup_kortit, on = .(k = V2)]
+#
+# join_rata <- join_kortit[aggr_to_slots, on = .(i = GAME_SLOT_ID)]
+# join_rata[, pelattu_kortti := na.locf(MOVEMENT, na.rm = FALSE)]
+#
+# sscols <- join_rata[, .(i, PIECE_ATTRIBUTE, pelattu_kortti, k)]
+# sscols
+#
 
-join_rata <- join_kortit[aggr_to_slots, on = .(i = GAME_SLOT_ID)]
-join_rata[, pelattu_kortti := na.locf(MOVEMENT, na.rm = FALSE)]
-
-sscols <- join_rata[, .(i, PIECE_ATTRIBUTE, pelattu_kortti, k)]
-sscols
-
-
-
-
-model <- MILPModel() %>%
-  add_variable(x[i, j], i = 2:rivi_lkm, j = 2:rivi_lkm, type = "binary") %>%
-  set_objective(sum_expr(cost_matrix[i, j] * x[i, j], i = 2:rivi_lkm, j = 2:rivi_lkm), "min")  %>%
-  #add_constraint(sum_expr(weights[i] * x[i], i = 1:n) <= max_capacity) %>%
-  set_bounds(x[i, j], ub = 0, i = 2:rivi_lkm, j = 2:rivi_lkm, is_legal(filter_nine_or_less, i, j)) %>%
-  #need to start from slot 1
-  add_constraint(sum_expr(x[i, j], j = 2:rivi_lkm) == 1, i = 2)%>%
-  #need to finish
-add_constraint(sum_expr(x[i, j], i = 2:rivi_lkm) == 1, j = rivi_lkm) %>%
-#need to leave from each slot where entered
-  add_constraint(x[i, j] == x[i + cost_matrix[i, j], j])
-#add_constraint(sum_expr(x[i, j], i = 2:rivi_lkm) >= sum_expr(x[i, j], j = 2:(rivi_lkm-3)))
-
-#add_constraint(x[i, j] == 0, i = 1:rivi_lkm, j = 1:rivi_lkm, is_legal(filter_nine_or_less, i, j))
-
-
-  res <- solve_model(model, with_ROI(solver = "symphony")) %>%
-  get_solution(x[i, j]) %>%
-    filter(value > 0) #%>%
-
-  res$solution
-  $solution
-  get_solution(x[i]) %>%
-  filter(value > 0)
-
-
-
-#radan pituus
-pituus <- 100
-#korttien määrä
-kortit <- 15
-
-#etäisyys matriisi. Radan koko on 40
-
-
-g
-
-
-
-
-model <- MIPModel() %>%
-  add_variable(x[i, j], type = "binary", i = 1:pituus, j = 1:kortit)%>%
-  set_objective(sum_expr(sum_expr(x[i, j],  i = 1:pituus == 0), j = 1:kortit), "min") %>%
-  add_constraint((x[i, j] + x[i, j + 1]) <= 1, i = 1:(pituus), j = 1:(kortit - 1)) %>%
-  add_constraint(sum_expr(x[i, j], i = 1:pituus <= 10, j = 1:kortit)) %>%
-  add_constraint(sum_expr(x[i, j], j = 1:kortit == 1, i = 1:pituus))
-
-
-result <- solve_model(model, with_ROI("symphony"))
-#add_constraint((x[i, j] + x[i + 1 , j - 1]) == 1, i = 1:pituus, j = 1:kortit)
-#set_objective(sum_expr(sum_expr(x[i, j],  i = 1:pituus) > 0, j = 1:kortit), direction = "min")
-
-
-%>%

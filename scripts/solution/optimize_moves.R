@@ -68,7 +68,7 @@ optimize_moves <- function(game_status, deck_status, cycler_ids){
           reverse[, pack_problem := (rleid(covered))]
           track_to_fill <- reverse[covered == 0, .(length = .N), by = .(id = pack_problem)]
           k <- sort(track_to_fill[length >= min(rest_of_cards[, MOVEMENT]) , length])
-          res <-adagio::mknapsack(join_map[,value], join_map[, capped_movement], k)
+          res <- adagio::mknapsack(join_map[,value], join_map[, capped_movement], k)
           res_data <- data.table(box = res$ksack,  join_map)
           #analyse result
           res_data[, movement_used := ifelse(box > 0, 1, 0) * capped_movement]

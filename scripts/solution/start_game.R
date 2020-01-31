@@ -6,10 +6,10 @@
 #                                   starting_lane = c(1, 1, 2, 1, 2, 2))
 #  track <- 2
 
-start_game <- function(input_STARTUP_DATA, track, STG_TRACK_PIECE, STG_TRACK) {
+start_game <- function(input_STARTUP_DATA, track, STG_TRACK_PIECE, STG_TRACK, force_lanes = NULL) {
 
 #create track
-tracki <-  create_track_table(track, STG_TRACK_PIECE, STG_TRACK)
+tracki <-  create_track_table(track, STG_TRACK_PIECE, STG_TRACK, force_lanes)
 start_row <- tracki[START == 1, max(GAME_SLOT_ID)]
 #set positions
 updated_status <-tracki

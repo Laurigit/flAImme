@@ -8,29 +8,30 @@ optimize_moves <- function(game_status, deck_status, cycler_ids){
                                                     LANE_NO,
                                                     SQUARE_ID,
                                                     CYCLER_ID)]
-
-  temp_game_status_for_debugging <- set_cycler_position(cycler_id, 10, 1, temp_game_status_for_debugging)
+  cycler_id <- 1
+  #temp_game_status_for_debugging <- set_cycler_position(cycler_id, 10, 1, temp_game_status_for_debugging)
   zoom(temp_game_status_for_debugging)
   cycler_ids <- temp_game_status_for_debugging[CYCLER_ID > 0, CYCLER_ID]
-  cycler_id <- 1
+
   cards_to_play <- deck_status[CYCLER_ID == cycler_id & Zone != "Removed", .(MOVEMENT, row_id)]
   cycler_pos <- temp_game_status_for_debugging[CYCLER_ID == cycler_id, GAME_SLOT_ID]
 
 
-  aggr_to_slots <- temp_game_status_for_debugging[is.na(EXTRA) &
-                                                    GAME_SLOT_ID <= game_status[FINISH == 1, GAME_SLOT_ID] &
-                                                    GAME_SLOT_ID >= cycler_pos , .N, by = .(GAME_SLOT_ID, PIECE_ATTRIBUTE, FINISH)]
+  aggr_to_slots <- temp_game_status_for_debugging[is.na(EXTRA)
+                                                   # GAME_SLOT_ID <= game_status[FINISH == 1, GAME_SLOT_ID] #&
+                                                  #  GAME_SLOT_ID >= cycler_pos
+                                                  , .N, by = .(GAME_SLOT_ID, PIECE_ATTRIBUTE, FINISH)]
 
 
 
 
-  #aggr_to_slots[, mountain_row := ifelse(PIECE_ATTRIBUTE == "M", 1, 0)]
+aggr_to_slots[, mountain_row := ifelse(PIECE_ATTRIBUTE == "M", 1, 0)]
   #aggr_to_slots[, ascend_row := ifelse(PIECE_ATTRIBUTE == "A", 1, 0)]
 #aggr_to_slots[, ascend_bonus_calc := rowid(rleid(ascend_row))]
     reverse <- aggr_to_slots[order(-GAME_SLOT_ID)]
     reverse[, ascend_bonus_zone := ifelse(shift(PIECE_ATTRIBUTE, 5, type = "lead") == "A", 1, 0)]
     reverse[, ascend_bonus_zone := ifelse(is.na(ascend_bonus_zone), 0, ascend_bonus_zone)]
-    # reverse[, start_of_restricted_movement := ifelse(shift(mountain_row == 1, n = 6) | mountain_row == 1, 1, 0)]
+     reverse[, start_of_restricted_movement := ifelse(shift(mountain_row == 1, n = 6) | mountain_row == 1, 1, 0)]
   # reverse[, start_of_restricted_movement := ifelse(is.na(start_of_restricted_movement), 0, start_of_restricted_movement)]
   #reverse[, counter_cons_piece := rowid(rleid(mountain_row))]
   reverse[, counter_cons_piece_attribute := rowid(rleid(PIECE_ATTRIBUTE))]
@@ -135,119 +136,6 @@ optimize_moves <- function(game_status, deck_status, cycler_ids){
   joinlpMpaping <- lpMappingTable[deck_left[MOVEMENT < 6], on = "MOVEMENT"]
 
 
-
-
-
-
-#here we are filling the first cap
-  mod <- lp(direction = "min",
-            objective.in = joinlpMpaping[, cost],
-            const.mat = rbind(joinlpMpaping[,weight], joinlpMpaping[,weight]),
-            const.dir = c("<=", ">="),
-            const.rhs = c(cap, cap_min),
-            all.bin = TRUE,
-            num.bin.solns = 1)
-  #mod$solution
-  join_lp_res <- joinlpMpaping[, selected := mod$solution]
-
-
-  #find next A
-  next_A <- reverse[next_to_lp_solve[loop_no, start_pos] < GAME_SLOT_ID & PIECE_ATTRIBUTE == "A", min(GAME_SLOT_ID)]
-
-
-  #if A is within the played cards, check if we need to AIM for it.
-  if (next_A <= (next_to_lp_solve[loop_no, start_pos]) + join_lp_res[selected == 1, sum(MOVEMENT)]) {
-    #damn, there's A on the. Need to consider hitting it.
-
-
-
-  end_of_A <- reverse[next_A < GAME_SLOT_ID & PIECE_ATTRIBUTE != "A", min(GAME_SLOT_ID)]
-  #distance of A. Get mod. If mod is 0, then we need to hit exactly the one spot. If mod is 1, then we have two options
-  A_options_length <- (end_of_A - next_A - 1) %% 5
-  #calculate SOMETHING IF length A > 5 so you could use multiple
-#install.packages("FLSSS")
-library(FLSSS)
-  #FLOSS SUBST SUMILLA PLACE HOW TO HIT A
-
-
-  target <- (A_options_length / 2 + next_A) - next_to_lp_solve[loop_no, start_pos]
-  ME <- A_options_length / 2
-  v <- join_lp_res[selected == 1, MOVEMENT]
-  #here we check if it possible to hit A with first optimal suggestion without adjustment
-
-    res <- FLSSS(0,v,target, ME ,solutionNeed = 1L)
-
-  res
-
-  #if found solution to hit A, then all good! If not, let's count if we should aim for A
-  #chck if we hit
-  if (length(res) > 0) {
-    # WE HIT IT; YEAH, write some code
-    #so join_lp_res is good data
-    play_these_cards <- join_lp_res[selected == 1]
-
-
-  } else {
-    #we missed it, now check if we can slow down to hit it
-
-    cycler_pos <- game_status[CYCLER_ID == cycler_id, min(GAME_SLOT_ID) ]
-    finish_pos <- game_status[FINISH == 1, min(GAME_SLOT_ID)]
-    track_left <- finish_pos - cycler_pos
-    #sort
-    deck_status <- deck_status[order(CYCLER_ID, -MOVEMENT)]
-    deck_status[, cum_sum := cumsum(MOVEMENT), by = CYCLER_ID]
-    potential_savings <- suppressWarnings(deck_status[CYCLER_ID == cycler_id & cum_sum >= track_left , max(MOVEMENT)])
-    if (is.infinite(potential_savings)) {
-      potential_savings <- 5 - 2
-    } else {
-        potential_savings <- 5 - potential_savings
-    }
-    #we can now try card that slow our movement temporarily, if the slowment if smaller than potentail savings
-
-
-    cap <- A_options_length  + next_A - next_to_lp_solve[loop_no, start_pos]
-    cap_min <- next_A - next_to_lp_solve[loop_no, start_pos]
-    #here we are filling the first cap
-    mod <- lp(direction = "min",
-              objective.in = joinlpMpaping[, cost],
-              const.mat = rbind(joinlpMpaping[,weight], joinlpMpaping[,weight]),
-              const.dir = c("<=", ">="),
-              const.rhs = c(cap, cap_min),
-              all.bin = TRUE,
-              num.bin.solns = 1)
-    #mod$solution
-    join_lp_res <- joinlpMpaping[, slow_selected := mod$solution]
-
-
-
-    #acceptected slowness
-    acc_slop <- 1:(potential_savings - 1)
-
-    for (slow_ness_loop in acc_slop) {
-    target <- next_A - next_to_lp_solve[loop_no, start_pos] - slow_ness_loop
-    ME <- 0
-    v <- joinlpMpaping[, MOVEMENT]
-    #find solution by looping through used card lengths
-
-      res <- FLSSS(len = 0, v ,target, ME = 0.1 ,solutionNeed = 1L)
-      if (length(res) > 0) {
-        break()
-      }
-    }
-    #check if solution found
-    if (length(res) > 0) {
-      #FOUND! We hit the downhill by playing solution, the we play min cards in hand until end of downhill.
-      only_prev_selected  <- joinlpMpaping[res[[1]], slow_selected := 1]
-    } else {
-      # we did not found solution, which is good. Nothing to optimize and we are ready for now.
-    }
-
-    }
-
-
-  } else {
-    #THERE's no A on the way. We are optimal!
-  }
 
 
 

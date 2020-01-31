@@ -1,19 +1,21 @@
   # required_data(c("STG_CYCLER", "STG_TRACK"))
-  # input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6),
-  #                                  PLAYER_ID = c(1,1,2,2,3,3),
-  #                                  exhaust = c(0, 0, 0, 0, 0, 0),
-  #                                  starting_row =   c(3, 2, 3, 1, 2, 1),
-  #                                   starting_lane = c(2, 1, 1, 1, 2, 2))
+  # input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8),
+  #                                  PLAYER_ID = c(1,1,2,2,3,3,4,4),
+  #                                  exhaust = c(0, 0, 0, 0, 0, 0,0,0),
+  #                                  starting_row =   c(1, 1, 1, 1, 1, 1,1,1),
+  #                                   starting_lane = c(1,2, 3, 4, 5, 6,7,8))
   #  track <- 3
    required_data(c("STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
   total_winner <- NULL
+
+
   full_action <- NULL
   game_action <- NULL
   for (game_id in 1:200000) {
     winner_state <- data.table(TURN_ID = numeric(), CYCLER_ID = numeric(), POSITION = numeric(), GAME_ID = numeric(),
                                row_over_finish = numeric(), finish_square = numeric())
 
-    game_status <- start_game(input_STARTUP_DATA,1, STG_TRACK_PIECE, STG_TRACK)
+    game_status <- start_game(input_STARTUP_DATA,1, STG_TRACK_PIECE, STG_TRACK, 8)
     #add_mountain_info
     game_status <- slots_out_of_mountains(game_status)
     orig_posits <- game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, PIECE_ATTRIBUTE), by = CYCLER_ID]
@@ -46,13 +48,17 @@
       pelatut_kortit[CYCLER_ID == 4, MOVEMENT := CARD_ID]
       pelatut_kortit[CYCLER_ID == 5, CARD_ID := card_selector_by_stat(game_status, deck_status[CYCLER_ID == 5 & Zone == "Hand"], 5, "SMART_MAX",  aim_downhill = TRUE)[, MOVEMENT]]
       pelatut_kortit[CYCLER_ID == 5, MOVEMENT := CARD_ID]
+      pelatut_kortit[CYCLER_ID == 7, CARD_ID := card_selector_by_stat(game_status, deck_status[CYCLER_ID == 7 & Zone == "Hand"], 7, "SMART_MAX",  aim_downhill = TRUE)[, MOVEMENT]]
+      pelatut_kortit[CYCLER_ID == 7, MOVEMENT := CARD_ID]
+      pelatut_kortit[CYCLER_ID == 8, CARD_ID := card_selector_by_stat(game_status, deck_status[CYCLER_ID == 8 & Zone == "Hand"], 8, "SMART_MAX",  aim_downhill = TRUE)[, MOVEMENT]]
+      pelatut_kortit[CYCLER_ID == 8, MOVEMENT := CARD_ID]
       #pelatut_kortit[CYCLER_ID == 6, CARD_ID := card_selector_by_stat(game_status, deck_status[CYCLER_ID == 6 & Zone == "Hand"], 6, "MAX",  aim_downhill = TRUE)[, MOVEMENT]]
       #pelatut_kortit[CYCLER_ID == 6, MOVEMENT := CARD_ID]
       #action_data <- data.table(CYCLER_ID = c(1,2,3,4,5,6), MOVEMENT = c(2,3,2,5,4,3), move_order = c(1,2,3,4,5,6), TEAM_ID = c(1,1,2,2,3,3))
 
       if (nrow(winner_state[CYCLER_ID == 6]) != 1) {
         if (turn_id <= 20) {
-          action_data3 <- pelatut_kortit[,. (CYCLER_ID, MOVEMENT)]
+          action_data3 <- pelatut_kortit[,. (CYCLER_ID, 0)]
           CYCLER_ORDER <- game_status[CYCLER_ID > 0][order(-SQUARE_ID)][, .(CYCLER_ID, move_order = seq_len(.N))]
           action_data2 <- CYCLER_ORDER[action_data3, on = "CYCLER_ID"]
           ss_team <- STG_CYCLER[, .(CYCLER_ID, TEAM_ID)]
@@ -61,7 +67,7 @@
           my_hand <- deck_status[CYCLER_ID == 6 & Zone == "Hand"]
           best_move <- NULL
           tot_analysis <- data.table(Setting = "")
-           orig_speed <- turns_to_finish(game_status, deck_status)
+          # orig_speed <- turns_to_finish(game_status, deck_status)
           for (best_loop in my_hand[, .N, by = MOVEMENT][, MOVEMENT]) {
             action_data1[CYCLER_ID == 6, MOVEMENT := best_loop]
             pos_score <- suppressWarnings(score_position(game_status, deck_status, action_data1, ADM_AI_CONF, orig_speed))[!is.na(Score)]
@@ -69,22 +75,23 @@
             #print(paste0("MY ", my_score))
             my_analysis <- pos_score[CYCLER_ID == 6, sum(Result), by = Setting]
             setnames(my_analysis, "V1", paste0("M",best_loop))
-            tot_analysis <- tot_analysis[my_analysis, on = "Setting"]
-            #print( pos_score[CYCLER_ID == 6])
+           tot_analysis <- tot_analysis[my_analysis, on = "Setting"]
+           # print( pos_score[CYCLER_ID == 6])
             #kovin_vrihu <- AI(cycler_id = 6, game_status, deck_status)
             enemy_score <- pos_score[CYCLER_ID != 6, sum(Result), by = CYCLER_ID][, mean(V1)]
             #print(paste0("ENEM ", enemy_score))
-            #print( pos_score[CYCLER_ID != 6, sum(Result), by = Setting])
-            #print(tot_analysis)
+           # print( pos_score[CYCLER_ID != 6, sum(Result), by = Setting])
+           # print(tot_analysis)
             row_data <- data.table(tot_score = my_score - 0, MOVEMENT = best_loop)
             best_move <- rbind(row_data, best_move)
             #print(pos_score[CYCLER_ID == 6])
           }
-           print(zoom(game_status, 8, 8))
-           print(tot_analysis)
-          selected_move <- best_move[ , .SD[which.max(tot_score)]][, MOVEMENT]
 
+         #  print(tot_analysis)
+          selected_move <- best_move[ , .SD[which.max(tot_score)]][, MOVEMENT]
+          print(zoom(game_status))
           print(selected_move)
+
 
           #browser()
           pelatut_kortit[CYCLER_ID == 6, ':=' (MOVEMENT = selected_move, CARD_ID = selected_move) ]
@@ -140,17 +147,22 @@
                                      Mean_Mov = mean(Mean_Mov),
                                      SLIP = sum(SLIP_BONUS), BLOCK = sum(BLOCK_DIFF), EXHAUST = sum(EXHAUST), ASCEND = sum(ASCEND_GAIN)), by = CYCLER_ID][order(CYCLER_ID)][, GAME_ID := game_id]
       #print(zoom(game_status, 8, 7))
-      deck_status[CYCLER_ID == 1]
+      # time_now <- Sys.time()
+      # tdiff <- prev_time -
+      #deck_status[CYCLER_ID == 1]
 
     }
-    print(winner_state)
+    #print(winner_state)
     #}
     #print(winner_state)
     full_action <- rbind(full_action, aggr_action)
     total_winner <- rbind(total_winner, winner_state)
+    total_winner[, .N, by = .(POSITION, CYCLER_ID)][order(CYCLER_ID)]
     #print(full_action[, .(m)])
     print(total_winner[, mean(POSITION), by = CYCLER_ID][order(V1)])
     #full_action[, .(SLIP = mean(SLIP), BLOCK = mean(BLOCK), EXHAUST = mean(EXHAUST), ASCEND = mean(ASCEND)), by = CYCLER_ID][order(CYCLER_ID)]
     print(full_action[, .(Mean_power_mov = mean(Mean_power_mov, na.rm = TRUE),
-                          Mean_Mov = mean(Mean_Mov), SLIP = mean(SLIP), BLOCK = mean(BLOCK), EXHAUST = mean(EXHAUST), ASCEND = mean(ASCEND)), by = CYCLER_ID][order(CYCLER_ID)])
+                          Mean_Mov = mean(Mean_Mov, na.rm = TRUE), SLIP = mean(SLIP), BLOCK = mean(BLOCK), EXHAUST = mean(EXHAUST), ASCEND = mean(ASCEND)), by = CYCLER_ID][order(CYCLER_ID)])
   }
+  print(total_winner[, .N, by = .(CYCLER_ID, POSITION)])[order(CYCLER_ID, POSITION)]
+

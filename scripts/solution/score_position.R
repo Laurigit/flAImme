@@ -1,5 +1,5 @@
 score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF, orig_speed) {
-  #action_data <- data.table(CYCLER_ID = c(1,2,3,4,5,6), MOVEMENT = c(2,3,2,5,4,3), move_order = c(1,2,3,4,5,6), TEAM_ID = c(1,1,2,2,3,3))
+ # action_data <- data.table(CYCLER_ID = c(1,2,3,4,5,6), MOVEMENT = c(2,3,2,5,4,3), move_order = c(1,2,3,4,5,6), TEAM_ID = c(1,1,2,2,3,3))
   temp_deck_status <- deck_status[1 != 0, .(CYCLER_ID, CARD_ID, Zone, MOVEMENT, row_id)]
   #make moves
   temp_game_status <- game_status[1 != 0, .(PIECE_ATTRIBUTE,
@@ -19,7 +19,7 @@ score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF, o
 
 
 
-  best_speed <- orig_speed[, .(Speed = min(TURN_ID * 10 - row_over_finish)), by = CYCLER_ID]
+  #best_speed <- orig_speed[, .(Speed = min(TURN_ID * 10 - row_over_finish)), by = CYCLER_ID]
     #blocks not needed most likely
   # BLOCK_ROWS <- NULL
   # BLOCKER_HONOR <- NULL
@@ -37,7 +37,7 @@ score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF, o
    }
 
   #cycler order
-  CYCLER_ORDER <- game_status[CYCLER_ID > 0][order(-SQUARE_ID)][, .(CYCLER_ID, Score = seq_len(.N), Setting = "Move_order")]
+  CYCLER_ORDER <- temp_game_status[CYCLER_ID > 0][order(-SQUARE_ID)][, .(CYCLER_ID, Score = seq_len(.N), Setting = "Move_order")]
 
   #SLIPSTREAM
   #most likely not needed
@@ -55,10 +55,13 @@ score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF, o
 
 #new speed
 
-  new_speed <- turns_to_finish(temp_game_status, deck_status)
-  best_speed_new <- new_speed[, .(Speed_new =  min(TURN_ID * 10 - row_over_finish + 10)), by = CYCLER_ID]
+ # new_speed <- turns_to_finish(temp_game_status, deck_status)
+  new_speed <- lapply(6, function(x) {
+    optimal_moves_to_finish(x, temp_game_status, temp_deck_status)})
+  speed_result <- rbindlist(new_speed)[, .(TURN_ID = Turns_to_finish), by  = .(CYCLER_ID = cycler_id)]
+ # best_speed_new <- new_speed[, .(Speed_new =  min(TURN_ID * 10 - row_over_finish + 10)), by = CYCLER_ID]
 
-  SPEED_CHANGE <- best_speed[best_speed_new, on = "CYCLER_ID"][, .(Score = Speed - Speed_new , CYCLER_ID, Setting = "Speed_change")]
+  SPEED_CHANGE <- speed_result[, .(Score = TURN_ID , CYCLER_ID, Setting = "Speed_change")]
 
 
 

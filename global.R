@@ -15,8 +15,16 @@ library(dragulaR)
 library(lubridate)
 library(readxl)
 library(zoo)
-library(lpSolve)
-library(FLSSS)
+
+library(dplyr)
+library(ROI)
+library(ROI.plugin.glpk)
+
+library(ROI.plugin.symphony)
+library(ompr)
+library(ompr.roi)
+
+
 options(shiny.trace=FALSE)
 
 
