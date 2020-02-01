@@ -13,7 +13,6 @@ score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF, o
 
 
 
-
   #MOVEMENT gained phase one. k posisck orig positions
   orig_posits <- temp_game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, turns_out_of_mountain), by = CYCLER_ID]
 
@@ -23,7 +22,8 @@ score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF, o
     #blocks not needed most likely
   # BLOCK_ROWS <- NULL
   # BLOCKER_HONOR <- NULL
-   for (move_loop in action_data[, move_order]) {
+
+   for (move_loop in action_data[!is.na(MOVEMENT), move_order]) {
      move_data <- action_data[move_order == move_loop]
      move_amount <- move_data[, MOVEMENT]
      move_cycler_id <- move_data[, CYCLER_ID]
