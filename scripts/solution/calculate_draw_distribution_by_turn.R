@@ -76,7 +76,7 @@ calculate_draw_distribution_by_turn <- function(cycler_id, current_decks_input, 
   }
 
 
- odds_limit <- 0.4
+ odds_limit <- 0.3
  #aggr  <- total_options[, .(count = .N), by = .(certain, draw_round_column, MOVEMENT)]#
 
 total_options[, count := 1] #used to enable summing each aggregation

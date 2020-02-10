@@ -1,4 +1,4 @@
-score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF, orig_speed) {
+score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF, orig_speed, precalc_track, cycler_ids) {
  # action_data <- data.table(CYCLER_ID = c(1,2,3,4,5,6), MOVEMENT = c(2,3,2,5,4,3), move_order = c(1,2,3,4,5,6), TEAM_ID = c(1,1,2,2,3,3))
   temp_deck_status <- deck_status[1 != 0, .(CYCLER_ID, CARD_ID, Zone, MOVEMENT, row_id)]
   #make moves
@@ -56,8 +56,8 @@ score_position <- function(game_status, deck_status, action_data, ADM_AI_CONF, o
 #new speed
 
  # new_speed <- turns_to_finish(temp_game_status, deck_status)
-  new_speed <- lapply(6, function(x) {
-    optimal_moves_to_finish(x, temp_game_status, temp_deck_status)})
+  new_speed <- lapply(cycler_ids, function(x) {
+    optimal_moves_to_finish(x, temp_game_status, temp_deck_status, precalc_track, use_draw_odds = TRUE)})
   speed_result <- rbindlist(new_speed)[, .(TURN_ID = Turns_to_finish), by  = .(CYCLER_ID = cycler_id)]
  # best_speed_new <- new_speed[, .(Speed_new =  min(TURN_ID * 10 - row_over_finish + 10)), by = CYCLER_ID]
 

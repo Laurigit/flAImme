@@ -13,8 +13,9 @@
 #movement <- 4
 #move_cycler
 
-move_cycler <- function(current_game_status_diff_name, cycler_id, movement, slipstream = FALSE, ignore_block = FALSE, ignore_end_of_track = FALSE) {
-  current_game_status <- current_game_status_diff_name[1 != 0]
+move_cycler <- function(current_game_status_diff_name, cycler_id, movement, slipstream = FALSE, ignore_block = FALSE, ignore_end_of_track = FALSE, return_numeric_position = FALSE) {
+
+   current_game_status <- current_game_status_diff_name[1 != 0]
   current_position_info <- current_game_status[cycler_id == CYCLER_ID, .(GAME_SLOT_ID, PIECE_ATTRIBUTE)]
   current_position <- current_position_info[, GAME_SLOT_ID]
   #check if started from ascend
@@ -45,15 +46,24 @@ move_cycler <- function(current_game_status_diff_name, cycler_id, movement, slip
     adjusted_movement <- min(max_movement, adjusted_movement)
   }
 
-  #clear old position
-  current_game_status[cycler_id == CYCLER_ID, CYCLER_ID := 0]
 
 
  if (ignore_block == FALSE) {
  new_square <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position) & CYCLER_ID == 0, max(SQUARE_ID)]
+ new_slot <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position) & CYCLER_ID == 0, max(GAME_SLOT_ID)]
  } else {
    new_square <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position), max(SQUARE_ID)]
+   new_slot <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position), max(GAME_SLOT_ID)]
  }
- current_game_status[SQUARE_ID == new_square, CYCLER_ID := cycler_id]
-  return(current_game_status)
+
+ if (return_numeric_position == TRUE) {
+   result <- new_slot
+ } else {
+   #clear old position
+   current_game_status[cycler_id == CYCLER_ID, CYCLER_ID := 0]
+
+   current_game_status[SQUARE_ID == new_square, CYCLER_ID := cycler_id]
+   result <- current_game_status
+ }
+  return(result)
 }
