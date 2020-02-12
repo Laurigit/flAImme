@@ -3,7 +3,8 @@
 # #aggr_to_slots <- aggr_to_slots[1:30]
 # cycler_id <- 6
 # optimal_moves_to_finish(6, game_status, deck_status)
-optimal_moves_to_finish <- function(cycler_id, game_status, deck_status, move_cycler_amount = FALSE, use_draw_odds = FALSE, precalc_data) {
+optimal_moves_to_finish <- function(cycler_id, game_status, deck_status, move_cycler_amount = FALSE, use_draw_odds = FALSE, precalc_data,
+                                    use_landing_slot = FALSE) {
 
 
 trRes <- tryCatch({
@@ -29,13 +30,18 @@ temp_game_status_for_debugging <- game_status[1 != 0 , .(GAME_SLOT_ID,
 deck_status_input <- deck_status[CYCLER_ID == cycler_id & Zone != "Removed"]
 
 if (move_cycler_amount != FALSE) {
+  if (use_landing_slot != FALSE) {
+    new_cycler_pos <- set_cycler_position(cycler_id, use_landing_slot, 1, temp_game_status_for_debugging)
+
+  } else {
   new_cycler_pos <- move_cycler(temp_game_status_for_debugging, cycler_id, move_cycler_amount, ignore_block = TRUE)
+
+  }
 
   #cut the optimization track to start from the first move
   aggr_to_slots <- aggr_to_slots[GAME_SLOT_ID > new_cycler_pos[CYCLER_ID == cycler_id, max(GAME_SLOT_ID)]]
   deck_status_input <- play_card(cycler_id, move_cycler_amount, deck_status_input, 0, 0, FALSE)
 }
-
 
 rivi_lkm <- aggr_to_slots[, .N]
 ascend_v <- aggr_to_slots[, ascend_v]
@@ -43,33 +49,6 @@ restricted_v <- aggr_to_slots[, restricted_v]
 aggr_to_slots[, row_number := seq_len(.N)]
 finish_slot <- aggr_to_slots[FINISH == 1, row_number ]
 
-#temp_game_status_for_debugging <- set_cycler_position(cycler_id, 10, 1, temp_game_status_for_debugging)
-
-#cycler_pos <- temp_game_status_for_debugging[CYCLER_ID == cycler_id, GAME_SLOT_ID]
-
-#
-# aggr_to_slots <- temp_game_status_for_debugging[
-#                                                 # GAME_SLOT_ID <= game_status[FINISH == 1, GAME_SLOT_ID] #&
-#                                                   GAME_SLOT_ID >= cycler_pos
-#                                                 , .N, by = .(GAME_SLOT_ID, PIECE_ATTRIBUTE, FINISH)]
-#
-#
-# aggr_to_slots[, mountain_row := ifelse(PIECE_ATTRIBUTE == "M", 1, 0)]
-# aggr_to_slots[, start_of_restricted_movement := ifelse(shift(mountain_row == 1, n = 1, type = "lead") |
-#                                                          shift(mountain_row == 1, n = 2, type = "lead") |
-#                                                          shift(mountain_row == 1, n = 3, type = "lead") |
-#                                                          shift(mountain_row == 1, n = 4, type = "lead") |
-#                                                          shift(mountain_row == 1, n = 5, type = "lead") |
-#                                                          shift(mountain_row == 1, n = 6, type = "lead") | mountain_row == 1, 1, 0)]
-# aggr_to_slots[, start_of_restricted_movement := ifelse(is.na(start_of_restricted_movement), 0, start_of_restricted_movement)]
-# aggr_to_slots[, key := "1"]
-
-#
-
-#
-# restricted_v <- aggr_to_slots[, start_of_restricted_movement] == 1
-# ascend_v <- aggr_to_slots[, PIECE_ATTRIBUTE == "A"]
-# rivi_lkm <- aggr_to_slots[, .N]
 
 
 

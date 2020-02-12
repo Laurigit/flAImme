@@ -1,4 +1,5 @@
-simulate_one_possibility <- function(game_status, deck_status, cycler_id, STG_CYCLER, phase_two_cyclers = NULL, turn_id) {
+simulate_one_possibility <- function(game_status, deck_status, STG_CYCLER, turn_id, p1_cycler_id, p1_movement,
+                                     p2_cycler_id, p2_movement, ctM_data) {
 
   take_copy_of_game <- copy(game_status)
 
@@ -8,10 +9,9 @@ simulate_one_possibility <- function(game_status, deck_status, cycler_id, STG_CY
   used_game_status <- copy(game_status)
 
   #this can be improved to use the known information when exhaust has been added
-  options <- not_played[, .N, by = .(MOVEMENT, CYCLER_ID)][order(CYCLER_ID)]
-  options[, turns_to_finish := 100]
-  pre_res <- precalc_track(used_game_status)
-  ctM_data <- cyclers_turns_MOVEMEMENT_combs(ctM_data, game_status, deck_status, turn_id, pre_res, NULL)
+  # options <- not_played[, .N, by = .(MOVEMENT, CYCLER_ID)][order(CYCLER_ID)]
+  # options[, turns_to_finish := 100]
+
 
 
   range_data <- calc_move_range(take_copy_of_game, deck_status, ctM_data)
@@ -28,10 +28,15 @@ simulate_one_possibility <- function(game_status, deck_status, cycler_id, STG_CY
   ss_team[, row_id := seq_len(.N)]
   simulate_decision <- ss_team[, .(row_id = sample(row_id, size = 1, prob = final_block_adjusted_odds)), by = TEAM_ID]
   simul_res <- ss_team[simulate_decision, on = .(row_id)]
+  sscols_simul_rs <- simul_res[, .(CYCLER_ID, MOVEMENT)]
+#upate input_decision
+  remove_input_cyclers <- sscols_simul_rs[!CYCLER_ID %in% c(p1_cycler_id, p2_cycler_id)]
+  new_data <- data.table(CYCLER_ID = p1_cycler_id, MOVEMENT = p1_movement)
+  bindaa <- rbind(remove_input_cyclers, new_data)
 
   phase_two_copy <- copy(take_copy_of_game)
-  for (cycler_loop in simul_res[, CYCLER_ID]) {
-    phase_two_copy <- move_cycler(phase_two_copy, cycler_loop, simul_res[CYCLER_ID == cycler_loop, MOVEMENT])
+  for (cycler_loop in bindaa[, CYCLER_ID]) {
+    phase_two_copy <- move_cycler(phase_two_copy, cycler_loop, bindaa[CYCLER_ID == cycler_loop, MOVEMENT])
 
 
   }
@@ -67,15 +72,28 @@ simulate_one_possibility <- function(game_status, deck_status, cycler_id, STG_CY
   #jionteam
   ss_team_v2 <- STG_CYCLER[range_data_2, on = "CYCLER_ID"]
   ss_team_v2[, row_id := seq_len(.N)]
-  simulate_decision_v2 <- ss_team_v2[, .(row_id = sample(row_id, size = 1, prob = shared_odds)), by = TEAM_ID]
+  #only phase two cyclers
+  ss_teaM_phase_two <- ss_team_v2[!CYCLER_ID %in% c(p1_cycler_id, p2_cycler_id) & MOVEMENT > 0]
+  simulate_decision_v2 <- ss_teaM_phase_two[, .(row_id = sample(row_id, size = 1, prob = shared_odds)), by = TEAM_ID]
   simul_res_v2 <- ss_team_v2[simulate_decision_v2, on = .(row_id)]
 
-  for (cycler_loop in simul_res_v2[, CYCLER_ID]) {
-    phase_two_copy <- move_cycler(phase_two_copy, cycler_loop, simul_res[CYCLER_ID == cycler_loop, MOVEMENT])
+  sscols_simul_v2 <- simul_res_v2[, .(CYCLER_ID, MOVEMENT)]
+  #upate input_decision
+
+  new_data_v2 <- data.table(CYCLER_ID = p2_cycler_id, MOVEMENT = p2_movement)
+  bindaa_v2 <- rbind(sscols_simul_v2, new_data_v2)
+
+  for (cycler_loop in bindaa_v2[, CYCLER_ID]) {
+    phase_two_copy <- move_cycler(phase_two_copy, cycler_loop, bindaa_v2[CYCLER_ID == cycler_loop, MOVEMENT])
   }
   zoom(phase_two_copy)
+#SLIPSTREAMMMMSA!!
+
+  phase_two_copy <- apply_slipstream(phase_two_copy)
+  res_vec <- NULL
+  res_vec$game_status <- phase_two_copy
+  res_vec$played_cards <- rbind(bindaa, bindaa_v2)
 
 
-
-  return(phase_two_copy)
+  return(res_vec)
 }

@@ -1,11 +1,13 @@
 
 cyclers_turns_MOVEMEMENT_combs <- function(ctM_data, game_status, deck_status, turn_id, pre_aggr_game_status, extra_vector = NULL) {
 
-  #extra vector format c(CYCLER_ID, MOVEMENT)
+  #extra vector format c(CYCLER_ID, MOVEMENT, NEW_LANDING_SLOT) #so the the idea is that you can play card 5 but move actually 6 due tie slipstream
   #t <- c("CYCLER_ID", "MOVEMENT")
   #extra_vector <-  c(1,5)
   used_game_status <- copy(game_status)
   deck_copied <- copy(deck_status)
+  curr_posits <- used_game_status[CYCLER_ID > 0, .(CYCLER_ID, curr_pos = GAME_SLOT_ID)]
+
   #check if we already have data
   if (is.null(ctM_data)) {
     options <- data.table(dummy_row = 1)
@@ -13,6 +15,8 @@ cyclers_turns_MOVEMEMENT_combs <- function(ctM_data, game_status, deck_status, t
     } else {
   options <- ctM_data[TURN_ID == turn_id]
     }
+
+
   if (nrow(options) > 0) {
     #we have data, check if we have been requested an extra combination
     if (!is.null(extra_vector)) {
@@ -20,8 +24,20 @@ cyclers_turns_MOVEMEMENT_combs <- function(ctM_data, game_status, deck_status, t
       row_count <- nrow(options[CYCLER_ID == extra_vector[1] & MOVEMENT == extra_vector[2]])
       if (row_count == 0){
         #no we dont have it, lets create it
-        turns_to_finish_extra <- optimal_moves_to_finish(extra_vector[1], used_game_status, deck_copied, extra_vector[2], use_draw_odds = FALSE, pre_aggr_game_status)[, .(MOVEMENT = extra_vector[2], CYCLER_ID = cycler_id, turns_to_finish = Turns_to_finish, N = 0)]
+
+        turns_to_finish_extra <- optimal_moves_to_finish(extra_vector[1],
+                                                         used_game_status,
+                                                         deck_copied,
+                                                         extra_vector[2],
+                                                         use_draw_odds = FALSE,
+                                                         pre_aggr_game_status,
+                                                         use_landing_slot = extra_vector[3])[, .(MOVEMENT = extra_vector[2],
+                                                                                                 CYCLER_ID = cycler_id,
+                                                                                                 turns_to_finish = Turns_to_finish, N = 0,
+                                                                                                 new_slot_after_moving = extra_vector[3])]
         turns_to_finish_extra[, TURN_ID := turn_id]
+        #join curr Pos
+
         ctM_data <- rbind(ctM_data, turns_to_finish_extra)
       } else {
         #we had that one already, return original
@@ -44,7 +60,12 @@ cyclers_turns_MOVEMEMENT_combs <- function(ctM_data, game_status, deck_status, t
       options[opt_loop, turns_to_finish := optimal_moves_to_finish(CYCLER_ID, used_game_status, deck_status, MOVEMENT, use_draw_odds = FALSE, pre_res)[, Turns_to_finish]]
     }
     options[, TURN_ID := turn_id]
-    ctM_data <- options
+
+    #join curr Pos
+    joincurr_pos <- curr_posits[options, on = "CYCLER_ID"]
+    joincurr_pos[, new_slot_after_moving := MOVEMENT + curr_pos]
+    joincurr_pos[, curr_pos := NULL]
+    ctM_data <- joincurr_pos
     return(ctM_data)
   }
 

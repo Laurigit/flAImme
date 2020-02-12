@@ -3,6 +3,7 @@
 calc_move_range <- function(game_status, deck_status, ctM_data) {
   #if N = 0 it has been calculated because of blocking or slipstream
   options <- ctM_data[N > 0]
+  used_game_status <- copy(game_status)
   #if only one is best, then calc odds of drawing it.
   #priority, turns_to_finish, highest movement
   options[, deck_size := sum(N), by = CYCLER_ID]
@@ -20,6 +21,7 @@ calc_move_range <- function(game_status, deck_status, ctM_data) {
   join_back_agg[, shared_odds := ifelse(!is.na(odds), odds * (N / prio_group_card_count), Rest_of_odds * (N / prio_group_card_count)), by = rowi]
 
   result <- join_back_agg[!is.na(shared_odds) & shared_odds > 0,. (CYCLER_ID, MOVEMENT, shared_odds, turns_to_finish)]
+
   calc_slot <- result[, .(new_slot = move_cycler(used_game_status, CYCLER_ID, MOVEMENT, ignore_block = TRUE, return_numeric_position = TRUE)), by = .(CYCLER_ID, MOVEMENT, shared_odds, turns_to_finish)]
   calc_slot[, splitted_odds := shared_odds / 2]
   return(calc_slot)
