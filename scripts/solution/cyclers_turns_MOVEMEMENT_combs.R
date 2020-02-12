@@ -21,7 +21,8 @@ cyclers_turns_MOVEMEMENT_combs <- function(ctM_data, game_status, deck_status, t
     #we have data, check if we have been requested an extra combination
     if (!is.null(extra_vector)) {
       #check if we have that already!
-      row_count <- nrow(options[CYCLER_ID == extra_vector[1] & MOVEMENT == extra_vector[2]])
+
+      row_count <- nrow(options[CYCLER_ID == extra_vector[1] & MOVEMENT == extra_vector[2] & new_slot_after_moving == extra_vector[3]])
       if (row_count == 0){
         #no we dont have it, lets create it
 

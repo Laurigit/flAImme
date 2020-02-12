@@ -2,8 +2,8 @@
   # input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8),
   #                                  PLAYER_ID = c(1,1,2,2,3,3,4,4),
   #                                  exhaust = c(0, 0, 0, 0, 0, 0,0,0),
-  #                                  starting_row =   c(1, 1, 1, 1, 1, 1,1,1),
-  #                                   starting_lane = c(1,2, 3, 4, 5, 6,7,8))
+  #                                  starting_row =   c(1, 1, 2, 2, 3, 3,4,4),
+  #                                   starting_lane = c(1,2, 1, 2, 1, 2,1,2))
   #  track <- 3
 
 # cycler_player_dt <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8), PLAYER_ID = c(1,1,2,2,3,3,4,4))
@@ -64,7 +64,10 @@ con <- connDB(con, "flaimme")
       #split cyclers to two phases
 
       phase_data <- data.table(CYCLER_ID = cyclers, phase = cyclers %% 2 + 1 )
-
+      if (!exists("ctM_data")) {
+        ctM_data <- NULL
+      }
+      ctM_data <- cyclers_turns_MOVEMEMENT_combs(ctM_data, game_status, deck_status, turn_id, pre_res, NULL)
       for (phase_loop in 1:2) {
 
         phase_cyclers <- phase_data[phase == phase_loop & CYCLER_ID %in% cyclers, CYCLER_ID]
@@ -92,9 +95,19 @@ con <- connDB(con, "flaimme")
 
           smart_phase_cycler <- setdiff(smart_cyclers, phase_cyclers)
 
-          for(cycler_loop in smart_phase_cycler) {
-            played_card_data[CYCLER_ID  == cycler_loop & TURN_ID == turn_id, MOVEMENT := select_move(game_status, deck_status, CYCLER_ID, STG_CYCLER, phase_two_cyclers = NULL)]
-          }
+
+
+            if (phase_loop == 1) {
+              #jäit siihen, että pitäis arpoa kortit käteen
+           simul_res_p1 <-  simulate_and_scores_phase_1(game_status, deck_status, 3, STG_CYCLER, turn_id, ctM_data)
+            move_cyc <- simul_res_p1[, CYCLER_ID]
+            move_amount <-  simul_res_p1[, MOVEMENT]
+            played_cards_data[CYCLER_ID  == move_cyc & TURN_ID == turn_id, MOVEMENT := move_amount]
+            } else if (phase_loop == 2) {
+
+            simul_rs_p2 <-  simulate_and_scores_phase_2(game_status, deck_status, 3, STG_CYCLER, turn_id, ctM_data, phase_2_cyclers)
+            }
+
 
           # for(cycler_loop in smart_cyclers) {
           #   if (nrow(winner_state[CYCLER_ID == cycler_loop]) == 0) {
@@ -124,6 +137,9 @@ con <- connDB(con, "flaimme")
 
       }
 
+          new_posits_phase <- game_status[CYCLER_ID > 0, .(GAME_SLOT_ID_NEW = GAME_SLOT_ID), by = CYCLER_ID]
+          diff_phase <- orig_posits[new_posits, on = "CYCLER_ID"][, ACTUAL_MOVEMENT := GAME_SLOT_ID_NEW - GAME_SLOT_ID]
+          phase_2_cyclers <- diff_phase[ACTUAL_MOVEMENT == 0, CYCLER_ID]
       } #end of phase
       new_posits <- game_status[CYCLER_ID > 0, .(GAME_SLOT_ID_NEW = GAME_SLOT_ID), by = CYCLER_ID]
       diff <- orig_posits[new_posits, on = "CYCLER_ID"][, ACTUAL_MOVEMENT := GAME_SLOT_ID_NEW - GAME_SLOT_ID]

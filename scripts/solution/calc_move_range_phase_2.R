@@ -4,7 +4,7 @@ calc_move_range_phase_2 <- function(game_status, deck_status, ctM_data, p2_score
   #if N = 0 it has been calculated because of blocking or slipstream
   options <- ctM_data[N > 0]
 
-  used_game_status <- copy(used_game_status)
+  used_game_status <- copy(game_status)
 
   #card pool by cycler_id
   pool_data <- deck_status[, .(move_list = list(MOVEMENT)), by = CYCLER_ID]

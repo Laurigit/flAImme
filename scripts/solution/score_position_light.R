@@ -1,5 +1,5 @@
 score_position_light <- function(game_status, ADM_AI_CONF,  precalc_track, ctM_data, orig_posits, STG_CYCLER, action_data) {
-  # action_data <- data.table(CYCLER_ID = c(1,2,3,4,5,6), MOVEMENT = c(2,3,2,5,4,3), move_order = c(1,2,3,4,5,6), TEAM_ID = c(1,1,2,2,3,3))
+  # action_databr <- data.table(CYCLER_ID = c(1,2,3,4,5,6), MOVEMENT = c(2,3,2,5,4,3), move_order = c(1,2,3,4,5,6), TEAM_ID = c(1,1,2,2,3,3))
 
   #make moves
   temp_game_status <- copy(game_status)
