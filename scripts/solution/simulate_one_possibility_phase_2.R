@@ -1,4 +1,4 @@
-simulate_one_possibility_phase_2 <- function(game_status, deck_status, STG_CYCLER, turn_id, p2_cycler_id, p2_movement,
+simulate_one_possibility_phase_2 <- function(game_status, deck_status, STG_CYCLER, p2_cycler_id, p2_movement,
                                              ctM_data, phase_one_cyclers, p2_score) {
 
   #second round simulation data

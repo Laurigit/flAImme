@@ -3,45 +3,21 @@
 # #aggr_to_slots <- aggr_to_slots[1:30]
 # cycler_id <- 6
 # optimal_moves_to_finish(6, game_status, deck_status)
-optimal_moves_to_finish <- function(cycler_id, game_status, deck_status, move_cycler_amount = FALSE, use_draw_odds = FALSE, precalc_data,
-                                    use_landing_slot = FALSE) {
+optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_data, use_draw_odds = FALSE) {
+
 
 
 trRes <- tryCatch({
 
-temp_game_status_for_debugging <- game_status[1 != 0 , .(GAME_SLOT_ID,
-                                                         PIECE_ATTRIBUTE,
-
-                                                         FINISH,
-                                                         EXTRA,
-                                                         LANE_NO,
-                                                         SQUARE_ID,
-                                                         CYCLER_ID)]
 
 
+    aggr_to_slots_all <- precalc_data$aggr_to_slots
+    #cut track
+    aggr_to_slots <- aggr_to_slots_all[GAME_SLOT_ID >= calc_from_slot]
 
+    copy_deck <- copy(cycler_deck_status)
+    deck_status_input <- copy_deck[Zone != "Removed"]
 
-    aggr_to_slots <- precalc_data$aggr_to_slots
-    all_cycler_pos <- precalc_data$cycler_pos
-    cycler_pos <- all_cycler_pos[CYCLER_ID == cycler_id]
-
-
-
-deck_status_input <- deck_status[CYCLER_ID == cycler_id & Zone != "Removed"]
-
-if (move_cycler_amount != FALSE) {
-  if (use_landing_slot != FALSE) {
-    new_cycler_pos <- set_cycler_position(cycler_id, use_landing_slot, 1, temp_game_status_for_debugging)
-
-  } else {
-  new_cycler_pos <- move_cycler(temp_game_status_for_debugging, cycler_id, move_cycler_amount, ignore_block = TRUE)
-
-  }
-
-  #cut the optimization track to start from the first move
-  aggr_to_slots <- aggr_to_slots[GAME_SLOT_ID > new_cycler_pos[CYCLER_ID == cycler_id, max(GAME_SLOT_ID)]]
-  deck_status_input <- play_card(cycler_id, move_cycler_amount, deck_status_input, 0, 0, FALSE)
-}
 
 rivi_lkm <- aggr_to_slots[, .N]
 ascend_v <- aggr_to_slots[, ascend_v]
@@ -50,18 +26,17 @@ aggr_to_slots[, row_number := seq_len(.N)]
 finish_slot <- aggr_to_slots[FINISH == 1, row_number ]
 
 
-
-
-cyc_dec <- deck_status_input[CYCLER_ID == cycler_id & Zone != "Removed"]
-
-kortit_Dt <-  rbind(data.table(CYCLER_ID = cycler_id, CARD_ID = 2, Zone = "Deck", MOVEMENT = 2, row_id = 1:10), cyc_dec)
+#cycler_id = -1 as we are not using it but need it for appending
+kortit_Dt <-  rbind(data.table(CYCLER_ID = -1, CARD_ID = 2, Zone = "Deck", MOVEMENT = 2, row_id = 1:10), deck_status_input)
 kortit_aggr <- kortit_Dt[, .(cards_in_hand = .N), by = MOVEMENT]
 kortit <- kortit_aggr[, MOVEMENT]
 card_count <- kortit_aggr[, cards_in_hand]
 
 if (use_draw_odds == TRUE) {
-draw_odds <- calculate_draw_distribution_by_turn(cycler_id, deck_status_input, how_many_cards = 4)
-} else {
+#draw_odds <- calculate_draw_distribution_by_turn(cycler_id, deck_status_input, how_many_cards = 4)
+warning("Draw odds requested, currenlty not supported in optimze moves to finish")
+  #even more so as we are adding unlimited 2:s to the deck a bit above
+  } else {
   draw_odds <- NULL
 }
 # deck_status_input[CYCLER_ID == 1]
@@ -125,13 +100,12 @@ model <- MILPModel() %>%
   arrange(i)
 
 
-dtres <- cbind(data.table(res), cycler_id)
-turns_to_finish_res <- dtres[, .(Turns_to_finish = .N), by = cycler_id]
+turns_to_finish_res <- data.table(res)[, .(TURNS_TO_FINISH = .N)]
 
 return(turns_to_finish_res)
 
 }, error = function(e) {
-  return(data.table(cycler_id, Turns_to_finish = 0))
+  return(data.table(TURNS_TO_FINISH = 0))
 })
 }
 # alkup_kortit <- kortit_Dt[, .(MOVEMENT, seq_len(.N))]

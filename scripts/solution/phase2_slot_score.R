@@ -1,11 +1,10 @@
-phase2_slot_score <- function(game_status, phase_two_cyclers, deck_status, range_data) {
+phase2_slot_score <- function(game_status, phase_two_cyclers, deck_status, range_data, agg_data) {
 copy_game <- copy(game_status)
-
+#HERE SHOULD BE SCORE WHEN HELPING TEAMMATE
 copy_deck <- copy(deck_status)
 move_options <- range_data[CYCLER_ID %in% phase_two_cyclers, .(MOVEMENT, CYCLER_ID, new_slot)]
 
 
-agg_data <- precalc_track(copy_game)
 
 aggr_occupied_slots <- agg_data$cycler_pos[CYCLER_ID %in% phase_two_cyclers, .N, by = cycler_pos][, cycler_pos]
 

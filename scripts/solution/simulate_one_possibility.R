@@ -1,6 +1,6 @@
 #phse_1
-simulate_one_possibility <- function(game_status, deck_status, STG_CYCLER, turn_id, p1_cycler_id, p1_movement,
-                                     ctM_data, p1_team_Mate) {
+simulate_one_possibility <- function(game_status, deck_status, STG_CYCLER,  p1_cycler_id, p1_movement,
+                                     ctM_data, p1_team_Mate, precalced_track) {
 
   take_copy_of_game <- copy(game_status)
 
@@ -46,7 +46,7 @@ simulate_one_possibility <- function(game_status, deck_status, STG_CYCLER, turn_
   #what I should do here is to calculate new move priority and their odds.
   phase_two_cyclers <- phase_two_copy[CYCLER_ID > 0 & !CYCLER_ID %in% bindaa[, CYCLER_ID], CYCLER_ID]
 
-  p2ScoreOutout <- phase2_slot_score(phase_two_copy, phase_two_cyclers, deck_copied, range_data)
+  p2ScoreOutout <- phase2_slot_score(phase_two_copy, phase_two_cyclers, deck_copied, range_data, precalced_track)
   res <- NULL
   res$game_status <- phase_two_copy
   res$moves_made <- bindaa
