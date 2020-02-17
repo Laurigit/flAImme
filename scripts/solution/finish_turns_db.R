@@ -15,6 +15,7 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
   #ADM_OPTIMAL_MOVES <- data.table(DECK_LEFT = "9993322", TRACK_LEFT = "NNNNNNNNNNNMMMAANNNNNNNNNN", TURNS_TO_FINISH = 3)
   #cycler_at_slot <- 20
   #create track left
+
   track_tot <- pre_aggr_game_status$aggr_to_slots
   finish_slot <- track_tot[FINISH == 1, GAME_SLOT_ID]
   track_left <- track_tot[GAME_SLOT_ID >= cycler_at_slot & GAME_SLOT_ID <= finish_slot, paste0(PIECE_ATTRIBUTE, collapse = "")]
@@ -23,6 +24,7 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
   #check if I have this observation
 
   row_result <- ADM_OPTIMAL_MOVES[res_data_row, on = .(TRACK_LEFT, DECK_LEFT)][!is.na(TURNS_TO_FINISH)]
+
 
       if (nrow(row_result) == 0){
         #no we dont have it, lets create it
@@ -33,9 +35,20 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
                                                         use_draw_odds = FALSE)
         new_result_row <- cbind(res_data_row, turns_to_finish_calc)
 
-        ADM_OPTIMAL_MOVES <- rbind(ADM_OPTIMAL_MOVES, new_result_row)
 
-        dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
+        tryIns <- tryCatch({
+          dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
+          ADM_OPTIMAL_MOVES <- rbind(ADM_OPTIMAL_MOVES, new_result_row)
+          FALSE
+        }, error = function(e) {
+          warning("tried to insert duplicate to ADM_OPTIMAL")
+        })
+        # if (tryIns == TRUE) {
+        #   browser()
+        #   dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
+        #   ADM_OPTIMAL_MOVES
+        # }
+
         final_result_list$turns_to_finish <- new_result_row[, TURNS_TO_FINISH]
         final_result_list$new_ADM_OPT <- ADM_OPTIMAL_MOVES
       } else {

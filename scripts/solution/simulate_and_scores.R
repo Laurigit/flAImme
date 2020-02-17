@@ -17,7 +17,8 @@ simulate_and_scores_phase_1 <- function(game_status, deck_status, team_id, STG_C
 
   for (simul_loop in 1:10) {
 
-  my_move <- range_joined_team[TEAM_ID == team_id & CYCLER_ID == cycler_id & MOVEMENT %in% card_options_in_hand, .(row_id = sample(row_id, size = 1, prob = shared_odds))]
+  my_move <- range_joined_team[TEAM_ID == team_id & CYCLER_ID == cycler_id & MOVEMENT %in% card_options_in_hand,
+                               .(row_id = custom_sample(row_id, prob = shared_odds))]
   moved_cycler <- range_joined_team[row_id == my_move[, row_id], CYCLER_ID]
   my_team_mate <- STG_CYCLER[TEAM_ID == team_id & CYCLER_ID != moved_cycler, CYCLER_ID ]
   move_amount <- range_joined_team[row_id == my_move[, row_id], MOVEMENT]
@@ -40,7 +41,7 @@ simulate_and_scores_phase_1 <- function(game_status, deck_status, team_id, STG_C
   #my random card
   range_joined_team2[, row_id := seq_len(.N)]
 
-  my_move <- range_joined_team2[TEAM_ID == team_id & prio_group != 100, .(row_id = sample(row_id, size = 1, prob = shared_odds))]
+  my_move <- range_joined_team2[TEAM_ID == team_id & prio_group != 100, .(row_id = custom_sample(row_id, prob = shared_odds))]
   moved_cycler2 <- range_joined_team2[row_id == my_move[, row_id], CYCLER_ID]
   move_amount2 <- range_joined_team2[row_id == my_move[, row_id], MOVEMENT]
 
@@ -76,7 +77,7 @@ simulate_and_scores_phase_1 <- function(game_status, deck_status, team_id, STG_C
       cycler_deck_updated[row_id == min_row_id_played, Zone := "Removed"]
 
       new_slot <- join_ctM[add_loop, new_slot_after_moving]
-      ft_res <- finish_turns_db(con, ADM_OPTIMAL_MOVES, simul_phase2$game_status, cycler_deck_updated, pre_res, slot)
+      ft_res <- finish_turns_db(con, ADM_OPTIMAL_MOVES, simul_phase2$game_status, cycler_deck_updated, pre_res, new_slot)
       #print(ft_res$turns_to_finish)
       ADM_OPTIMAL_MOVES <- ft_res$new_ADM_OPT
       join_ctM[add_loop, turns_to_finish := ft_res$turns_to_finish]
@@ -100,7 +101,7 @@ simulate_and_scores_phase_1 <- function(game_status, deck_status, team_id, STG_C
  join_team <- STG_CYCLER[res, on = "CYCLER_ID"]
 
   all_scores <- join_team[,.(Score = sum(Result)), by = .(CYCLER_ID, MOVEMENT)][order(Score)]
-
+print(join_team[CYCLER_ID == 3])
 total_scores <- rbind(all_scores, total_scores)
 #total_scores[, .(mean_score = mean(Score, na.rm = TRUE), .N), by = .(CYCLER_ID,TEAM_ID,MOVEMENT)][order(-mean_score)]
   }
@@ -109,7 +110,8 @@ total_scores <- rbind(all_scores, total_scores)
   include_initial_simul <- rbind(total_scores, ssCols_old)
 
  score_data <- include_initial_simul[CYCLER_ID == cycler_id, .(mean_score = mean(Score, na.rm = TRUE), .N), by = .(MOVEMENT)][order(-mean_score)]
-  my_best_score <- score_data[, max(mean_score)]
+#print(score_data)
+   my_best_score <- score_data[, max(mean_score)]
 my_decision <- score_data[mean_score == my_best_score][1,  MOVEMENT]
   return(my_decision)
 }

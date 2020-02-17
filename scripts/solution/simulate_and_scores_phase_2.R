@@ -19,7 +19,8 @@ simulate_and_scores_phase_2 <- function(game_status, deck_status, cycler_id, STG
     #my random card
     range_joined_team2[, row_id := seq_len(.N)]
 
-    my_move <- range_joined_team2[CYCLER_ID == cycler_id & prio_group != 100 & MOVEMENT %in% card_options_in_hand, .(row_id = sample(row_id, size = 1, prob = shared_odds))]
+    my_move <- range_joined_team2[CYCLER_ID == cycler_id & prio_group != 100 & MOVEMENT %in% card_options_in_hand,
+                                  .(row_id = custom_sample(row_id, prob = shared_odds))]
     move_amount2 <- range_joined_team2[row_id == my_move[, row_id], MOVEMENT]
 
     simul_phase2 <- simulate_one_possibility_phase_2(used_game_status,
@@ -54,7 +55,7 @@ simulate_and_scores_phase_2 <- function(game_status, deck_status, cycler_id, STG
 
 
         new_slot <- join_ctM[add_loop, new_slot_after_moving]
-        ft_res <- finish_turns_db(con, ADM_OPTIMAL_MOVES, simul_phase2$game_status, cycler_deck_updated, pre_res, slot)
+        ft_res <- finish_turns_db(con, ADM_OPTIMAL_MOVES, simul_phase2$game_status, cycler_deck_updated, pre_res, new_slot)
         #print(ft_res$turns_to_finish)
         ADM_OPTIMAL_MOVES <- ft_res$new_ADM_OPT
         join_ctM[add_loop, turns_to_finish := ft_res$turns_to_finish]
@@ -88,6 +89,7 @@ simulate_and_scores_phase_2 <- function(game_status, deck_status, cycler_id, STG
     #total_scores[, .(mean_score = mean(Score, na.rm = TRUE), .N), by = .(CYCLER_ID,TEAM_ID,MOVEMENT)][order(-mean_score)]
   }
   score_data <- total_scores[, .(mean_score = mean(Score, na.rm = TRUE), .N), by = .(CYCLER_ID, TEAM_ID,MOVEMENT)][order(-mean_score)]
+  print(score_data)
   my_best_score <- score_data[TEAM_ID == team_id, max(mean_score)]
   my_decision <- score_data[mean_score == my_best_score][1,. (CYCLER_ID, MOVEMENT)]
   return(my_decision)

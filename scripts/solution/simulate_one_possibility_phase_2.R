@@ -35,7 +35,8 @@ simulate_one_possibility_phase_2 <- function(game_status, deck_status, STG_CYCLE
   #only phase two cyclers
 
   ss_teaM_phase_two <- ss_team_v2[!CYCLER_ID %in% c(p2_cycler_id) & CYCLER_ID %in% phase_two_cyclers & MOVEMENT > 0]
-  simulate_decision_v2 <- ss_teaM_phase_two[, .(row_id = sample(row_id, size = 1, prob = shared_odds)), by = TEAM_ID]
+
+  simulate_decision_v2 <- ss_teaM_phase_two[, .(row_id = custom_sample(row_id, prob = shared_odds)), by = TEAM_ID]
   simul_res_v2 <- ss_team_v2[simulate_decision_v2, on = .(row_id)]
 
   sscols_simul_v2 <- simul_res_v2[, .(CYCLER_ID, MOVEMENT)]

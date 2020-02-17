@@ -5,13 +5,19 @@
   #                                  starting_row =   c(1, 1, 2, 2, 3, 3,4,4),
   #                                   starting_lane = c(1,2, 1, 2, 1, 2,1,2))
   #  track <- 3
+   # input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4),
+   #                                  PLAYER_ID = c(1,1,2,2),
+   #                                  exhaust = c(0, 0, 0, 0),
+   #                                  starting_row =   c(1, 1, 2, 2),
+   #                                  starting_lane = c(1,2, 1, 2))
+   # track <- 3
 
 # cycler_player_dt <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8), PLAYER_ID = c(1,1,2,2,3,3,4,4))
 # lane_data <-    data.table(  exhaust = c(0, 0, 0, 0, 0, 0,0,0),
 #                                  starting_row =   c(1, 1, 2, 2, 3, 3, 4, 4),
 #                                   starting_lane = c(1,2, 1, 2, 1, 2, 1, 2))
 con <- connDB(con, "flaimme")
-   required_data(c("STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
+   required_data(c("ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
   total_winner <- NULL
 
 
@@ -44,7 +50,7 @@ con <- connDB(con, "flaimme")
 
 
     cyclers <- input_STARTUP_DATA[, CYCLER_ID]
-    smart_cyclers <- c(5, 6)
+    smart_cyclers <- c(3, 4)
     action_data <- NULL
     #draw phase
     turn_amount <- 25
@@ -52,6 +58,7 @@ con <- connDB(con, "flaimme")
     played_cards_data <- merge(x = data.table(TURN_ID = 1:turn_amount, key_col = "1"), y = move_data, by = "key_col", all = TRUE, allow.cartesian = TRUE)
     played_cards_data[, key_col := NULL]
     played_cards_data[, PHASE := 0]
+    phase_data <- data.table(CYCLER_ID = cyclers, phase = cyclers %% 2 + 1 )
     for(turn_id in 1:turn_amount) {
       orig_posits <- game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, PIECE_ATTRIBUTE), by = CYCLER_ID]
       #print(turn_id)
@@ -61,10 +68,11 @@ con <- connDB(con, "flaimme")
         deck_status <- draw_cards(loop, deck_status)
       }
 
+
       #spirters move first
       #split cyclers to two phases
 
-      phase_data <- data.table(CYCLER_ID = cyclers, phase = cyclers %% 2 + 1 )
+
       if (!exists("ctM_data")) {
         ctM_data <- NULL
       }
@@ -100,56 +108,59 @@ con <- connDB(con, "flaimme")
 
 
           smart_phase_cycler <- setdiff(smart_cyclers, phase_cyclers)
+          team_id <- 2
 
-          move_first_cycler_result <- which_cycler_to_move_first(game_status, deck_status, team_id, STG_CYCLER, turn_id, ctM_data, pre_aggr_game_status)
-
-          move_first_cycler <- move_first_cycler_result$decision
-          simulation_data_from_which_cycler <- move_first_cycler_result$simulation
             if (phase_loop == 1) {
+              move_first_cycler_result <- which_cycler_to_move_first(game_status, deck_status, team_id, STG_CYCLER, turn_id, ctM_data, pre_aggr_game_status)
+
+              move_first_cycler <- move_first_cycler_result$decision
+              simulation_data_from_which_cycler <- move_first_cycler_result$simulation
               #look at my cards
 
+              print(paste0("Moving cycler ", move_first_cycler))
+              card_options_in_hand <- smart_cards_options(deck_status[CYCLER_ID == move_first_cycler & Zone == "Hand", unique(MOVEMENT)], pre_aggr_game_status, move_first_cycler)
 
-              card_options_in_hand <- deck_status[CYCLER_ID == move_first_cycler & Zone == "Hand", unique(MOVEMENT)]
-           simul_res_p1 <-  simulate_and_scores_phase_1(game_status, deck_status, my_team, STG_CYCLER, ctM_data, card_options_in_hand, move_first_cycler, simulation_data_from_which_cycler)
+
+              print(card_options_in_hand)
+             # print(zoom(game_status))
+
+           simul_res_p1 <-  simulate_and_scores_phase_1(game_status, deck_status, team_id, STG_CYCLER, ctM_data, card_options_in_hand, move_first_cycler, simulation_data_from_which_cycler)
             move_cyc <- move_first_cycler
             move_amount <-  simul_res_p1
-            played_cards_data[CYCLER_ID  == move_cyc & TURN_ID == turn_id, MOVEMENT := move_amount]
-            played_cards_data[CYCLER_ID  == move_cyc & TURN_ID == turn_id, PHASE := phase_loop]
+            print(paste0("Played card: ", move_amount))
+            played_cards_data[CYCLER_ID  == move_first_cycler & TURN_ID == turn_id, MOVEMENT := move_amount]
+            played_cards_data[CYCLER_ID  == move_first_cycler & TURN_ID == turn_id, PHASE := phase_loop]
+            played_cards_data[TURN_ID == turn_id & CYCLER_ID == move_first_cycler, CARD_ID := move_amount]
             } else if (phase_loop == 2) {
               #who am i
               second_cycler <- STG_CYCLER[TEAM_ID == STG_CYCLER[CYCLER_ID == move_first_cycler, TEAM_ID] & CYCLER_ID != move_first_cycler, CYCLER_ID]
 
-                card_options_in_hand_p2 <- deck_status[CYCLER_ID == second_cycler & Zone == "Hand", unique(MOVEMENT)]
+                card_options_in_hand_p2 <- smart_cards_options(deck_status[CYCLER_ID == second_cycler & Zone == "Hand", unique(MOVEMENT)], pre_aggr_game_status, second_cycler)
+
+
+                print(paste0("Phase 2, moving cycler ", second_cycler))
+                card_options_in_hand <- deck_status[CYCLER_ID == move_first_cycler & Zone == "Hand", unique(MOVEMENT)]
+                print(card_options_in_hand_p2)
+                print(zoom(game_status))
+
               phase_one_actions <-  played_cards_data[TURN_ID == turn_id & MOVEMENT & PHASE == 1,. (CYCLER_ID, MOVEMENT)]
             simul_rs_p2 <-  simulate_and_scores_phase_2(game_status, deck_status, second_cycler, STG_CYCLER
                                                         , ctM_data, phase_one_actions, pre_aggr_game_status, card_options_in_hand_p2)
             move_cyc <- simul_rs_p2[, CYCLER_ID]
             move_amount <-  simul_rs_p2[, MOVEMENT]
+            print(paste0("Played card: ", move_amount))
             played_cards_data[CYCLER_ID  == move_cyc & TURN_ID == turn_id, MOVEMENT := move_amount]
             played_cards_data[CYCLER_ID  == move_cyc & TURN_ID == turn_id, PHASE := phase_loop]
+            played_cards_data[TURN_ID == turn_id & CYCLER_ID == move_cyc, CARD_ID := move_amount]
 
             }
 
 
-          # for(cycler_loop in smart_cyclers) {
-          #   if (nrow(winner_state[CYCLER_ID == cycler_loop]) == 0) {
-          #     colnames <- c("CYCLER_ID", "MOVEMENT", "CARD_ID")
-          #     played_cards_data[CYCLER_ID == cycler_loop & TURN_ID == turn_id, (colnames) := choose_AI_card(cycler_loop,
-          #                                                                                                   game_status,
-          #                                                                                                   deck_status,
-          #                                                                                                   action_data1,
-          #                                                                                                   precalc_track_res)]
-          #   }
-          #
-          # }
+          phase_cyclers <- played_cards_data[TURN_ID == turn_id & PHASE == phase_loop, CYCLER_ID]
 
-
-
-
-      #
-      #print("Start moving")
 
       for(loop_move in phase_cyclers) {
+       # browser()
         row_data <- played_cards_data[TURN_ID == turn_id & loop_move == CYCLER_ID & PHASE == phase_loop]
 
         deck_status <- play_card(cycler_id = loop_move,
@@ -160,7 +171,7 @@ con <- connDB(con, "flaimme")
       }
 
           new_posits_phase <- game_status[CYCLER_ID > 0, .(GAME_SLOT_ID_NEW = GAME_SLOT_ID), by = CYCLER_ID]
-          diff_phase <- orig_posits[new_posits, on = "CYCLER_ID"][, ACTUAL_MOVEMENT := GAME_SLOT_ID_NEW - GAME_SLOT_ID]
+          diff_phase <- orig_posits[new_posits_phase, on = "CYCLER_ID"][, ACTUAL_MOVEMENT := GAME_SLOT_ID_NEW - GAME_SLOT_ID]
           phase_2_cyclers <- diff_phase[ACTUAL_MOVEMENT == 0, CYCLER_ID]
       } #end of phase
       new_posits <- game_status[CYCLER_ID > 0, .(GAME_SLOT_ID_NEW = GAME_SLOT_ID), by = CYCLER_ID]
@@ -168,17 +179,21 @@ con <- connDB(con, "flaimme")
 
 
       game_status <- apply_slipstream(game_status)
+
+      print("TURN DONE")
+      print(zoom(game_status))
+    print(deck_status[CYCLER_ID == 3])
       slip_status <- game_status[CYCLER_ID > 0, .(GAME_SLOT_SLIP = GAME_SLOT_ID), by = CYCLER_ID]
       diff_slip <- diff[slip_status, on = "CYCLER_ID"][, ':=' (SLIP_BONUS = GAME_SLOT_SLIP - GAME_SLOT_ID_NEW,
                                                                TOTAL_MOVEMENT = GAME_SLOT_SLIP - GAME_SLOT_ID)]
-      movementit <- pelatut_kortit[,. (CYCLER_ID, MOVEMENT)]
+      movementit <- played_cards_data[TURN_ID == turn_id,. (CYCLER_ID, MOVEMENT, PHASE)]
 
       join_exh <- calc_exhaust(game_status)[diff_slip, on = "CYCLER_ID"]
       join_movement <- join_exh[movementit, on = "CYCLER_ID"]
       action_row <- join_movement[, .(CYCLER_ID, EXHAUST, GAME_SLOT_ID = GAME_SLOT_SLIP,
                                       BLOCK_DIFF = pmin(ACTUAL_MOVEMENT - MOVEMENT, 0),
                                       ASCEND_GAIN = pmax(ACTUAL_MOVEMENT - MOVEMENT, 0),
-                                      SLIP_BONUS, START_PIECE = PIECE_ATTRIBUTE,
+                                      SLIP_BONUS,
                                       TOTAL_MOVEMENT, TURN_ID = turn_id)]
 
       action_data <- rbind(action_data, action_row, fill = TRUE)
@@ -218,5 +233,5 @@ con <- connDB(con, "flaimme")
     print(full_action[, .(Mean_power_mov = mean(Mean_power_mov, na.rm = TRUE),
                           Mean_Mov = mean(Mean_Mov, na.rm = TRUE), SLIP = mean(SLIP), BLOCK = mean(BLOCK), EXHAUST = mean(EXHAUST), ASCEND = mean(ASCEND)), by = CYCLER_ID][order(CYCLER_ID)])
   }
-  print(total_winner[, .N, by = .(CYCLER_ID, POSITION)])[order(CYCLER_ID, POSITION)]
+  #print(total_winner[, .N, by = .(CYCLER_ID, POSITION)])[order(CYCLER_ID, POSITION)]
 

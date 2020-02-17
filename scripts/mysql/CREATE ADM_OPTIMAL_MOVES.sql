@@ -1,0 +1,8 @@
+#drop table flaimme.ADM_OPTIMAL_MOVES;
+
+create table flaimme.ADM_OPTIMAL_MOVES (
+TRACK_LEFT text(160),
+DECK_LEFT text(20),
+TURNS_TO_FINISH int,
+PRIMARY KEY (TRACK_LEFT(160), DECK_LEFT(20)));
+

@@ -27,7 +27,7 @@ simulate_one_possibility <- function(game_status, deck_status, STG_CYCLER,  p1_c
   ss_team[, odds_group_total := sum(block_adj_odds_first), by = .(TEAM_ID, turns_to_finish)]
   ss_team[, final_block_adjusted_odds := block_adj_odds_first * odds_grop_total_orig / odds_group_total]
   ss_team[, row_id := seq_len(.N)]
-  simulate_decision <- ss_team[, .(row_id = sample(row_id, size = 1, prob = final_block_adjusted_odds)), by = TEAM_ID]
+  simulate_decision <- ss_team[, .(row_id = custom_sample(row_id, prob = final_block_adjusted_odds)), by = TEAM_ID]
   simul_res <- ss_team[simulate_decision, on = .(row_id)]
   sscols_simul_rs <- simul_res[, .(CYCLER_ID, MOVEMENT)]
 #upate input_decision
@@ -41,7 +41,7 @@ simulate_one_possibility <- function(game_status, deck_status, STG_CYCLER,  p1_c
 
 
   }
-  zoom(phase_two_copy)
+
 
   #what I should do here is to calculate new move priority and their odds.
   phase_two_cyclers <- phase_two_copy[CYCLER_ID > 0 & !CYCLER_ID %in% bindaa[, CYCLER_ID], CYCLER_ID]

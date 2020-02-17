@@ -21,13 +21,15 @@ score_position_light <- function(game_status, ADM_AI_CONF,  precalc_track, ctM_d
   turns_to_finish <- ctM_data[new_cycler_positions, on = .(CYCLER_ID, new_slot_after_moving = GAME_SLOT_ID)][, .(.N), by = .(CYCLER_ID, turns_to_finish)]
   leader_turns <- turns_to_finish[, min(turns_to_finish)]
   second_turns <- turns_to_finish[turns_to_finish > leader_turns, max(turns_to_finish)]
+  if (is.infinite(second_turns)) {
+    second_turns <- leader_turns
+  }
   turns_to_finish[, is_leader := turns_to_finish == leader_turns]
   turns_to_finish[, ttf_score := ifelse(is_leader,
                                         abs(second_turns - turns_to_finish),
                                         leader_turns - turns_to_finish + 1), by = CYCLER_ID]
   SPEED_CHANGE <- turns_to_finish[, .(Score = ttf_score , CYCLER_ID, Setting = "Speed_change",
                                       modifier = NA, Setting_modifier = "")]
-
 
 
   #exhaust

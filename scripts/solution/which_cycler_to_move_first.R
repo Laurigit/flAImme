@@ -8,6 +8,7 @@ which_cycler_to_move_first <- function(game_status, deck_status, team_id, STG_CY
   orig_posits <- used_game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, CYCLER_ID)]
 
   #
+
   range_data <- calc_move_range(used_game_status, deck_status, ctM_data)
   #join team to range
   range_joined_team <- STG_CYCLER[range_data, on = "CYCLER_ID"]
@@ -17,7 +18,7 @@ which_cycler_to_move_first <- function(game_status, deck_status, team_id, STG_CY
 
   for (simul_loop in 1:10) {
 
-    my_move <- range_joined_team[TEAM_ID == team_id, .(row_id = sample(row_id, size = 1, prob = shared_odds))]
+    my_move <- range_joined_team[TEAM_ID == team_id, .(row_id = custom_sample(row_id, prob = shared_odds))]
     moved_cycler <- range_joined_team[row_id == my_move[, row_id], CYCLER_ID]
     my_team_mate <- STG_CYCLER[TEAM_ID == team_id & CYCLER_ID != moved_cycler, CYCLER_ID ]
     move_amount <- range_joined_team[row_id == my_move[, row_id], MOVEMENT]
@@ -39,8 +40,10 @@ which_cycler_to_move_first <- function(game_status, deck_status, team_id, STG_CY
     range_joined_team2 <- STG_CYCLER[range_data_2, on = "CYCLER_ID"]
     #my random card
     range_joined_team2[, row_id := seq_len(.N)]
-
-    my_move <- range_joined_team2[TEAM_ID == team_id & prio_group != 100, .(row_id = sample(row_id, size = 1, prob = shared_odds))]
+    if (nrow(range_joined_team2[TEAM_ID == team_id & prio_group != 100]) == 0) {
+      browser()
+    }
+    my_move <- range_joined_team2[TEAM_ID == team_id & prio_group != 100, .(row_id = custom_sample(row_id, prob = shared_odds))]
     moved_cycler2 <- range_joined_team2[row_id == my_move[, row_id], CYCLER_ID]
     move_amount2 <- range_joined_team2[row_id == my_move[, row_id], MOVEMENT]
 
