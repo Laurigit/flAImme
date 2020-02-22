@@ -3,6 +3,10 @@
 calc_move_range_phase_2 <- function(game_status, deck_status, ctM_data, p2_score) {
   #if N = 0 it has been calculated because of blocking or slipstream
   options <- ctM_data[N > 0]
+browser()
+
+#jäit siihen, että laitoit CTM dataan laskemaan vaan movementteja, eikä pelattuja kortteja.
+#Sitten calc_move_range_phase2 luulee, että ei oo enää mahd
 
   used_game_status <- copy(game_status)
 

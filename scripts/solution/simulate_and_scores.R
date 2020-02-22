@@ -101,7 +101,7 @@ simulate_and_scores_phase_1 <- function(game_status, deck_status, team_id, STG_C
  join_team <- STG_CYCLER[res, on = "CYCLER_ID"]
 
   all_scores <- join_team[,.(Score = sum(Result)), by = .(CYCLER_ID, MOVEMENT)][order(Score)]
-print(join_team[CYCLER_ID == 3])
+#print(join_team[CYCLER_ID == 3])
 total_scores <- rbind(all_scores, total_scores)
 #total_scores[, .(mean_score = mean(Score, na.rm = TRUE), .N), by = .(CYCLER_ID,TEAM_ID,MOVEMENT)][order(-mean_score)]
   }

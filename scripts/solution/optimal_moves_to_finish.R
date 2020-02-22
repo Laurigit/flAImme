@@ -59,7 +59,7 @@ boundi_filtteri <- function(i, j, k, restricted_v, ascend_v, odds_filtter) {
   max_odds <- odds_filtter[, max(Turn_to_Draw)]
   joini <- odds_filtter[rividata, on = .(Turn_to_Draw  == i,  MOVEMENT == k)]
   joini[Turn_to_Draw <= max_odds & is.na(prob), tulos_save := TRUE]
-
+  browser()
   } else {
     joini <- rividata
   }
