@@ -2,6 +2,8 @@
 #prepare most likely needed optimal moves
 cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status) {
 
+  #what = precalculates turns
+
   #extra vector format c(CYCLER_ID, MOVEMENT, NEW_LANDING_SLOT) #so the the idea is that you can play card 5 but move actually 6 due tie slipstream
   #t <- c("CYCLER_ID", "MOVEMENT")
   #extra_vector <-  c(1,5)
@@ -40,7 +42,7 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
       join_curr[opt_loop, turns_to_finish := res_temp$turns_to_finish]
   }
 
-
+    join_curr[, actual_movement := new_slot_after_moving - curr_pos]
     res_list <- NULL
     res_list$new_ADM_OPT <- ADM_OPTIMAL_MOVES
     res_list$ctM_data <- join_curr

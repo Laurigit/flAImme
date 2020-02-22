@@ -43,6 +43,7 @@ con <- connDB(con, "flaimme")
     game_status <- start_game(used_startup_data,1, STG_TRACK_PIECE, STG_TRACK)
     #add_mountain_info
     game_status <- slots_out_of_mountains(game_status)
+    game_status <- slots_out_of_mountains_to_track(game_status)
     orig_posits <- game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, PIECE_ATTRIBUTE), by = CYCLER_ID]
 
     #initial decks
@@ -139,7 +140,7 @@ con <- connDB(con, "flaimme")
 
 
                 print(paste0("Phase 2, moving cycler ", second_cycler))
-                card_options_in_hand <- deck_status[CYCLER_ID == move_first_cycler & Zone == "Hand", unique(MOVEMENT)]
+
                 print(card_options_in_hand_p2)
                 print(zoom(game_status))
 
