@@ -2,39 +2,27 @@
 #prepare most likely needed optimal moves
 cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status) {
 
-
-  #OUTPUT, MOVEMENT, actual_movement
-
-
   #extra vector format c(CYCLER_ID, MOVEMENT, NEW_LANDING_SLOT) #so the the idea is that you can play card 5 but move actually 6 due tie slipstream
   #t <- c("CYCLER_ID", "MOVEMENT")
   #extra_vector <-  c(1,5)
-
   used_game_status <- copy(game_status)
   deck_copied <- copy(deck_status)
   curr_posits <- used_game_status[CYCLER_ID > 0, .(CYCLER_ID, curr_pos = GAME_SLOT_ID)]
 
-  #join track info
-  track_info <- pre_aggr_game_status$aggr_to_slots[curr_posits, on = .(GAME_SLOT_ID = curr_pos),. (CYCLER_ID, restricted_v, ascend_v)]
-
 
     #we dont have data for this turn, lets calc it
-    not_played_all <- deck_copied[Zone != "Removed"]
-    #join track_info to options
-
-    not_played <- track_info[not_played_all, on = "CYCLER_ID"]
-    not_played[, MOVEMENT := ifelse(restricted_v == TRUE, pmin(5, MOVEMENT), MOVEMENT)]
-    not_played[, MOVEMENT := ifelse(ascend_v == TRUE, pmax(5, MOVEMENT), MOVEMENT)]
+    not_played <- deck_copied[Zone != "Removed"]
     #this can be improved to use the known information when exhaust has been added
     options <- not_played[, .N, by = .(MOVEMENT, CYCLER_ID)][order(CYCLER_ID)]
     options[, turns_to_finish := 100]
 
     #join current position
-    join_curr <- curr_posits[options, on = "CYCLER_ID"][!is.na(curr_pos)]
+    join_curr <- curr_posits[options, on = "CYCLER_ID"]
     join_curr[, new_slot_after_moving := move_cycler(used_game_status, CYCLER_ID, MOVEMENT,
                                         slipstream = FALSE,
                                         ignore_block = TRUE,
                                         return_numeric_position = TRUE), by = .(CYCLER_ID, MOVEMENT)]
+
 
 
 
@@ -51,7 +39,7 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
       ADM_OPTIMAL_MOVES <- res_temp$new_ADM_OPT
       join_curr[opt_loop, turns_to_finish := res_temp$turns_to_finish]
   }
-    join_curr[, actual_movement := new_slot_after_moving - curr_pos]
+
 
     res_list <- NULL
     res_list$new_ADM_OPT <- ADM_OPTIMAL_MOVES
