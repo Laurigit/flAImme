@@ -1,6 +1,6 @@
 #calculcate move distribution of everyone
 
-calc_move_range <- function(game_status, deck_status, ctM_data) {
+calc_move_range <- function(game_status, deck_status, ctM_data, STG_TEAM) {
 
   #input cTM
 
@@ -28,6 +28,7 @@ calc_move_range <- function(game_status, deck_status, ctM_data) {
 
 
   chosen_cols <- c("prio_group", "N")
+
   join_prio[, odds := melt(lapply(prio_group, exact_draw_odds_outer, .SD), id.vars = "CYCLER_ID"), by = CYCLER_ID, .SDcols = chosen_cols]
 
   calc_slot <- join_prio[, .(new_slot = move_cycler(used_game_status,
@@ -35,7 +36,15 @@ calc_move_range <- function(game_status, deck_status, ctM_data) {
                                                  ignore_block = TRUE,
                                                  return_numeric_position = TRUE)), by = .(CYCLER_ID, MOVEMENT, odds, turns_to_finish, actual_movement)]
   calc_slot[, splitted_odds := odds / 2]
-  return(calc_slot)
+
+
+  #join team to range
+  range_joined_team <- STG_CYCLER[calc_slot, on = "CYCLER_ID"]
+  # zoom(used_game_status)
+  #my random card
+  range_joined_team[, row_id := seq_len(.N)]
+
+  return(range_joined_team)
 }
 
 

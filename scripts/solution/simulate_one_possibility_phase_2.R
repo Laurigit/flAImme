@@ -1,5 +1,5 @@
 simulate_one_possibility_phase_2 <- function(game_status, deck_status, STG_CYCLER, p2_cycler_id, p2_movement,
-                                             ctM_data, phase_one_cyclers, p2_score, range_data_2) {
+                                             ctM_data, phase_one_cyclers, range_data_2) {
 
   #second round simulation data
   #remove blocked options
@@ -32,7 +32,7 @@ simulate_one_possibility_phase_2 <- function(game_status, deck_status, STG_CYCLE
   for (cycler_loop in bindaa_v2[, CYCLER_ID]) {
     phase_two_copy <- move_cycler(phase_two_copy, cycler_loop, bindaa_v2[CYCLER_ID == cycler_loop, MOVEMENT])
   }
-  zoom(phase_two_copy)
+#  zoom(phase_two_copy)
   #SLIPSTREAMMMMSA!!
 
   phase_two_copy <- apply_slipstream(phase_two_copy)

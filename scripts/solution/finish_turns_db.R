@@ -4,9 +4,9 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
   #cycler_at_slot <- 20
   #cycler_deck_status <- deck_status[CYCLER_ID == 5]
 
-  used_game_status <- copy(game_status)
-  deck_copied_all <- copy(cycler_deck_status)
-  deck_copied <- deck_copied_all[Zone != "Removed"]
+
+  #deck_copied_all <- copy(cycler_deck_status)
+  deck_copied <- cycler_deck_status[Zone != "Removed"]
   final_result_list <- NULL
   #db handling, memory
   #keep all data in memory

@@ -21,7 +21,8 @@ trRes <- tryCatch({
 
 rivi_lkm <- aggr_to_slots[, .N]
 ascend_v <- aggr_to_slots[, ascend_v]
-restricted_v <- aggr_to_slots[, restricted_v]
+#restricted_v <- aggr_to_slots[, restricted_v]
+max_move_vect <-  aggr_to_slots[, MAXIMUM_MOVEMENT]
 aggr_to_slots[, row_number := seq_len(.N)]
 finish_slot <- aggr_to_slots[FINISH == 1, row_number ]
 
@@ -46,20 +47,27 @@ warning("Draw odds requested, currenlty not supported in optimze moves to finish
 #input_draw_odds_threshold
 
 #odds_filtter <-draw_odds
-boundi_filtteri <- function(i, j, k, restricted_v, ascend_v, odds_filtter) {
-#browser()
-  rividata <- data.table(i, j, k, restricted_v, ascend_v)
+
+boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
+
+  rividata <- data.table(i, j, k, max_move_vect, ascend_v)
   rividata[, distance := j - i]
   rividata[, tulos_save := !(distance >= 2 & k == distance)]
 
   rividata[ascend_v == TRUE & distance == 5, tulos_save := !(k >= 2 & k <= 5)] #caset, missä pääsee laskeen alamäkeen
   rividata[ascend_v == TRUE & distance < 5, tulos_save := TRUE] #mahdoton lasketella alle 5
   rividata[ascend_v == TRUE & distance > 5, tulos_save := !(k == distance)] #voi mennä kovempaa ku 5 alamäessä
+  #restirct movement
+  rividata[k > max_move_vect, tulos_save := TRUE]
+
+  #card value is higher than max_movement. Card value is greater or equal to distance. Then distance on max movement.
+  rividata[k > max_move_vect & k >= distance & max_move_vect == distance, tulos_save := FALSE]
+
   if (!is.null(odds_filtter)) {
   max_odds <- odds_filtter[, max(Turn_to_Draw)]
   joini <- odds_filtter[rividata, on = .(Turn_to_Draw  == i,  MOVEMENT == k)]
   joini[Turn_to_Draw <= max_odds & is.na(prob), tulos_save := TRUE]
-  browser()
+
   } else {
     joini <- rividata
   }
@@ -75,7 +83,7 @@ model <- MILPModel() %>%
   add_variable(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), type = "binary") %>%
   #set_objective(sum_expr(y[k], k = 1), "max") %>%
   set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
-  set_bounds(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), ub = 0, boundi_filtteri(i, j, kortit[k], restricted_v, ascend_v, draw_odds )) %>%
+  set_bounds(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), ub = 0, boundi_filtteri(i, j, kortit[k], max_move_vect, ascend_v, draw_odds )) %>%
  add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit)) # %>%
 
 #add_constraint(ruudut[i, j] * x[i, j, k] <= y[k] * kortit[k], j = 1:rivi_lkm, i = 1:rivi_lkm , k = 1:20) %>%
@@ -108,13 +116,19 @@ return(turns_to_finish_res)
   return(data.table(TURNS_TO_FINISH = 0))
 })
 }
-# alkup_kortit <- kortit_Dt[, .(MOVEMENT, seq_len(.N))]
-# join_kortit <- dtres[alkup_kortit, on = .(k = V2)]
+
+# dtRes <-data.table(res)
+# kortti_id <- kortit_Dt[, .N, by = MOVEMENT]
 #
-# join_rata <- join_kortit[aggr_to_slots, on = .(i = GAME_SLOT_ID)]
+# alkup_kortit <- kortti_id[, .(MOVEMENT, seq_len(.N))]
+# join_kortit <- dtRes[alkup_kortit, on = .(k = V2)]
+#
+# aggr_to_slots[, row_no := seq_len(.N)]
+#
+# join_rata <- join_kortit[aggr_to_slots, on = .(i = row_no)]
 # join_rata[, pelattu_kortti := na.locf(MOVEMENT, na.rm = FALSE)]
 #
-# sscols <- join_rata[, .(i, PIECE_ATTRIBUTE, pelattu_kortti, k)]
+# sscols <- join_rata[, .(i, PIECE_ATTRIBUTE, pelattu_kortti, k, MOVEMENT)]
 # sscols
 #
 

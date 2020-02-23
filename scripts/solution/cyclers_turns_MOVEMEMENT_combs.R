@@ -7,6 +7,7 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
   #extra vector format c(CYCLER_ID, MOVEMENT, NEW_LANDING_SLOT) #so the the idea is that you can play card 5 but move actually 6 due tie slipstream
   #t <- c("CYCLER_ID", "MOVEMENT")
   #extra_vector <-  c(1,5)
+
   used_game_status <- copy(game_status)
   deck_copied <- copy(deck_status)
   curr_posits <- used_game_status[CYCLER_ID > 0, .(CYCLER_ID, curr_pos = GAME_SLOT_ID)]
@@ -19,8 +20,8 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
     options[, turns_to_finish := 100]
 
     #join current position
-    join_curr <- curr_posits[options, on = "CYCLER_ID"]
-
+    #join_curr <- curr_posits[, on = "CYCLER_ID"]
+    join_curr <- options[curr_posits, on = "CYCLER_ID"]
     join_curr[, new_slot_after_moving := move_cycler(used_game_status, CYCLER_ID, MOVEMENT,
                                         slipstream = FALSE,
                                         ignore_block = TRUE,

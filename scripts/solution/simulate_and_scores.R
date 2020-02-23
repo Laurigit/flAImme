@@ -1,7 +1,6 @@
 simulate_and_scores_phase_1 <- function(simul_score, STG_CYCLER, cycler_id) {
 
   #card_options_in_hand <- c(4,5)
-browser()
 
 
 #join_team
