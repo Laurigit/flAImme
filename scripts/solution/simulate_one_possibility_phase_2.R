@@ -1,5 +1,5 @@
 simulate_one_possibility_phase_2 <- function(game_status, deck_status, STG_CYCLER, p2_cycler_id, p2_movement,
-                                             ctM_data, phase_one_cyclers, p2_score) {
+                                             ctM_data, phase_one_cyclers, p2_score, range_data_2) {
 
   #second round simulation data
   #remove blocked options
@@ -13,22 +13,6 @@ simulate_one_possibility_phase_2 <- function(game_status, deck_status, STG_CYCLE
 
 
 
-  #run while blocking odds > 0.4
-  max_odds <- 1
-
-  while (max_odds  > 0.4) {
-
-    range_data_2 <- calc_move_range_phase_2(phase_two_copy, deck_copied, ctM_data, p2_score)
-
-    block_output_phase2 <- blocking_odds_all_phase2(phase_two_copy, range_data_2, STG_CYCLER, phase_two_cyclers)
-
-    #remove blocked movements and calc again
-    remove <- block_output_phase2[blocked_odds > 0.4]
-    deck_copied <- remove[deck_copied, on = .(CYCLER_ID, MOVEMENT)]
-    deck_copied <- deck_copied[is.na(blocked_odds),. (CYCLER_ID, MOVEMENT, CARD_ID, Zone, row_id)]
-    max_odds <- remove[, max(blocked_odds)]
-  }
-
   #jionteam
   ss_team_v2 <- STG_CYCLER[range_data_2, on = "CYCLER_ID"]
   ss_team_v2[, row_id := seq_len(.N)]
@@ -36,7 +20,7 @@ simulate_one_possibility_phase_2 <- function(game_status, deck_status, STG_CYCLE
 
   ss_teaM_phase_two <- ss_team_v2[!CYCLER_ID %in% c(p2_cycler_id) & CYCLER_ID %in% phase_two_cyclers & MOVEMENT > 0]
 
-  simulate_decision_v2 <- ss_teaM_phase_two[, .(row_id = custom_sample(row_id, prob = shared_odds)), by = TEAM_ID]
+  simulate_decision_v2 <- ss_teaM_phase_two[, .(row_id = custom_sample(row_id, prob = odds)), by = TEAM_ID]
   simul_res_v2 <- ss_team_v2[simulate_decision_v2, on = .(row_id)]
 
   sscols_simul_v2 <- simul_res_v2[, .(CYCLER_ID, MOVEMENT)]

@@ -29,12 +29,12 @@ calc_move_range <- function(game_status, deck_status, ctM_data) {
 
   chosen_cols <- c("prio_group", "N")
   join_prio[, odds := melt(lapply(prio_group, exact_draw_odds_outer, .SD), id.vars = "CYCLER_ID"), by = CYCLER_ID, .SDcols = chosen_cols]
-  browser()
+
   calc_slot <- join_prio[, .(new_slot = move_cycler(used_game_status,
                                                  CYCLER_ID, MOVEMENT,
                                                  ignore_block = TRUE,
-                                                 return_numeric_position = TRUE)), by = .(CYCLER_ID, MOVEMENT, odds, turns_to_finish,N)]
-  calc_slot[, splitted_odds := shared_odds / 2]
+                                                 return_numeric_position = TRUE)), by = .(CYCLER_ID, MOVEMENT, odds, turns_to_finish, actual_movement)]
+  calc_slot[, splitted_odds := odds / 2]
   return(calc_slot)
 }
 

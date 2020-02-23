@@ -7,7 +7,7 @@ simulate_and_scores_phase_2 <- function(game_status, deck_status, cycler_id, STG
   orig_posits <- used_game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, CYCLER_ID)]
 
   phase_two_cyclers <- used_game_status[CYCLER_ID > 0 & !CYCLER_ID %in% phase_one_actions[, CYCLER_ID], CYCLER_ID]
-
+browser()
 
   for (simul_loop in 1:10) {
     range_data <- calc_move_range(used_game_status, deck_status, ctM_data)

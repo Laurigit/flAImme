@@ -20,6 +20,7 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
 
     #join current position
     join_curr <- curr_posits[options, on = "CYCLER_ID"]
+
     join_curr[, new_slot_after_moving := move_cycler(used_game_status, CYCLER_ID, MOVEMENT,
                                         slipstream = FALSE,
                                         ignore_block = TRUE,
@@ -43,6 +44,7 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
   }
 
     join_curr[, actual_movement := new_slot_after_moving - curr_pos]
+
     res_list <- NULL
     res_list$new_ADM_OPT <- ADM_OPTIMAL_MOVES
     res_list$ctM_data <- join_curr
