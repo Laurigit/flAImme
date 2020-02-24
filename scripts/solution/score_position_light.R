@@ -2,8 +2,8 @@ score_position_light <- function(game_status, ADM_AI_CONF,  precalc_track, ctM_d
   # action_databr <- data.table(CYCLER_ID = c(1,2,3,4,5,6), MOVEMENT = c(2,3,2,5,4,3), move_order = c(1,2,3,4,5,6), TEAM_ID = c(1,1,2,2,3,3))
 
   #make moves
-  temp_game_status <- copy(game_status)
-  zoom(temp_game_status)
+  temp_game_status <- game_status
+  #zoom(temp_game_status)
   new_cycler_positions <- temp_game_status[CYCLER_ID > 0, .(CYCLER_ID, GAME_SLOT_ID)]
 
   #cycler order
@@ -28,7 +28,7 @@ score_position_light <- function(game_status, ADM_AI_CONF,  precalc_track, ctM_d
   turns_to_finish[, ttf_score := ifelse(is_leader,
                                         abs(second_turns - turns_to_finish),
                                         leader_turns - turns_to_finish + 1), by = CYCLER_ID]
-  SPEED_CHANGE <- turns_to_finish[, .(Score = ttf_score , CYCLER_ID, Setting = "Speed_change",
+  SPEED_CHANGE <- turns_to_finish[, .(Score = ttf_score  / turns_to_finish , CYCLER_ID, Setting = "Speed_change",
                                       modifier = NA, Setting_modifier = "")]
 
 
@@ -40,7 +40,7 @@ score_position_light <- function(game_status, ADM_AI_CONF,  precalc_track, ctM_d
   #join turns
   join_turns_exh <- ss_turns_to_finish[exhaust_amount_temp, on = "CYCLER_ID"]
 
-  EXHAUST_AMOUONT <- join_turns_exh[,.(CYCLER_ID, Score = -EXHAUST , Setting = "Get_exhaust", modifier = turns_to_finish, Setting_modifier = "Exhaust_impactless_turns")]
+  EXHAUST_AMOUONT <- join_turns_exh[,.(CYCLER_ID, Score = -EXHAUST , Setting = "Get_exhaust", modifier = turns_to_finish, Setting_modifier = 1)]
 
 
   #MOVEMENT GAINED PHASE 2
@@ -59,6 +59,16 @@ score_position_light <- function(game_status, ADM_AI_CONF,  precalc_track, ctM_d
   COST_OF_CARD_SPENT <- action_data[,. (CYCLER_ID, Score = -MOVEMENT, Setting = "Card_spent",
                                         modifier = NA, Setting_modifier = "")]
 
+# SLOTS_OVER_FINISHLINE #TO MOVITAVE HIGH MOVE AT THE END
+new_cycler_squares <- temp_game_status[CYCLER_ID > 0, .(CYCLER_ID, SQUARE_ID)]
+action_data
+join_pos_and_action <- action_data[new_cycler_squares, on = "CYCLER_ID"]
+finish_square <- game_status[FINISH == 1, min(SQUARE_ID)] - 1
+join_pos_and_action[, over_finish_square := max(SQUARE_ID - finish_square, 0)]
+SQUARES_OVER_FINISHLINE <- join_pos_and_action[, .(CYCLER_ID, Score = over_finish_square*(10^(2 - phase)), Setting = "Finish_sprint",
+                                                   modifier = NA, Setting_modifier = "")]
+
+
   position_score <- rbind(
     EXHAUST_AMOUONT,
     TEAM_PENALTY,
@@ -69,11 +79,12 @@ score_position_light <- function(game_status, ADM_AI_CONF,  precalc_track, ctM_d
     COST_OF_CARD_SPENT,
     CYCLER_ORDER,
     MOVEMENT_GAINED,
+    SQUARES_OVER_FINISHLINE,
     SPEED_CHANGE)
 
   #join score
   POSITION_SCORE <- ADM_AI_CONF[position_score, on = .(Setting,  CYCLER_ID)]
-  POSITION_SCORE[, Result := Value * Score]
+  POSITION_SCORE[, Result := ifelse(is.na(modifier), Value * Score, Value * Score * modifier * as.numeric(Setting_modifier))]
 
   #join action data
   join_action <- action_data[POSITION_SCORE, on = "CYCLER_ID"]
