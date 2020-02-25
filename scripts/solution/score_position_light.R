@@ -28,7 +28,7 @@ score_position_light <- function(game_status, ADM_AI_CONF,  precalc_track, ctM_d
   turns_to_finish[, ttf_score := ifelse(is_leader,
                                         abs(second_turns - turns_to_finish),
                                         leader_turns - turns_to_finish + 1), by = CYCLER_ID]
-  SPEED_CHANGE <- turns_to_finish[, .(Score = ttf_score  / turns_to_finish , CYCLER_ID, Setting = "Speed_change",
+  SPEED_CHANGE <- turns_to_finish[, .(Score = ttf_score , CYCLER_ID, Setting = "Speed_change",
                                       modifier = NA, Setting_modifier = "")]
 
 

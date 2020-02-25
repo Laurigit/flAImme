@@ -157,6 +157,11 @@ two_phase_simulation_score <- function(game_status,
     }
     #append to old ctm
     ctM_data <- rbind(ctM_data, join_ctM)[!is.na(turns_to_finish)]
+#
+#     #in which slot am I? What is left in my deck?
+#     temp_stat <- play_card(3, 3, deck_status[CYCLER_ID == 3], 1, 1)
+#     draw_odds <- calculate_draw_distribution_by_turn(3, temp_stat, 4)
+#     updated_deck <-
 
     res <-  score_position_light(simul_phase2$game_status, ADM_AI_CONF,  pre_res, ctM_data, orig_posits,
                                  STG_CYCLER, append_actions)

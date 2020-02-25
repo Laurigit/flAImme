@@ -15,7 +15,7 @@ library(dragulaR)
 library(lubridate)
 library(readxl)
 library(zoo)
-
+library(optiRum)
 library(dplyr)
 library(ROI)
 library(ROI.plugin.glpk)

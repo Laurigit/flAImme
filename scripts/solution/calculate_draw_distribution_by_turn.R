@@ -76,12 +76,17 @@ calculate_draw_distribution_by_turn <- function(cycler_id, current_decks_input, 
   }
 
 
- odds_limit <- 0.3
+ odds_limit <- 0.4
  #aggr  <- total_options[, .(count = .N), by = .(certain, draw_round_column, MOVEMENT)]#
 
 total_options[, count := 1] #used to enable summing each aggregation
- for (odds_aggr_loop in (1:(total_options[, max(draw_round_column)]))) {
-   total_options <- calc_odds(total_options, odds_limit, how_many_cards)
+loop_rounds <- total_options[, max(draw_round_column)]
+ for (odds_aggr_loop in (1:loop_rounds)) {
+   last_round <- FALSE
+   if (odds_aggr_loop == loop_rounds) {
+     last_round <- TRUE
+   }
+   total_options <- calc_odds(total_options, odds_limit, how_many_cards, last_round)
  }
 
  sscols_res <- total_options[,. (Turn_to_Draw = draw_round_column, MOVEMENT, prob = calc_phase_one)]
@@ -92,18 +97,21 @@ total_options[, count := 1] #used to enable summing each aggregation
  return(sorted_res)
 }
 
-calc_odds <- function(total_options, odds_limit, how_many_cards)  {
+calc_odds <- function(total_options, odds_limit, how_many_cards,last_round)  {
 
   aggr  <- total_options[, .(count = sum(count)), by = .(certain, draw_round_column, MOVEMENT)]#
 
   aggr[, group_sum := sum(count), by= .(certain, draw_round_column) ]
-  aggr[draw_round_column == 1 & certain < 100 & certain > 0, calc_phase_one := 1 - dhyper(certain, group_sum - count,  count,  certain)]
+  how_many_uncertain_left_d1 <- aggr[certain == 100, .N]
+  aggr[draw_round_column == 1 & certain < 100 & certain > 0, calc_phase_one := 1 - dhyper(0, count, group_sum - count, how_many_cards - how_many_uncertain_left_d1)]
   aggr[certain == 100, calc_phase_one := 1]
-  aggr[ certain != 100, calc_phase_one := 1- dhyper(how_many_cards, group_sum - count, count, how_many_cards)]
-  aggr[calc_phase_one < odds_limit, draw_round_column := draw_round_column + 1]
+  aggr[ certain < 0, calc_phase_one := 1- dhyper(0, count, group_sum - count, how_many_cards)]
+
+  if (last_round == FALSE) {
+    aggr[calc_phase_one < odds_limit, draw_round_column := draw_round_column + 1]
+
+  }
   aggr[calc_phase_one < odds_limit & certain != 100, certain := -1]
-
-
   return(aggr)
 }
 

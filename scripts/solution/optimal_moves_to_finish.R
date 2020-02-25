@@ -34,11 +34,20 @@ kortit <- kortit_aggr[, MOVEMENT]
 card_count <- kortit_aggr[, cards_in_hand]
 
 if (use_draw_odds == TRUE) {
-#draw_odds <- calculate_draw_distribution_by_turn(cycler_id, deck_status_input, how_many_cards = 4)
-warning("Draw odds requested, currenlty not supported in optimze moves to finish")
-  #even more so as we are adding unlimited 2:s to the deck a bit above
+  cycler_id <- deck_status_input[, unqiue(CYCLER_ID)]
+  odds_filtter <- calculate_draw_distribution_by_turn(cycler_id, deck_status_input, how_many_cards = 4)
+ # odds_filtter <- draw_odds[1:8]# draw_odds[2:8, .(Turn_to_Draw = Turn_to_Draw + 1, MOVEMENT, prob = 0.5)]
+  max_odds <- odds_filtter[, max(Turn_to_Draw)]
+  compare_data <- CJ.dt(data.table(Turn_to_Draw = 1:max_odds), data.table(MOVEMENT = kortit))
+  join_compare <- odds_filtter[compare_data, on = .(MOVEMENT, Turn_to_Draw)]
+  missing_odds <- join_compare[is.na(prob)]
+  modds_data <- missing_odds[, .(Turn_to_Draw, MOVEMENT, keep_me = FALSE)]
+  #pad missing turns
+  pad_data <- compare_data[!Turn_to_Draw %in% missing_odds[, unique(Turn_to_Draw)]][, keep_me := TRUE]
+  append_pad <- rbind(pad_data, modds_data)
+
   } else {
-  draw_odds <- NULL
+    append_pad <- NULL
 }
 # deck_status_input[CYCLER_ID == 1]
 # draw_odds
@@ -46,7 +55,7 @@ warning("Draw odds requested, currenlty not supported in optimze moves to finish
 #filtered <- draw_odds[prob > input_draw_odds_threshold]
 #input_draw_odds_threshold
 
-#odds_filtter <-draw_odds
+
 
 boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
 
@@ -65,9 +74,20 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
 
   if (!is.null(odds_filtter)) {
   max_odds <- odds_filtter[, max(Turn_to_Draw)]
-  joini <- odds_filtter[rividata, on = .(Turn_to_Draw  == i,  MOVEMENT == k)]
-  joini[Turn_to_Draw <= max_odds & is.na(prob), tulos_save := TRUE]
-
+    prev_round_res <- data.table(j = 1)
+    total_res <- NULL
+    for (turn_loop in 1:max_odds) {
+     # round_rows <- nrow(odds_filtter[Turn_to_Draw == 1])
+      keep_or_drop <- odds_filtter[Turn_to_Draw == turn_loop, .N, by = keep_me][, keep_me]
+      round_res <- rividata[i %in% prev_round_res[, j] & k %in% odds_filtter[Turn_to_Draw == turn_loop, MOVEMENT] & tulos_save == FALSE]
+      #here is invert logic where TRUE means DELETE possibility
+      round_res[, drop_me := !keep_or_drop]
+      total_res <- rbind(total_res, round_res)
+      prev_round_res <- round_res
+    }
+    sscols_res <-total_res[, .(i, j, k, drop_me)][drop_me == TRUE]
+    joini <- sscols_res[rividata, on = .(i, j, k)]
+    joini[!is.na(drop_me), tulos_save := TRUE]
   } else {
     joini <- rividata
   }
@@ -81,10 +101,11 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
 model <- MILPModel() %>%
   #  add_variable(y[k], k = 1:20, type = "binary") %>%
   add_variable(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), type = "binary") %>%
+  add_variable(u[i], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), type = "binary") %>%
   #set_objective(sum_expr(y[k], k = 1), "max") %>%
   set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
-  set_bounds(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), ub = 0, boundi_filtteri(i, j, kortit[k], max_move_vect, ascend_v, draw_odds )) %>%
- add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit)) # %>%
+  set_bounds(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), ub = 0, boundi_filtteri(i, j, kortit[k], max_move_vect, ascend_v, append_pad )) %>%
+  add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit)) # %>%
 
 #add_constraint(ruudut[i, j] * x[i, j, k] <= y[k] * kortit[k], j = 1:rivi_lkm, i = 1:rivi_lkm , k = 1:20) %>%
   #tätä ei tarvi, koska se on jo boundeissa

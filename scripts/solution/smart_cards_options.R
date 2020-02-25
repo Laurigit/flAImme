@@ -12,6 +12,7 @@ card_options_res <- card_options
 #remove all cards higher than max movement, expect if we dont have exactly max movement card, then include smallest that is higher
 max_move_var <- me_cycler[, MAXIMUM_MOVEMENT]
 temp_res <- card_options[card_options <= max_move_var]
+
 if (max(temp_res) < max_move_var) {
   card_options_res <- c(temp_res, min(card_options[card_options > max_move_var]))
 }
