@@ -23,8 +23,8 @@ cycl <- data.table(CYCLER_ID =
 #TEAM
 
 tiimi <- data.table(  TEAM_ID = 1:6,
-                      TEAM_COLOR = c("Red", "Red", "Blue", "Blue", "Black", "Black", "Green", "Green",
-                                     "Purple", "Purple", "White", "White"))
+                      TEAM_COLOR = c("Red", "Blue", "Black", "Green",
+                                     "Purple","White"))
 
 #dbWriteTable(con, "TEAM", tiimi, row.names = FALSE, append = TRUE)
 

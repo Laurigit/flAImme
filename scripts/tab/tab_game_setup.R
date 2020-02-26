@@ -17,3 +17,15 @@ output$select_track <- renderUI({
 observeEvent(input$go_to_add_track_tab, {
   updateTabItems(session, "sidebarmenu", selected = "tab_add_track")
 })
+
+
+observeEvent(input$go_to_start_position_tab, {
+
+
+  updateTabItems(session, "sidebarmenu", selected = "tab_start_positions")
+})
+
+# eR_TRACK_SELECTED <- eventReactive(input$select_track, {
+#   required_data("STG_TRACK")
+#   curren
+# })

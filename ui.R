@@ -7,7 +7,7 @@
 uusi_peli <- dashboardBody(
 
 
-
+  tags$script("$(\"input:radio[name='blue_setup'][value='Human']\").parent().css('background-color', '#DE6B63');"),
 
   tags$head(
     tags$style(
@@ -35,7 +35,8 @@ uusi_peli <- dashboardBody(
     source("./scripts/ui/ui_start_positions.R",local = TRUE)$value,
     source("./scripts/ui/ui_deal_cards.R",local = TRUE)$value,
     source("./scripts/ui/ui_play_card.R",local = TRUE)$value,
-    source("./scripts/ui/ui_input_other_moves.R",local = TRUE)$value
+    source("./scripts/ui/ui_input_other_moves.R",local = TRUE)$value,
+    source("./scripts/ui/ui_manage_deck.R",local = TRUE)$value
     # source("./scripts/ui/ui_pakkaupload.R",local = TRUE)$value,
     # source("./scripts/ui/ui_saavutusasetukset.R",local = TRUE)$value,
     # source("./scripts/ui/ui_boosterit.R",local = TRUE)$value,
@@ -52,9 +53,10 @@ sidebar <- dashboardSidebar(
               menuItem("Game setup", icon = icon("beer"), tabName = "tab_game_setup"),
               menuItem("Add custom track", icon = icon("trophy"), tabName = "tab_add_track"),
               menuItem("Start positions",icon = icon("bar-chart"),tabName = "tab_start_positions"),
+              menuItem('Manage deck',  icon = icon("sliders-h"),tabName = 'tab_manage_deck'),
               menuItem("Deal cards",icon = icon("bullseye"),tabName = "tab_deal_cards"),
               menuItem('Play card', icon = icon("tasks") ,tabName = 'tab_play_card'),
-              menuItem('Input human moves',  icon = icon("sliders-h"),tabName = 'input_other_moves')
+              menuItem('Input human moves',  icon = icon("sliders-h"),tabName = 'tab_input_other_moves')
 
   )
 

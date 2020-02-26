@@ -19,7 +19,7 @@ library(optiRum)
 library(dplyr)
 library(ROI)
 library(ROI.plugin.glpk)
-
+library(shinyWidgets)
 library(ROI.plugin.symphony)
 library(ompr)
 library(ompr.roi)

@@ -1,5 +1,5 @@
 
-drop table CARD;
+#drop table CARD;
 	create table CARD (
 	CARD_ID int auto_increment,
 	MOVEMENT int,
