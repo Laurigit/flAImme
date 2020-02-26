@@ -79,32 +79,33 @@ observeEvent(input$save_played_cards, {
   join_info <- sscols_info[sscols, on = "UI_text"]
   moving_cyclers <- join_info[, CYCLER_ID]
 
-    for (loop_update in moving_cyclers) {
+  for (loop_update in moving_cyclers) {
     #make sure exhaust is played
     move_amt <- join_info[CYCLER_ID == loop_update, MOVEMENT]
     played_card_id <- react_status$deck_status[CYCLER_ID == loop_update & MOVEMENT == move_amt, min(CARD_ID)]
+
     react_status$action_data[TURN_ID == react_status$turn &
                                CYCLER_ID == loop_update, ':=' (MOVEMENT = move_amt,
-                                                                  PHASE = react_status$phase,
+                                                               PHASE = react_status$phase,
                                                                CARD_ID = played_card_id)]
   }
 
 
 
   #start moving cyclers
-
-  phase_cyclers_in_move_order <- create_move_order_vec(game_status, moving_cyclers)
+  moving_cyclers_incl_ai <-  react_status$action_data[TURN_ID == react_status$turn & PHASE == react_status$phase, CYCLER_ID]
+  phase_cyclers_in_move_order <- create_move_order_vec(react_status$game_status, moving_cyclers)
   for(loop_move in phase_cyclers_in_move_order) {
 
-    row_data <- played_cards_data[TURN_ID == react_status$turn & loop_move == CYCLER_ID & PHASE == react_status$turn]
+    row_data <- react_status$action_data[TURN_ID == react_status$turn & loop_move == CYCLER_ID & PHASE == react_status$phase]
 
     react_status$deck_status <- play_card(cycler_id = loop_move,
-                             card_id = row_data[, CARD_ID],
-                             current_decks = deck_status, 1, 1, FALSE)
-    react_status$game_status <- move_cycler(game_status, loop_move, movement = row_data[, MOVEMENT])
+                                          card_id = row_data[, CARD_ID],
+                                          current_decks = react_status$deck_status, 1, 1, FALSE)
+    react_status$game_status <- move_cycler(react_status$game_status, loop_move, movement = row_data[, MOVEMENT])
 
   }
-  print(zoom(game_status))
+
   #if phase two
   if (react_status$phase == 2) {
     game_status <- apply_slipstream(react_status$game_status)
@@ -115,6 +116,10 @@ observeEvent(input$save_played_cards, {
 
     react_status$phase <- 2
   }
+  print(zoom(react_status$game_status))
+  link_reactive$value <-  link_reactive$value + 1
+  updateTabItems(session, "sidebarmenu", selected = "tab_deal_cards")
+
 })
 
 

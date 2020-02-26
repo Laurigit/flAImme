@@ -85,6 +85,8 @@ eR_startGrid <- eventReactive(input$continue_to_deck_handling, {
 })
 
 
+link_reactive <- reactiveValues(value = 0)
+
 observeEvent(input$save_and_start, {
 
   #gather data from manage deck
@@ -111,7 +113,7 @@ required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK"))
   react_status$deck_status <- create_decks(ss_input[, CYCLER_ID], ADM_CYCLER_DECK, ss_input[, exhaust], renamed)
   react_status$game_status <- slots_out_of_mountains( react_status$game_status)
   react_status$game_status <- slots_out_of_mountains_to_track( react_status$game_status)
-
+    print(zoom(  react_status$game_status ))
   cyclers <- eRstartPosData()[status != "Not playing", CYCLER_ID]
   move_data <- data.table(CYCLER_ID = cyclers, MOVEMENT = 0, CARD_ID = 0, key_col = "1")
   turn_amount <- 25
@@ -126,9 +128,10 @@ required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK"))
   react_status$phase <- 1
   #we should start simulating asap
   react_status$AI_team <- eRstartPosData()[status %in% c("AI", "AI autocards"), max(TEAM_ID)]
+  link_reactive$value <-  link_reactive$value + 1
 })
 
-eR_next_cycler <- eventReactive(c(input$save_and_start, input$save_played_cards), {
+eR_next_cycler <- eventReactive(link_reactive$value, {
 
   required_data("STG_CYCLER")
   if (react_status$phase == 1) {

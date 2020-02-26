@@ -63,6 +63,7 @@ observeEvent(input$save_dealt_cards, {
   if (react_status$phase == 1) {
     move_first_cycler <- eR_next_cycler()
     #start COMPUTING
+
     card_options_in_hand <- smart_cards_options(react_status$deck_status[CYCLER_ID == eR_next_cycler() & Zone == "Hand", unique(MOVEMENT)], react_status$precalc_track_agg, move_first_cycler)
     if (length(card_options_in_hand) == 1) {
       move_amount <- card_options_in_hand
@@ -95,13 +96,13 @@ observeEvent(input$save_dealt_cards, {
     second_cycler <- eR_next_cycler()
 
     card_options_in_hand_p2 <- smart_cards_options(react_status$deck_status[CYCLER_ID == second_cycler & Zone == "Hand", unique(MOVEMENT)],
-                                                   react_status$pre_aggr_game_status, second_cycler)
+                                                   react_status$precalc_track_agg, second_cycler)
     if (length(card_options_in_hand_p2) == 1) {
-      move_amount_p2 <- card_options_in_hand_p2
+      move_amount <- card_options_in_hand_p2
     } else {
 
 
-      phase_one_actions <-  played_cards_data[TURN_ID == turn_id & MOVEMENT & PHASE == 1,. (CYCLER_ID, MOVEMENT, phase = PHASE)]
+      phase_one_actions <-   react_status$action_data[TURN_ID ==  react_status$turn & MOVEMENT & PHASE == 1,. (CYCLER_ID, MOVEMENT, phase = PHASE)]
 
       phase_2_simul <-  two_phase_simulation_score(react_status$game_status, react_status$deck_status, react_status$AI_team,
                                                    STG_CYCLER, react_status$turn, react_status$ctM_data, react_status$precalc_track_agg,
@@ -111,19 +112,19 @@ observeEvent(input$save_dealt_cards, {
                                                    simul_rounds = 1)
 
       simul_rs_p2 <-  simulate_and_scores_phase_2(phase_2_simul, STG_CYCLER, react_status$AI_team, second_cycler)
-      move_amount_p2 <-  simul_rs_p2[, MOVEMENT]
+      move_amount <-  simul_rs_p2[, MOVEMENT]
     }
     move_cyc <- simul_rs_p2[, CYCLER_ID]
 
 
     #make sure exhaust is played if possible
-    played_card_id <- react_status$deck_status[CYCLER_ID == second_cycler & MOVEMENT == move_amount_p2, min(CARD_ID)]
-    react_status$action_data[CYCLER_ID  == move_cyc & TURN_ID == react_status$turn, ':=' (MOVEMENT = move_amount_p2,
-                                                                                   PHASE = react_status$phase,
-                                                                                   CARD_ID = played_card_id)]
+    played_card_id <- react_status$deck_status[CYCLER_ID == second_cycler & MOVEMENT == move_amount, min(CARD_ID)]
+    react_status$action_data[CYCLER_ID  == move_cyc & TURN_ID == react_status$turn, ':=' (MOVEMENT = move_amount,
+                                                                                          PHASE = react_status$phase,
+                                                                                          CARD_ID = played_card_id)]
 
 
-}
+  }
 
   react_status$last_played_card <- move_amount
   hide("show_card_text")
@@ -136,7 +137,7 @@ output$which_first <- renderText({
   required_data("ADM_CYCLER_INFO")
   if (react_status$phase == 0) {
     res <- "Thinking"
-  } else if (react_status$phase == 1) {
+  } else {
     res <- ADM_CYCLER_INFO[CYCLER_ID == eR_next_cycler(), UI_text]
   }
 
