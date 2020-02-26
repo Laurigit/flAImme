@@ -1,4 +1,4 @@
-which_cycler_to_move_first <- function(simul_scores, STG_CYCLER) {
+which_cycler_to_move_first <- function(simul_scores, STG_CYCLER, team_id) {
 
 
 

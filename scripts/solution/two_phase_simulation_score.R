@@ -9,7 +9,8 @@ two_phase_simulation_score <- function(game_status,
                                        card_options = NULL,
                                        cycler_id = NULL,
                                        phase_one_actions = NULL,
-                                       simul_rounds = 10) {
+                                       simul_rounds = 10,
+                                       simulate_until_stopped = FALSE) {
   total_scores <-  NULL
   used_game_status <- copy(game_status)
   deck_copied <- copy(deck_status)
@@ -36,7 +37,11 @@ two_phase_simulation_score <- function(game_status,
 
 
   for (simul_loop in 1:simul_rounds) {
-
+    # browser()
+    # httpuv:::service()
+    # if (isTRUE(session$input$stopThis)) {
+    #   break()
+    # }
 
 
         if (is.null(phase_one_actions)) {

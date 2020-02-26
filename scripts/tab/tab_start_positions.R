@@ -14,7 +14,7 @@
 output$cyclersInput <- renderUI({
 
 
-  lapply(eRstartPosData()[, UI_text],
+  lapply(c(eRstartPosData()[, UI_text], "READY"),
          function(teksti) { tags$h3(drag = teksti,teksti)})
 })
 
@@ -22,6 +22,11 @@ output$cyclersPeloton <- renderUI({
 
   div()
 })
+output$ready <- renderUI({
+
+  div()
+})
+
 
 observeEvent(input$continue_to_deck_handling, {
   updateTabItems(session, "sidebarmenu", selected = "tab_manage_deck")

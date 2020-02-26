@@ -1,3 +1,52 @@
 tabItem(tabName = "tab_deal_cards",
-        fluidPage()
+        fluidPage(
+          fluidRow(h3(textOutput("which_first"))),
+                  fluidRow(actionButton(inputId = "deal_E",
+                                        label = "E",
+                                        width = "33%",
+                                        style='height:200px; font-size:400%'),
+                           actionButton(inputId = "deal_2",
+                                     label = "2",
+                                     width = "33%",
+                                     style='height:200px; font-size:400%'),
+                         actionButton(inputId = "deal_3",
+                                      label = "3",
+                                      width = "33%",
+                                      style='height:200px; font-size:400%')),
+                  fluidRow(
+                         actionButton(inputId = "deal_4",
+                                      label = "4",
+                                      width = "33%",
+                                      style='height:200px; font-size:400%'),
+                         actionButton(inputId = "deal_5",
+                                      label = "5",
+                                      width = "33%",
+                                      style='height:200px; font-size:400%'),
+                         actionButton(inputId = "deal_6",
+                                      label = "6",
+                                      width = "33%",
+                                      style = 'height:200px; font-size:400%')),
+                  fluidRow(
+                         actionButton(inputId = "deal_7",
+                                      label = "7",
+                                      width = "33%",
+                                      style = 'height:200px; font-size:400%'),
+                         actionButton(inputId = "deal_9",
+                                      label = "9",
+                                      width = "33%",
+                                      style = 'height:200px; font-size:400%'),
+                         actionButton(inputId = "undo_deal",
+                                      label = "Undo",
+                                      width = "33%",
+                                      style = 'height:200px; font-size:400%')),
+                  fluidRow(column(4, h3(textOutput("cards_dealt"))),
+                           column(8,
+                           actionButton(inputId = "save_dealt_cards",
+                                        label = "Confirm dealt cards",
+                                        width = "100%",
+                                        style = 'height:200px; font-size:200%',
+                                        onclick = "Shiny.onInputChange('startThis',true)")))
+
+
+  )
 )

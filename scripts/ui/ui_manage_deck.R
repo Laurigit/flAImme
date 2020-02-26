@@ -6,7 +6,8 @@ tabItem(tabName = "tab_manage_deck",
                 )
         ),
         fluidRow(
-          actionButton("save_and_start", "Save settings and start game", width = "100%")
+          actionButton("save_and_start", "Save settings and start game", width = "100%",
+                       onclick = "Shiny.onInputChange('stopThis',false)")
         )
 
 )

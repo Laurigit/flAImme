@@ -6,7 +6,7 @@
 
 uusi_peli <- dashboardBody(
 
-
+  useShinyjs(),
   tags$script("$(\"input:radio[name='blue_setup'][value='Human']\").parent().css('background-color', '#DE6B63');"),
 
   tags$head(

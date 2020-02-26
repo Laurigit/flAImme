@@ -5,7 +5,7 @@ input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8),
                                    exhaust = c(0, 0, 0, 0, 0, 0,0,0),
                                    starting_row =   c(1, 1, 2, 2, 3, 3,4,4),
                                     starting_lane = c(1,2, 1, 2, 1, 2,1,2))
-   track <- 6
+   track <- 1
    # input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4),
    #                                  PLAYER_ID = c(1,1,2,2),
    #                                  exhaust = c(0, 0, 0, 0),
@@ -164,10 +164,11 @@ con <- connDB(con, "flaimme")
 
 
 
-              simult_list_res <-  two_phase_simulation_score(game_status, deck_status, team_id, STG_CYCLER, turn_id, ctM_data, pre_aggr_game_status, range_joined_team,
+              simult_list_res <-  two_phase_simulation_score(game_status, deck_status, team_id, STG_CYCLER, turn_id,
+                                                             ctM_data, pre_aggr_game_status, range_joined_team,
                                                              card_options = NULL, cycler_id = NULL, phase_one_actions = NULL)
               ctM_data <- simult_list_res$updated_ctm
-              move_first_cycler <- which_cycler_to_move_first(simult_list_res$scores, STG_CYCLER)
+              move_first_cycler <- which_cycler_to_move_first(simult_list_res$scores, STG_CYCLER, team_id)
 
              # simulation_data_from_which_cycler <- move_first_cycler_result$simulation
               #look at my cards

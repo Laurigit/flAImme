@@ -58,12 +58,17 @@ eR_startGrid <- eventReactive(input$continue_to_deck_handling, {
   grid_order[, starting_row := ceiling(grid_order / start_width)]
   grid_order[, starting_lane := seq_len(.N), by = starting_row]
   grid_order[, type := "Grid"]
+  sscols_gris <- grid_order[, .(UI_text, starting_row, starting_lane, type)]
+  if (!is.null(dragulaValue(input$dragula)$cyclersPeloton)) {
   peloton_order <- data.table(UI_text = dragulaValue(input$dragula)$cyclersPeloton)
   peloton_order[, starting_lane := seq_len(.N)]
   peloton_order[, starting_row := -4]
   peloton_order[, type := "Breakaway"]
   sscols_peloton <- peloton_order[, .(UI_text, starting_row, starting_lane, type)]
-  sscols_gris <- grid_order[, .(UI_text, starting_row, starting_lane, type)]
+  } else {
+    sscols_peloton <- sscols_gris[1 == 0]
+  }
+
   append <- rbind(sscols_peloton, sscols_gris)
   #get ui_names back to cycler_ids
   join_ui_to_cycid <- eRstartPosData()[append, on = "UI_text"]
@@ -90,18 +95,67 @@ required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK"))
   grid_data[, exhaust := input[[paste0("exhaust_inp_", CYCLER_ID)]], by = CYCLER_ID]
 
   #resolve breakaway
+  if (!is.null(dragulaValue(input$dragula)$cyclersPeloton)) {
   grid_data[, ba_bid1 := input[[paste0("bid_one_", CYCLER_ID)]], by = CYCLER_ID]
   grid_data[, ba_bid2 := input[[paste0("bid_two_", CYCLER_ID)]], by  = CYCLER_ID]
   ba_data <- grid_data[,. (CYCLER_ID, ba_bid1, ba_bid2)]
 
   melt <- melt.data.table(ba_data, id.vars = c("CYCLER_ID"))
   renamed <- melt[, .(CYCLER_ID, MOVEMENT = value)][!is.na(MOVEMENT)]
+  } else {
+    renamed <- NULL
+  }
   ss_input <- grid_data[, .(CYCLER_ID, exhaust, starting_row, starting_lane)]
-  game_status <- start_game(ss_input, as.numeric(input$select_track), STG_TRACK_PIECE, STG_TRACK)
-  deck_status <- create_decks(ss_input[, CYCLER_ID], ADM_CYCLER_DECK, ss_input[, exhaust], renamed)
-  browser()
-print(game_status)
-print(deck_status[CYCLER_ID == 1])
+  react_status$game_status <- start_game(ss_input, as.numeric(input$select_track), STG_TRACK_PIECE, STG_TRACK)
+
+  react_status$deck_status <- create_decks(ss_input[, CYCLER_ID], ADM_CYCLER_DECK, ss_input[, exhaust], renamed)
+  react_status$game_status <- slots_out_of_mountains( react_status$game_status)
+  react_status$game_status <- slots_out_of_mountains_to_track( react_status$game_status)
+
+  cyclers <- eRstartPosData()[status != "Not playing", CYCLER_ID]
+  move_data <- data.table(CYCLER_ID = cyclers, MOVEMENT = 0, CARD_ID = 0, key_col = "1")
+  turn_amount <- 25
+  played_cards_data <- merge(x = data.table(TURN_ID = 1:turn_amount, key_col = "1"), y = move_data, by = "key_col", all = TRUE, allow.cartesian = TRUE)
+  played_cards_data[, key_col := NULL]
+  played_cards_data[, PHASE := 0]
+  react_status$action_data <- played_cards_data
+
+
+  updateTabItems(session, "sidebarmenu", selected = "tab_deal_cards")
+  react_status$turn <- 1
+  react_status$phase <- 1
+  #we should start simulating asap
+  react_status$AI_team <- eRstartPosData()[status %in% c("AI", "AI autocards"), max(TEAM_ID)]
 })
 
+eR_next_cycler <- eventReactive(c(input$save_and_start, input$save_played_cards), {
+
+  required_data("STG_CYCLER")
+  if (react_status$phase == 1) {
+  react_status$precalc_track_agg <- precalc_track(react_status$game_status )
+  ctM_res <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, react_status$game_status, react_status$deck_status, react_status$precalc_track_agg)
+  ADM_OPTIMAL_MOVES <- ctM_res$new_ADM_OPT
+  react_status$ctM_data <- ctM_res$ctM_data
+
+  react_status$range_joined_team <- calc_move_range(react_status$game_status, react_status$deck_status, react_status$ctM_data, STG_CYCLER)
+
+  simult_list_res <-  two_phase_simulation_score(react_status$game_status, react_status$deck_status, react_status$AI_team,
+                                                 STG_CYCLER, react_status$turn, react_status$ctM_data, react_status$precalc_track_agg,
+                                                 react_status$range_joined_team,
+                                                 card_options = NULL, cycler_id = NULL, phase_one_actions = NULL,
+                                                 simul_rounds = 1)
+  react_status$ctM_data <- simult_list_res$updated_ctm
+
+  next_cycler <- which_cycler_to_move_first(simult_list_res$scores, STG_CYCLER, react_status$AI_team)
+  } else {
+    required_data("ADM_CYCLER_INFO")
+    next_cycler <- ADM_CYCLER_INFO[TEAM_ID == ADM_CYCLER_INFO[CYCLER_ID == react_status$first_cycler, react_status$AI_team] & CYCLER_ID != react_status$first_cycler, CYCLER_ID]
+    next_cycler
+
+  }
+    react_status$first_cycler <- next_cycler
+    react_status$cycler_in_turn <- next_cycler
+  next_cycler
+
+})
 
