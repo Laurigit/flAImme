@@ -28,7 +28,7 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
                                         return_numeric_position = TRUE), by = .(CYCLER_ID, MOVEMENT)]
 
 
-
+    join_curr[, DRAW_ODDS := ""]
 
     for (opt_loop in 1:nrow(join_curr)) {
       loop_cycler <- join_curr[opt_loop, CYCLER_ID]
@@ -39,8 +39,11 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
 
 
       slot <- join_curr[opt_loop, new_slot_after_moving]
-      res_temp <- finish_turns_db(con, ADM_OPTIMAL_MOVES, used_game_status, cycler_deck_updated, pre_aggr_game_status, slot)
+
+      draw_odds_input <- ""
+      res_temp <- finish_turns_db(con, ADM_OPTIMAL_MOVES, used_game_status, cycler_deck_updated, pre_aggr_game_status, slot, draw_odds_input)
       ADM_OPTIMAL_MOVES <- res_temp$new_ADM_OPT
+
       join_curr[opt_loop, turns_to_finish := res_temp$turns_to_finish]
   }
 

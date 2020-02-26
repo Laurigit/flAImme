@@ -4,7 +4,7 @@
                                    exhaust = c(0, 0, 0, 0, 0, 0,0,0),
                                    starting_row =   c(1, 1, 2, 2, 3, 3,4,4),
                                     starting_lane = c(1,2, 1, 2, 1, 2,1,2))
-   track <- 3
+   track <- 6
    # input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4),
    #                                  PLAYER_ID = c(1,1,2,2),
    #                                  exhaust = c(0, 0, 0, 0),
@@ -40,8 +40,8 @@ con <- connDB(con, "flaimme")
 
 
 
-    game_status <- start_game(used_startup_data,1, STG_TRACK_PIECE, STG_TRACK)
-    #add_mountain_info
+    game_status <- start_game(used_startup_data,track, STG_TRACK_PIECE, STG_TRACK)
+    #add_mountain_inf
     game_status <- slots_out_of_mountains(game_status)
     game_status <- slots_out_of_mountains_to_track(game_status)
     orig_posits <- game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, PIECE_ATTRIBUTE), by = CYCLER_ID]
@@ -70,15 +70,15 @@ con <- connDB(con, "flaimme")
 
     for(turn_id in 1:turn_amount) {
       orig_posits <- game_status[CYCLER_ID > 0, .(GAME_SLOT_ID, PIECE_ATTRIBUTE), by = CYCLER_ID]
+
       #print(turn_id)
 
       #everybody draws
       for(loop in cyclers) {
         deck_status <- draw_cards(loop, deck_status)
       }
-     if (nrow(deck_status[Zone == "Hand"]) == 0) {
-       stop()
-     }
+
+
 
       #spirters move first
       #split cyclers to two phases
@@ -239,8 +239,11 @@ con <- connDB(con, "flaimme")
 
           phase_cyclers <- played_cards_data[TURN_ID == turn_id & PHASE == phase_loop, CYCLER_ID]
 
-      for(loop_move in phase_cyclers) {
-       # browser()
+
+
+          phase_cyclers_in_move_order <- create_move_order_vec(game_status, phase_cyclers)
+      for(loop_move in phase_cyclers_in_move_order) {
+
         row_data <- played_cards_data[TURN_ID == turn_id & loop_move == CYCLER_ID & PHASE == phase_loop]
 
         deck_status <- play_card(cycler_id = loop_move,

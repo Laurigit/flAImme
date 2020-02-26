@@ -125,11 +125,29 @@ two_phase_simulation_score <- function(game_status,
 
     append_actions <- rbind(simul_phase2$played_cards,  moves_made_phase_1)
     #join played cards
+
     player_and_pos <- append_actions[posits, on = "CYCLER_ID"]
+
+    #join_draw_odds
+
+    player_and_pos[, DRAW_ODDS := ifelse(CYCLER_ID %in% team_cyclers, calculate_draw_distribution_by_turn(CYCLER_ID,
+                                                                                                           play_card(CYCLER_ID,
+                                                                                                                     card_id = NULL,
+                                                                                                                     deck_copied,
+                                                                                                                     game_id = 0,
+                                                                                                                     turn_id = 0,
+                                                                                                                     con = FALSE,
+                                                                                                                     card_row_id = NULL,
+                                                                                                                     MOVEMENT_PLAYED = MOVEMENT),
+                                                                                                           4, db_res = TRUE), ""), by = CYCLER_ID]
 
     #joinaa
 
-    join_ctM <- ctM_data[player_and_pos, on = .(CYCLER_ID, MOVEMENT, new_slot_after_moving = GAME_SLOT_ID), .(new_slot_after_moving, CYCLER_ID, MOVEMENT, curr_pos, actual_movement, N = 0, turns_to_finish)][is.na(curr_pos)]
+    join_ctM <- ctM_data[player_and_pos, on = .(CYCLER_ID, MOVEMENT, new_slot_after_moving = GAME_SLOT_ID, DRAW_ODDS), .(DRAW_ODDS, new_slot_after_moving, CYCLER_ID, MOVEMENT, curr_pos, actual_movement, N = 0, turns_to_finish)][is.na(curr_pos)]
+
+
+
+
     #request new turns_to_finish
     if (nrow(join_ctM) > 0) {
       for (add_loop in 1:nrow(join_ctM)){
@@ -140,8 +158,11 @@ two_phase_simulation_score <- function(game_status,
         min_row_id_played <- cycler_deck_updated[Zone != "Removed", min(row_id)]
         cycler_deck_updated[row_id == min_row_id_played, Zone := "Removed"]
 
+        draw_odds_raw_data <- join_ctM[add_loop, DRAW_ODDS]
+
+
         new_slot <- join_ctM[add_loop, new_slot_after_moving]
-        ft_res <- finish_turns_db(con, ADM_OPTIMAL_MOVES, simul_phase2$game_status, cycler_deck_updated, pre_res, new_slot)
+        ft_res <- finish_turns_db(con, ADM_OPTIMAL_MOVES, simul_phase2$game_status, cycler_deck_updated, pre_res, new_slot, draw_odds_raw_data)
         #print(ft_res$turns_to_finish)
         ADM_OPTIMAL_MOVES <- ft_res$new_ADM_OPT
         join_ctM[add_loop, turns_to_finish := ft_res$turns_to_finish]

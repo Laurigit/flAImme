@@ -1,5 +1,5 @@
 
-calculate_draw_distribution_by_turn <- function(cycler_id, current_decks_input, how_many_cards = 4) {
+calculate_draw_distribution_by_turn <- function(cycler_id, current_decks_input, how_many_cards = 4, db_res = FALSE) {
 
   #case draw more than cards in deck
   #use only cards in deck until need to recycle
@@ -20,6 +20,16 @@ calculate_draw_distribution_by_turn <- function(cycler_id, current_decks_input, 
   #
 
   curr_deck_cards <- current_decks_input[cycler_id == CYCLER_ID]
+  #if we have no cards left, it means we are going to draw an exhaust
+
+  if (nrow(curr_deck_cards[Zone != "Removed"]) == 0) {
+    curr_deck_cards <- data.table(CYCLER_ID = cycler_id,
+                                  CARD_ID = 1,
+                                  Zone = "Recycle",
+                                  MOVEMENT = 2,
+                                  row_id = 1)
+  }
+
   #curr_deck_cards[1:12, Zone := "Recycle"]
 
   #check if enough cards
@@ -81,7 +91,9 @@ calculate_draw_distribution_by_turn <- function(cycler_id, current_decks_input, 
 
 total_options[, count := 1] #used to enable summing each aggregation
 loop_rounds <- total_options[, max(draw_round_column)]
+
  for (odds_aggr_loop in (1:loop_rounds)) {
+
    last_round <- FALSE
    if (odds_aggr_loop == loop_rounds) {
      last_round <- TRUE
@@ -92,9 +104,21 @@ loop_rounds <- total_options[, max(draw_round_column)]
  sscols_res <- total_options[,. (Turn_to_Draw = draw_round_column, MOVEMENT, prob = calc_phase_one)]
  sscols_res[is.nan(prob), prob := 1]
  aggr_res <- sscols_res[, .(prob = max(prob)), by = .(Turn_to_Draw, MOVEMENT)]
+
  sorted_res <- aggr_res[order(Turn_to_Draw, MOVEMENT)]
 
- return(sorted_res)
+ #remove turns with only on option
+ opt_count <- sorted_res[, .N, by = Turn_to_Draw]
+ #leave at least one row
+ filtered_res <- sorted_res[Turn_to_Draw %in% c(opt_count[N > 1, Turn_to_Draw], 1)]
+ if (db_res == TRUE) {
+
+    db_vec <- paste0(paste0(filtered_res[, Turn_to_Draw], collapse = ""), ";", paste0(filtered_res[, MOVEMENT], collapse = ""))
+    return(db_vec)
+ } else {
+   return(sorted_res)
+  }
+
 }
 
 calc_odds <- function(total_options, odds_limit, how_many_cards,last_round)  {

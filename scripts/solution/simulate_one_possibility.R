@@ -35,8 +35,11 @@ simulate_one_possibility <- function(game_status, deck_status, STG_CYCLER,  p1_c
   new_data <- data.table(CYCLER_ID = p1_cycler_id, MOVEMENT = p1_movement)
   bindaa <- rbind(remove_input_cyclers, new_data)
 
+  phase_cyclers_in_move_order <- create_move_order_vec(game_status, phase_cyclers)
   phase_two_copy <- copy(take_copy_of_game)
-  for (cycler_loop in bindaa[, CYCLER_ID]) {
+
+  orderd_cyclers <- create_move_order_vec(phase_two_copy, bindaa[, CYCLER_ID])
+  for (cycler_loop in orderd_cyclers) {
     phase_two_copy <- move_cycler(phase_two_copy, cycler_loop, bindaa[CYCLER_ID == cycler_loop, MOVEMENT])
 
 

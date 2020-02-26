@@ -1,9 +1,19 @@
 
-finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_status, pre_aggr_game_status, cycler_at_slot) {
+finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_status, pre_aggr_game_status, cycler_at_slot, draw_odds_raw_data = NULL) {
   #cycler_id only needed for parsing the deck_left
   #cycler_at_slot <- 20
   #cycler_deck_status <- deck_status[CYCLER_ID == 5]
 
+  #draw odds are in data table format and sql db format. raw = db. We use raw in joins and data.table to be sent to optimization
+  if (draw_odds_raw_data == "") {
+    draw_odds_input <- ""
+  } else {
+
+    parse_draw_odds <- str_split(draw_odds_raw_data, ";")
+    draw_odds_input <- data.table(Turn_to_Draw = as.numeric(str_split(parse_draw_odds[[1]][1], "")[[1]]),
+                                  MOVEMENT =  as.numeric(str_split(parse_draw_odds[[1]][2], "")[[1]]),
+                                  prob = -1)
+  }
 
   #deck_copied_all <- copy(cycler_deck_status)
   deck_copied <- cycler_deck_status[Zone != "Removed"]
@@ -20,10 +30,11 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
   finish_slot <- track_tot[FINISH == 1, GAME_SLOT_ID]
   track_left <- track_tot[GAME_SLOT_ID >= cycler_at_slot & GAME_SLOT_ID <= finish_slot, paste0(PIECE_ATTRIBUTE, collapse = "")]
   deck_left <- deck_copied[order(-MOVEMENT)][, paste0(MOVEMENT, collapse = "")]
-  res_data_row <- data.table(TRACK_LEFT = track_left, DECK_LEFT = deck_left)
+
+  res_data_row <- data.table(TRACK_LEFT = track_left, DECK_LEFT = deck_left, DRAW_ODDS = draw_odds_raw_data)
   #check if I have this observation
 
-  row_result <- ADM_OPTIMAL_MOVES[res_data_row, on = .(TRACK_LEFT, DECK_LEFT)][!is.na(TURNS_TO_FINISH)]
+  row_result <- ADM_OPTIMAL_MOVES[res_data_row, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][!is.na(TURNS_TO_FINISH)]
 
 
       if (nrow(row_result) == 0){
@@ -32,7 +43,7 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
         turns_to_finish_calc <- optimal_moves_to_finish(deck_copied,
                                                         cycler_at_slot,
                                                         pre_aggr_game_status,
-                                                        use_draw_odds = FALSE)
+                                                        use_draw_odds = draw_odds_input)
         new_result_row <- cbind(res_data_row, turns_to_finish_calc)
 
 

@@ -33,9 +33,9 @@ kortit_aggr <- kortit_Dt[, .(cards_in_hand = .N), by = MOVEMENT]
 kortit <- kortit_aggr[, MOVEMENT]
 card_count <- kortit_aggr[, cards_in_hand]
 
-if (use_draw_odds == TRUE) {
-  cycler_id <- deck_status_input[, unqiue(CYCLER_ID)]
-  odds_filtter <- calculate_draw_distribution_by_turn(cycler_id, deck_status_input, how_many_cards = 4)
+if (use_draw_odds != "") {
+
+  odds_filtter <- use_draw_odds
  # odds_filtter <- draw_odds[1:8]# draw_odds[2:8, .(Turn_to_Draw = Turn_to_Draw + 1, MOVEMENT, prob = 0.5)]
   max_odds <- odds_filtter[, max(Turn_to_Draw)]
   compare_data <- CJ.dt(data.table(Turn_to_Draw = 1:max_odds), data.table(MOVEMENT = kortit))
