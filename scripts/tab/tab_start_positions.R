@@ -24,7 +24,7 @@ output$cyclersPeloton <- renderUI({
 })
 
 observeEvent(input$continue_to_deck_handling, {
-  updateTabItems(session, "sidebarmenu", selected = "tab_start_positions")
+  updateTabItems(session, "sidebarmenu", selected = "tab_manage_deck")
 
 
 })

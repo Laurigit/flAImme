@@ -1,5 +1,6 @@
   # required_data(c("STG_CYCLER", "STG_TRACK"))
-  input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8),
+kaadu
+input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8),
                                    PLAYER_ID = c(1,1,2,2,3,3,4,4),
                                    exhaust = c(0, 0, 0, 0, 0, 0,0,0),
                                    starting_row =   c(1, 1, 2, 2, 3, 3,4,4),
