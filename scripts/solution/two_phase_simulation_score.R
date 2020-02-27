@@ -10,7 +10,8 @@ two_phase_simulation_score <- function(game_status,
                                        cycler_id = NULL,
                                        phase_one_actions = NULL,
                                        simul_rounds = 10,
-                                       simulate_until_stopped = FALSE) {
+                                       simulate_until_stopped = FALSE,
+                                       ADM_AI_CONF) {
   total_scores <-  NULL
   used_game_status <- copy(game_status)
   deck_copied <- copy(deck_status)
@@ -135,7 +136,8 @@ two_phase_simulation_score <- function(game_status,
 
     #join_draw_odds
 
-    player_and_pos[, DRAW_ODDS := ifelse(CYCLER_ID %in% team_cyclers, calculate_draw_distribution_by_turn(CYCLER_ID,
+#lets calculate draw odds for everyone, but lets not use the information. Only use own cyclers
+    player_and_pos[, DRAW_ODDS :=  calculate_draw_distribution_by_turn(CYCLER_ID,
                                                                                                            play_card(CYCLER_ID,
                                                                                                                      card_id = NULL,
                                                                                                                      deck_copied,
@@ -144,10 +146,11 @@ two_phase_simulation_score <- function(game_status,
                                                                                                                      con = FALSE,
                                                                                                                      card_row_id = NULL,
                                                                                                                      MOVEMENT_PLAYED = MOVEMENT),
-                                                                                                           4, db_res = TRUE), ""), by = CYCLER_ID]
+                                                                                                           4, db_res = TRUE), by = CYCLER_ID]
 
+    #removed exrtra info
+    player_and_pos[!CYCLER_ID %in% team_cyclers, DRAW_ODDS := ""]
     #joinaa
-
     join_ctM <- ctM_data[player_and_pos, on = .(CYCLER_ID, MOVEMENT, new_slot_after_moving = GAME_SLOT_ID, DRAW_ODDS), .(DRAW_ODDS, new_slot_after_moving, CYCLER_ID, MOVEMENT, curr_pos, actual_movement, N = 0, turns_to_finish)][is.na(curr_pos)]
 
 
@@ -159,11 +162,13 @@ two_phase_simulation_score <- function(game_status,
         loop_cycler <- join_ctM[add_loop, CYCLER_ID]
         cycler_deck_updated <- deck_copied[CYCLER_ID == loop_cycler]
 
-        played_card <- join_ctM[add_loop, MOVEMENT]
-        min_row_id_played <- cycler_deck_updated[Zone != "Removed", min(row_id)]
-        cycler_deck_updated[row_id == min_row_id_played, Zone := "Removed"]
-
+        # played_card <- join_ctM[add_loop, MOVEMENT]
+        #
+        # min_row_id_played <- cycler_deck_updated[Zone != "Removed" & MOVEMENT == played_card, min(row_id)]
+        # cycler_deck_updated[row_id == min_row_id_played, Zone := "Removed"]
+        # cycler_deck_updated[Zone == "Hand", Zone := "Recycled"]
         draw_odds_raw_data <- join_ctM[add_loop, DRAW_ODDS]
+        print(draw_odds_raw_data)
 
 
         new_slot <- join_ctM[add_loop, new_slot_after_moving]
@@ -191,6 +196,7 @@ two_phase_simulation_score <- function(game_status,
 
     res <-  score_position_light(simul_phase2$game_status, ADM_AI_CONF,  pre_res, ctM_data, orig_posits,
                                  STG_CYCLER, append_actions)
+
     res[, simul_round := simul_loop]
 
     if (!exists("total_simul_res")) {

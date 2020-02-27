@@ -110,10 +110,19 @@ loop_rounds <- total_options[, max(draw_round_column)]
  #remove turns with only on option
  opt_count <- sorted_res[, .N, by = Turn_to_Draw]
  #leave at least one row
- filtered_res <- sorted_res[Turn_to_Draw %in% c(opt_count[N > 1, Turn_to_Draw], 1)]
+ #only take last row out if it contains only one row
+ last_row <- sorted_res[, max(Turn_to_Draw)]
+ last_group_row_count <- sorted_res[Turn_to_Draw == last_row, .N]
+ if (last_group_row_count == 1 & last_row > 1){
+   filtered_res <- sorted_res[Turn_to_Draw != last_row]
+ } else {
+   filtered_res <- sorted_res
+ }
+
  if (db_res == TRUE) {
 
     db_vec <- paste0(paste0(filtered_res[, Turn_to_Draw], collapse = ""), ";", paste0(filtered_res[, MOVEMENT], collapse = ""))
+
     return(db_vec)
  } else {
    return(sorted_res)

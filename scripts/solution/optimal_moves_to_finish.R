@@ -11,6 +11,7 @@ trRes <- tryCatch({
 
 
 
+
     aggr_to_slots_all <- precalc_data$aggr_to_slots
     #cut track
     aggr_to_slots <- aggr_to_slots_all[GAME_SLOT_ID >= calc_from_slot]
@@ -25,10 +26,21 @@ ascend_v <- aggr_to_slots[, ascend_v]
 max_move_vect <-  aggr_to_slots[, MAXIMUM_MOVEMENT]
 aggr_to_slots[, row_number := seq_len(.N)]
 finish_slot <- aggr_to_slots[FINISH == 1, row_number ]
+if (length(finish_slot) == 0 ) {
+  finish_slot <- 0
+}
 
+if (finish_slot <= 3) {
+  turns_to_finish_res <- data.table(TURNS_TO_FINISH = 0)
+} else {
 
 #cycler_id = -1 as we are not using it but need it for appending
-kortit_Dt <-  rbind(data.table(CYCLER_ID = -1, CARD_ID = 2, Zone = "Deck", MOVEMENT = 2, row_id = 1:10), deck_status_input)
+#kortit_Dt <-  rbind(data.table(CYCLER_ID = -1, CARD_ID = 2, Zone = "Deck", MOVEMENT = 2, row_id = 1:10), deck_status_input)
+kortit_Dt <- kortit_Dt <-  rbind(data.table(CYCLER_ID = -1, CARD_ID = 2, Zone = "Deck", MOVEMENT = 2, row_id = 1:15), deck_status_input)
+#kortit_Dt <- deck_status_input
+# if (nrow(kortit_Dt) == 0) {
+#   kortit_Dt <-  rbind(data.table(CYCLER_ID = -1, CARD_ID = 2, Zone = "Deck", MOVEMENT = 2, row_id = 1:10), deck_status_input)
+# }
 kortit_aggr <- kortit_Dt[, .(cards_in_hand = .N), by = MOVEMENT]
 kortit <- kortit_aggr[, MOVEMENT]
 card_count <- kortit_aggr[, cards_in_hand]
@@ -41,7 +53,8 @@ if (use_draw_odds != "") {
   compare_data <- CJ.dt(data.table(Turn_to_Draw = 1:max_odds), data.table(MOVEMENT = kortit))
   join_compare <- odds_filtter[compare_data, on = .(MOVEMENT, Turn_to_Draw)]
   missing_odds <- join_compare[is.na(prob)]
-  modds_data <- missing_odds[, .(Turn_to_Draw, MOVEMENT, keep_me = FALSE)]
+  missing_odds[, keep_me := FALSE]
+  modds_data <- missing_odds[, .(Turn_to_Draw, MOVEMENT, keep_me)]
   #pad missing turns
   pad_data <- compare_data[!Turn_to_Draw %in% missing_odds[, unique(Turn_to_Draw)]][, keep_me := TRUE]
   append_pad <- rbind(pad_data, modds_data)
@@ -85,7 +98,8 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
       total_res <- rbind(total_res, round_res)
       prev_round_res <- round_res
     }
-    sscols_res <-total_res[, .(i, j, k, drop_me)][drop_me == TRUE]
+    sscols_res_all <- total_res[, .(i, j, k, drop_me)][drop_me == TRUE]
+    sscols_res <- sscols_res_all[, .(.N), by = .(i, j, k,drop_me)][, N := NULL]
     joini <- sscols_res[rividata, on = .(i, j, k)]
     joini[!is.na(drop_me), tulos_save := TRUE]
   } else {
@@ -96,15 +110,24 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
 }
 
 
+# distance_func <- function(i, j) {
+#   return(j - i)
+# }
 
 
 model <- MILPModel() %>%
   #  add_variable(y[k], k = 1:20, type = "binary") %>%
   add_variable(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), type = "binary") %>%
-  add_variable(u[i], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), type = "binary") %>%
   #set_objective(sum_expr(y[k], k = 1), "max") %>%
-  set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
+
   set_bounds(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), ub = 0, boundi_filtteri(i, j, kortit[k], max_move_vect, ascend_v, append_pad )) %>%
+  #eka sarake alotettava
+  add_constraint(sum_expr(x[i, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == 1, i = 1:1) %>%
+
+  #jatka siitä mihin jäit
+
+  # add_constraint(x[i, j, k]  <= sum_expr(x[i + kortit[k], j, k], i = 1:7, j = 1:length(kortit), k = 1:5) , i = 1:10, j = 1:10, k = 1:5) %>%# )
+
   add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit)) # %>%
 
 #add_constraint(ruudut[i, j] * x[i, j, k] <= y[k] * kortit[k], j = 1:rivi_lkm, i = 1:rivi_lkm , k = 1:20) %>%
@@ -113,28 +136,76 @@ model <- MILPModel() %>%
 
   #käytä kortti vain kerran
   res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
-  #eka sarake alotettava
-   add_constraint(sum_expr(x[i, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == 1, i = 1:1) %>%
-
-  #jatka siitä mihin jäit
-  add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(finish_slot - 1)) %>%
-  # add_constraint(x[i, j, k]  <= sum_expr(x[i + kortit[k], j, k], i = 1:7, j = 1:length(kortit), k = 1:5) , i = 1:10, j = 1:10, k = 1:5) %>%# )
-  #maaliin on päästävä
-  add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, k = 1:length(kortit), j = finish_slot:rivi_lkm) == 1) %>%
-
+    set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
+    #maaliin on päästävä
+    add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, k = 1:length(kortit), j = finish_slot:rivi_lkm) == 1) %>%
+    add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(finish_slot - 1)) %>%
   #add_constraint(sum_expr(x[i, j], i = length(kortit)) == 1, j = 1:n) %>%
   solve_model(with_ROI(solver = "symphony", verbosity = -2)) %>%
   get_solution(x[i, j, k]) %>%
   filter(value > 0) %>%
   arrange(i)
 
+  turns_to_finish_res <- data.table(res)[, .(TURNS_TO_FINISH = .N)]
+  # if (turns_to_finish_res[, TURNS_TO_FINISH] > 20 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
+  #
+  # res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
+  #   set_objective(sum_expr(x[i, j, k] * distance_func(i, j), i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "max") %>%
+  #   add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(length(kortit) - 1)) %>%
+  #   #add_constraint(sum_expr(x[i, j], i = length(kortit)) == 1, j = 1:n) %>%
+  #   solve_model(with_ROI(solver = "symphony", verbosity = -2)) %>%
+  #   get_solution(x[i, j, k]) %>%
+  #   filter(value > 0) %>%
+  #   arrange(i)
+  #
+  # max_distance <- data.table(res)
+  # slot_reached <- max_distance[, max(j)]
+  # turns_to_finish_res <- data.table(TURNS_TO_FINISH = ((finish_slot - slot_reached) / 2 + 0.01))
+  #
+  # }
 
-turns_to_finish_res <- data.table(res)[, .(TURNS_TO_FINISH = .N)]
 
+  if (turns_to_finish_res[, TURNS_TO_FINISH] > 22 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
+    #not enough moves left
+  browser()
+
+  }
+}
 return(turns_to_finish_res)
 
 }, error = function(e) {
-  return(data.table(TURNS_TO_FINISH = 0))
+
+  warning("Optmization failed on trycatch")
+  if (length(finish_slot) == 0 | finish_slot ==1 ) {
+    res <- data.table(TURNS_TO_FINISH = 0)
+  } else {
+
+    if (turns_to_finish_res[, TURNS_TO_FINISH] > 22 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
+
+    #   res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
+    #     set_objective(sum_expr(x[i, j, k] * distance_func(i, j), i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "max") %>%
+    #     add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(length(kortit) - 1)) %>%
+    #     #add_constraint(sum_expr(x[i, j], i = length(kortit)) == 1, j = 1:n) %>%
+    #     solve_model(with_ROI(solver = "symphony", verbosity = -2)) %>%
+    #     get_solution(x[i, j, k]) %>%
+    #     filter(value > 0) %>%
+    #     arrange(i)
+    #
+    #   max_distance <- data.table(res)
+    #   slot_reached <- max_distance[, max(j)]
+    #   turns_to_finish_res <- data.table(TURNS_TO_FINISH = ((finish_slot - slot_reached) / 2 + 0.01))
+    #   res <- turns_to_finish_res[, TURNS_TO_FINISH]
+    #
+    # } else {
+      browser()
+    }
+
+
+  }
+  # if(res[, TURNS_TO_FINISH] <= 0) {
+  #   browser()
+  # }
+  return(res)
 })
 }
 

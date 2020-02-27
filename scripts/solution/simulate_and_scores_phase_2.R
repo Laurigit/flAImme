@@ -16,7 +16,7 @@ simulate_and_scores_phase_2 <- function(simul_res, STG_CYCLER, team_id, cycler_i
     #total_scores[, .(mean_score = mean(Score, na.rm = TRUE), .N), by = .(CYCLER_ID,TEAM_ID,MOVEMENT)][order(-mean_score)]
 
   score_data <- act_score[, .(mean_score = mean(Score, na.rm = TRUE), .N), by = .(CYCLER_ID, TEAM_ID,MOVEMENT)][order(-mean_score)]
-
+  print(score_data)
   my_best_score <- score_data[TEAM_ID == team_id, max(mean_score)]
   my_decision <- score_data[mean_score == my_best_score][1,. (CYCLER_ID, MOVEMENT)]
   return(my_decision)

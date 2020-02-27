@@ -13,6 +13,7 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
     draw_odds_input <- data.table(Turn_to_Draw = as.numeric(str_split(parse_draw_odds[[1]][1], "")[[1]]),
                                   MOVEMENT =  as.numeric(str_split(parse_draw_odds[[1]][2], "")[[1]]),
                                   prob = -1)
+
   }
 
   #deck_copied_all <- copy(cycler_deck_status)
