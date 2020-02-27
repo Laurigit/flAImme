@@ -88,13 +88,14 @@ observeEvent(input$save_played_cards, {
                                CYCLER_ID == loop_update, ':=' (MOVEMENT = move_amt,
                                                                PHASE = react_status$phase,
                                                                CARD_ID = played_card_id)]
+
   }
 
 
 
   #start moving cyclers
   moving_cyclers_incl_ai <-  react_status$action_data[TURN_ID == react_status$turn & PHASE == react_status$phase, CYCLER_ID]
-  phase_cyclers_in_move_order <- create_move_order_vec(react_status$game_status, moving_cyclers)
+  phase_cyclers_in_move_order <- create_move_order_vec(react_status$game_status, moving_cyclers_incl_ai)
   for(loop_move in phase_cyclers_in_move_order) {
 
     row_data <- react_status$action_data[TURN_ID == react_status$turn & loop_move == CYCLER_ID & PHASE == react_status$phase]
@@ -117,9 +118,13 @@ observeEvent(input$save_played_cards, {
     react_status$phase <- 2
   }
   print(zoom(react_status$game_status))
-  link_reactive$value <-  link_reactive$value + 1
+  if ( react_status$game_phase == 3) {
+    react_status$game_phase <- 4
+  } else if ( react_status$game_phase == 6) {
+    react_status$game_phase <- 1
+  }
   updateTabItems(session, "sidebarmenu", selected = "tab_deal_cards")
-
+  playedt$cards <-  ""
 })
 
 

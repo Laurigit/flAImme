@@ -45,6 +45,15 @@ kortit_aggr <- kortit_Dt[, .(cards_in_hand = .N), by = MOVEMENT]
 kortit <- kortit_aggr[, MOVEMENT]
 card_count <- kortit_aggr[, cards_in_hand]
 
+kortit_Dt <- deck_status_input
+kortit_aggr <- kortit_Dt[, .(cards_in_hand = .N), by = MOVEMENT]
+#append extra exh
+extra_exh <- data.table(MOVEMENT = 2, cards_in_hand = 15)
+appendaa <- rbind(kortit_aggr, extra_exh)
+kortit <-  appendaa[, MOVEMENT]
+card_count <- appendaa[, cards_in_hand]
+
+
 if (use_draw_odds != "") {
 
   odds_filtter <- use_draw_odds
@@ -115,6 +124,16 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
 # }
 
 
+cost_function <- function(i, j, k, length_k,  finish_line) {
+
+  costdata <- data.table(i, j, k, length_k)
+
+ # costdata[, cost := 1 + as.numeric(k == length_k * ((100 + 10 ) - j))]
+  costdata[, cost := pmax(finish_line - i - 2, 0) ^ 3 * (k == length_k)]
+  return(costdata[, cost])
+
+}
+
 model <- MILPModel() %>%
   #  add_variable(y[k], k = 1:20, type = "binary") %>%
   add_variable(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), type = "binary") %>%
@@ -136,34 +155,21 @@ model <- MILPModel() %>%
 
   #käytä kortti vain kerran
   res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
-    set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
+   # set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
+    set_objective(sum_expr(x[i, j, k] * cost_function(i, j, k, length(kortit), finish_slot), i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
     #maaliin on päästävä
     add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, k = 1:length(kortit), j = finish_slot:rivi_lkm) == 1) %>%
     add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(finish_slot - 1)) %>%
   #add_constraint(sum_expr(x[i, j], i = length(kortit)) == 1, j = 1:n) %>%
   solve_model(with_ROI(solver = "symphony", verbosity = -2)) %>%
+   # objective_value(res)
   get_solution(x[i, j, k]) %>%
   filter(value > 0) %>%
   arrange(i)
+  #print(res)
+  dt_result <-data.table(res)
 
-  turns_to_finish_res <- data.table(res)[, .(TURNS_TO_FINISH = .N)]
-  # if (turns_to_finish_res[, TURNS_TO_FINISH] > 20 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
-  #
-  # res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
-  #   set_objective(sum_expr(x[i, j, k] * distance_func(i, j), i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "max") %>%
-  #   add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(length(kortit) - 1)) %>%
-  #   #add_constraint(sum_expr(x[i, j], i = length(kortit)) == 1, j = 1:n) %>%
-  #   solve_model(with_ROI(solver = "symphony", verbosity = -2)) %>%
-  #   get_solution(x[i, j, k]) %>%
-  #   filter(value > 0) %>%
-  #   arrange(i)
-  #
-  # max_distance <- data.table(res)
-  # slot_reached <- max_distance[, max(j)]
-  # turns_to_finish_res <- data.table(TURNS_TO_FINISH = ((finish_slot - slot_reached) / 2 + 0.01))
-  #
-  # }
-
+  turns_to_finish_res <- dt_result[, .(TURNS_TO_FINISH = .N)]
 
   if (turns_to_finish_res[, TURNS_TO_FINISH] > 22 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
     #not enough moves left
@@ -182,21 +188,7 @@ return(turns_to_finish_res)
 
     if (turns_to_finish_res[, TURNS_TO_FINISH] > 22 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
 
-    #   res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
-    #     set_objective(sum_expr(x[i, j, k] * distance_func(i, j), i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "max") %>%
-    #     add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(length(kortit) - 1)) %>%
-    #     #add_constraint(sum_expr(x[i, j], i = length(kortit)) == 1, j = 1:n) %>%
-    #     solve_model(with_ROI(solver = "symphony", verbosity = -2)) %>%
-    #     get_solution(x[i, j, k]) %>%
-    #     filter(value > 0) %>%
-    #     arrange(i)
-    #
-    #   max_distance <- data.table(res)
-    #   slot_reached <- max_distance[, max(j)]
-    #   turns_to_finish_res <- data.table(TURNS_TO_FINISH = ((finish_slot - slot_reached) / 2 + 0.01))
-    #   res <- turns_to_finish_res[, TURNS_TO_FINISH]
-    #
-    # } else {
+
       browser()
     }
 

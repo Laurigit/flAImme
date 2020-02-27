@@ -128,11 +128,61 @@ required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK"))
   react_status$phase <- 1
   #we should start simulating asap
   react_status$AI_team <- eRstartPosData()[status %in% c("AI", "AI autocards"), max(TEAM_ID)]
-  link_reactive$value <-  link_reactive$value + 1
+  react_status$AI_cyclers <- STG_CYCLER[TEAM_ID == react_status$AI_team, CYCLER_ID]
+
+  react_status$AI_cards <- eRstartPosData()[status %in% c("AI", "AI autocards"), status][1]
+  react_status$game_phase <- 1
+
 })
 
-eR_next_cycler <- eventReactive(link_reactive$value, {
 
+observeEvent(react_status$game_phase, {
+
+  if (react_status$game_phase == 1) {
+    #calculate first cycler
+
+    link_reactive$value <-  link_reactive$value + 1
+
+  } else if (react_status$game_phase == 2){
+    #wait for cards or auto deal
+    if (react_status$AI_cards == "AI autocards") {
+      for (loop_cyc in  react_status$AI_cyclers) {
+        react_status$deck_status <- draw_cards(loop_cyc,   react_status$deck_status, 4, FALSE)
+      }
+      react_status$game_phase <- 3
+      updateTabItems(session, "sidebarmenu", selected = "tab_play_card")
+    }
+  } else if (react_status$game_phase == 3) {
+    choose_and_play$now <-  choose_and_play$now + 1
+
+  } else if (react_status$game_phase == 4) {
+    #"calculate" next cycler
+    link_reactive$value <-  link_reactive$value + 1
+  } else if (react_status$game_phase == 5) {
+    #wait for cards or auto deal
+    if (react_status$AI_cards == "AI autocards") {
+      for (loop_cyc in  react_status$AI_cyclers) {
+        react_status$deck_status <- draw_cards(loop_cyc,   react_status$deck_status, 4, FALSE)
+      }
+      react_status$game_phase <- 6
+      updateTabItems(session, "sidebarmenu", selected = "tab_play_card")
+    }
+  } else if (react_status$game_phase == 6) {
+    # calculate move and wait for human input
+    choose_and_play$now <-  choose_and_play$now + 1
+  }
+},ignoreInit = )
+
+state <- reactiveValues(next_cycler = 0)
+
+#AI <- reactiveValues(ready = FALSE)
+observe({
+  ###DEP
+  print(link_reactive$value )
+
+  ####
+  isolate({
+required_data("ADM_AI_CONF")
   required_data("STG_CYCLER")
   if (react_status$phase == 1) {
   react_status$precalc_track_agg <- precalc_track(react_status$game_status )
@@ -146,19 +196,25 @@ eR_next_cycler <- eventReactive(link_reactive$value, {
                                                  STG_CYCLER, react_status$turn, react_status$ctM_data, react_status$precalc_track_agg,
                                                  react_status$range_joined_team,
                                                  card_options = NULL, cycler_id = NULL, phase_one_actions = NULL,
-                                                 simul_rounds = 1)
+                                                 simul_rounds = 1,
+                                                 ADM_AI_CONF = ADM_AI_CONF)
   react_status$ctM_data <- simult_list_res$updated_ctm
 
   next_cycler <- which_cycler_to_move_first(simult_list_res$scores, STG_CYCLER, react_status$AI_team)
-  } else {
+  react_status$game_phase <- 2
+  } else if (react_status$phase == 2) {
     required_data("ADM_CYCLER_INFO")
     next_cycler <- ADM_CYCLER_INFO[TEAM_ID == ADM_CYCLER_INFO[CYCLER_ID == react_status$first_cycler, react_status$AI_team] & CYCLER_ID != react_status$first_cycler, CYCLER_ID]
-    next_cycler
+    react_status$game_phase <- 5
 
+
+  } else {
+    next_cycler <- 0
   }
-    react_status$first_cycler <- next_cycler
-    react_status$cycler_in_turn <- next_cycler
-  next_cycler
+  })
+  react_status$first_cycler <- next_cycler
+  react_status$cycler_in_turn <- next_cycler
 
+  state$next_cycler <- next_cycler
 })
 

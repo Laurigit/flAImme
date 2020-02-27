@@ -14,7 +14,8 @@ shinyServer(function(input, output, session) {
                                  precalc_track_agg = 0,
                                  ctM_data = 0,
                                  AI_team = 0,
-                                 range_joined_team = 0)
+                                 range_joined_team = 0,
+                                 game_phase = 0)
 
   sourcelist <- data.table(polku = c(dir("./scripts/", recursive = TRUE)))
   sourcelist[, rivi := seq_len(.N)]

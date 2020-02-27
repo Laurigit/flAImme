@@ -7,7 +7,7 @@ output$which_cycler_playing <- renderText({
   if (react_status$phase == 0) {
     res <- "Thinking"
   } else  {
-    res <- ADM_CYCLER_INFO[CYCLER_ID == eR_next_cycler(), UI_text]
+    res <-  paste0(ADM_CYCLER_INFO[CYCLER_ID == state$next_cycler, UI_text], " ", Sys.time(), " Game state: ", react_status$game_phase)
   }
     res
 })

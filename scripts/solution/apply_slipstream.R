@@ -4,7 +4,7 @@
 #game_state <- game_status
 apply_slipstream <- function(game_state) {
 
-  potential_cyclers <- game_state[PIECE_ATTRIBUTE != "M" & CYCLER_ID > 0, .N, by = GAME_SLOT_ID][order(-GAME_SLOT_ID)]
+  potential_cyclers <- game_state[!PIECE_ATTRIBUTE %in% c("M", "C") & CYCLER_ID > 0, .N, by = GAME_SLOT_ID][order(-GAME_SLOT_ID)]
   potential_cyclers[, diff := GAME_SLOT_ID - shift(GAME_SLOT_ID )]
 
   #move last 1 or 2 first

@@ -61,11 +61,11 @@ score_position_light <- function(game_status, ADM_AI_CONF,  precalc_track, ctM_d
 
 # SLOTS_OVER_FINISHLINE #TO MOVITAVE HIGH MOVE AT THE END
 new_cycler_squares <- temp_game_status[CYCLER_ID > 0, .(CYCLER_ID, SQUARE_ID)]
-action_data
+
 join_pos_and_action <- action_data[new_cycler_squares, on = "CYCLER_ID"]
 finish_square <- game_status[FINISH == 1, min(SQUARE_ID)] - 1
 join_pos_and_action[, over_finish_square := max(SQUARE_ID - finish_square, 0)]
-SQUARES_OVER_FINISHLINE <- join_pos_and_action[, .(CYCLER_ID, Score = over_finish_square*(10^(2 - phase)), Setting = "Finish_sprint",
+SQUARES_OVER_FINISHLINE <- join_pos_and_action[, .(CYCLER_ID, Score = over_finish_square * (10 ^ (2 - phase)) * MOVEMENT ^ 2, Setting = "Finish_sprint",
                                                    modifier = NA, Setting_modifier = "")]
 
 

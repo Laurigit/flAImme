@@ -1,11 +1,11 @@
   # required_data(c("STG_CYCLER", "STG_TRACK"))
-#kaadu
-input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8),
-                                   PLAYER_ID = c(1,1,2,2,3,3,4,4),
-                                   exhaust = c(0, 0, 0, 0, 0, 0,0,0),
-                                   starting_row =   c(1, 1, 2, 2, 3, 3,4,4),
-                                    starting_lane = c(1,2, 1, 2, 1, 2,1,2))
-   track <- 1
+kaadu
+input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8,9,10,11,12),
+                                   PLAYER_ID = c(1,1,2,2,3,3,4,4,5,5,6,6),
+                                   exhaust = c(0, 0, 0, 0, 0, 0,0,0,0,0,0,0),
+                                   starting_row =   c(1, 1, 1, 2, 2, 2,3,3,3,4,4,4),
+                                    starting_lane = c(1,2, 3, 1, 2, 3,1,2,3,1,2,3))
+   track <- 14
    # input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4),
    #                                  PLAYER_ID = c(1,1,2,2),
    #                                  exhaust = c(0, 0, 0, 0),
@@ -13,10 +13,10 @@ input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8),
    #                                  starting_lane = c(1,2, 1, 2))
    # track <- 3
 
- cycler_player_dt <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8), PLAYER_ID = c(1,1,2,2,3,3,4,4))
- lane_data <-    data.table(  exhaust = c(0, 0, 0, 0, 0, 0,0,0),
-                                  starting_row =   c(1, 1, 2, 2, 3, 3, 4, 4),
-                                   starting_lane = c(1,2, 1, 2, 1, 2, 1, 2))
+ cycler_player_dt <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8,9,10,11,12), PLAYER_ID = c(1,1,2,2,3,3,4,4,5,5,6,6))
+ lane_data <-    data.table(  exhaust = c(0, 0, 0, 0, 0, 0,0,0,0,0,0,0),
+                                  starting_row =   c(1, 1, 1, 2, 2, 2,3,3,3,4,4,4),
+                              starting_lane = c(1,2, 3, 1, 2, 3,1,2,3,1,2,3))
 con <- connDB(con, "flaimme")
    required_data(c("ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
   total_winner <- NULL
@@ -154,13 +154,15 @@ con <- connDB(con, "flaimme")
           #if anyone is finished, stop calc and to smart max
           if (nrow(winner_state) > 0) {
             turn_cycler <- played_cards_data[CYCLER_ID %in% smart_phase_cycler & TURN_ID == turn_id & MOVEMENT == 0, min(CYCLER_ID)]
-            for (loop in turn_cycler) {
-              if (phase_loop == 1){
-              move_selected  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == loop & Zone == "Hand"], loop, "SMART_MAX",  aim_downhill = TRUE)[, MOVEMENT]
-              card_id <- deck_status[CYCLER_ID == loop & MOVEMENT == move_selected, min(CARD_ID)]
-              played_cards_data[TURN_ID == turn_id & CYCLER_ID == loop,  CARD_ID := card_id]
-              played_cards_data[TURN_ID == turn_id & CYCLER_ID == loop, MOVEMENT := move_selected]
-              played_cards_data[TURN_ID == turn_id & CYCLER_ID == loop, PHASE := phase_loop]
+            if (is.finite(turn_cycler)) {
+              for (loop in turn_cycler) {
+                if (phase_loop == 1){
+                move_selected  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == loop & Zone == "Hand"], loop, "SMART_MAX",  aim_downhill = TRUE)[, MOVEMENT]
+                card_id <- deck_status[CYCLER_ID == loop & MOVEMENT == move_selected, min(CARD_ID)]
+                played_cards_data[TURN_ID == turn_id & CYCLER_ID == loop,  CARD_ID := card_id]
+                played_cards_data[TURN_ID == turn_id & CYCLER_ID == loop, MOVEMENT := move_selected]
+                played_cards_data[TURN_ID == turn_id & CYCLER_ID == loop, PHASE := phase_loop]
+                }
               }
             }
 
@@ -330,6 +332,7 @@ con <- connDB(con, "flaimme")
       action_data <- rbind(action_data, action_row, fill = TRUE)
 
       print(action_row)
+      print(ctM_data[CYCLER_ID %in% smart_cyclers])
       #action_data <- join_left_and_power[action_row, on = "CYCLER_ID"]
       #aggr_action <- action_data[, .(Mean_power_mov = mean(Mean_power_mov, na.rm = TRUE),
       #                               Mean_Mov = mean(Mean_Mov, na.rm = TRUE),

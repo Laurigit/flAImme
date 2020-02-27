@@ -168,7 +168,7 @@ two_phase_simulation_score <- function(game_status,
         # cycler_deck_updated[row_id == min_row_id_played, Zone := "Removed"]
         # cycler_deck_updated[Zone == "Hand", Zone := "Recycled"]
         draw_odds_raw_data <- join_ctM[add_loop, DRAW_ODDS]
-        print(draw_odds_raw_data)
+
 
 
         new_slot <- join_ctM[add_loop, new_slot_after_moving]
