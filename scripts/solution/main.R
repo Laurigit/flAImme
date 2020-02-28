@@ -94,7 +94,7 @@ con <- connDB(con, "flaimme")
 
       #ADM_OPTIMAL_MOVES <- data.table(DECK_LEFT = "9993322", TRACK_LEFT = "NNNNNNNNNNNMMMAANNNNNNNNNN", TURNS_TO_FINISH = 3)
       ctM_res <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status)
-      ADM_OPTIMAL_MOVES <- ctM_res$new_ADM_OPT
+      ADM_OPTIMAL_MOVES <<- ctM_res$new_ADM_OPT
       ctM_data <- ctM_res$ctM_data
 
       if(is.null(new_EV)) {

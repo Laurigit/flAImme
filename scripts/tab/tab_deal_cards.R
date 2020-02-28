@@ -85,7 +85,7 @@ observeEvent(choose_and_play$now,{
                                                    react_status$range_joined_team,
                                                    card_options = card_options_in_hand, cycler_id = move_first_cycler,
                                                    phase_one_actions = NULL,
-                                                   simul_rounds = 1,
+                                                   simul_rounds = 20,
                                                    simulate_until_stopped = TRUE,
                                                    ADM_AI_CONF = ADM_AI_CONF)
       react_status$ctM_data <- phase_1_simul$updated_ctm
@@ -119,7 +119,7 @@ observeEvent(choose_and_play$now,{
                                                    react_status$range_joined_team,
                                                    card_options = card_options_in_hand_p2, cycler_id = second_cycler,
                                                    phase_one_actions = phase_one_actions,
-                                                   simul_rounds = 1,
+                                                   simul_rounds = 50,
                                                    ADM_AI_CONF = ADM_AI_CONF)
 
       simul_rs_p2 <-  simulate_and_scores_phase_2(phase_2_simul, STG_CYCLER, react_status$AI_team, second_cycler)

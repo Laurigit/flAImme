@@ -56,3 +56,6 @@ con <- connDB(con, "flaimme")
 #rm(con)
 dbSendQuery(con, 'SET NAMES utf8')
 dbQ("SHOW TABLES", con)
+luettu <- dbSelectAll("ADM_OPTIMAL_MOVES", con)
+
+ADM_OPTIMAL_MOVES <- fix_colnames(luettu)

@@ -50,7 +50,7 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
 
         tryIns <- tryCatch({
           dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
-          ADM_OPTIMAL_MOVES <- rbind(ADM_OPTIMAL_MOVES, new_result_row)
+          ADM_OPTIMAL_MOVES <<- rbind(ADM_OPTIMAL_MOVES, new_result_row)
           FALSE
         }, error = function(e) {
           warning("tried to insert duplicate to ADM_OPTIMAL")

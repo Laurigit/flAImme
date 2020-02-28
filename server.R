@@ -1,5 +1,8 @@
 
-required_data(c("ADM_OPTIMAL_MOVES", "ADM_AI_CONF"))
+luettu <- dbSelectAll("ADM_OPTIMAL_MOVES", con)
+
+ADM_OPTIMAL_MOVES <- fix_colnames(luettu)
+
 shinyServer(function(input, output, session) {
 
 

@@ -174,7 +174,7 @@ two_phase_simulation_score <- function(game_status,
         new_slot <- join_ctM[add_loop, new_slot_after_moving]
         ft_res <- finish_turns_db(con, ADM_OPTIMAL_MOVES, simul_phase2$game_status, cycler_deck_updated, pre_res, new_slot, draw_odds_raw_data)
         #print(ft_res$turns_to_finish)
-        ADM_OPTIMAL_MOVES <- ft_res$new_ADM_OPT
+        ADM_OPTIMAL_MOVES <<- ft_res$new_ADM_OPT
         join_ctM[add_loop, turns_to_finish := ft_res$turns_to_finish]
         join_ctM[, curr_pos := ifelse(is.na(curr_pos), -100, curr_pos)]
         if (nrow(ctM_data[is.na(CYCLER_ID)]) > 1) {

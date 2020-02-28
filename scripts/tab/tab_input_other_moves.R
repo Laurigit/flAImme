@@ -110,8 +110,8 @@ observeEvent(input$save_played_cards, {
 
   #if phase two
   if (react_status$phase == 2) {
-    game_status <- apply_slipstream(react_status$game_status)
-    deck_status <- apply_exhaustion(react_status$deck_status, react_status$game_status)
+    react_status$game_status <- apply_slipstream(react_status$game_status)
+    react_status$deck_status <- apply_exhaustion(react_status$deck_status, react_status$game_status)
     react_status$turn <- react_status$turn + 1
     react_status$phase <- 1
   } else {

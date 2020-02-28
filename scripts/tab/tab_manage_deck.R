@@ -139,12 +139,13 @@ required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK"))
 observeEvent(react_status$game_phase, {
 
   if (react_status$game_phase == 1) {
-    browser()
+
     #calculate first cycler
     print(react_status$game_phase)
     print(zoom(react_status$game_status))
     aggr_deck <- react_status$deck_status[, .N, by = .(CYCLER_ID, MOVEMENT, Zone)][order(CYCLER_ID, MOVEMENT)]
     print(dcast.data.table(aggr_deck, formula = CYCLER_ID + MOVEMENT ~ Zone, value.var = "N"))
+
     link_reactive$value <-  link_reactive$value + 1
 
   } else if (react_status$game_phase == 2){
@@ -205,7 +206,7 @@ required_data("ADM_AI_CONF")
   if (react_status$phase == 1) {
   react_status$precalc_track_agg <- precalc_track(react_status$game_status )
   ctM_res <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, react_status$game_status, react_status$deck_status, react_status$precalc_track_agg)
-  ADM_OPTIMAL_MOVES <- ctM_res$new_ADM_OPT
+  ADM_OPTIMAL_MOVES <<- ctM_res$new_ADM_OPT
   react_status$ctM_data <- ctM_res$ctM_data
 
   react_status$range_joined_team <- calc_move_range(react_status$game_status, react_status$deck_status, react_status$ctM_data, STG_CYCLER)
@@ -214,7 +215,7 @@ required_data("ADM_AI_CONF")
                                                  STG_CYCLER, react_status$turn, react_status$ctM_data, react_status$precalc_track_agg,
                                                  react_status$range_joined_team,
                                                  card_options = NULL, cycler_id = NULL, phase_one_actions = NULL,
-                                                 simul_rounds = 1,
+                                                 simul_rounds = 5,
                                                  ADM_AI_CONF = ADM_AI_CONF)
   react_status$ctM_data <- simult_list_res$updated_ctm
 
