@@ -96,6 +96,7 @@ observeEvent(input$save_played_cards, {
   #start moving cyclers
   moving_cyclers_incl_ai <-  react_status$action_data[TURN_ID == react_status$turn & PHASE == react_status$phase, CYCLER_ID]
   phase_cyclers_in_move_order <- create_move_order_vec(react_status$game_status, moving_cyclers_incl_ai)
+
   for(loop_move in phase_cyclers_in_move_order) {
 
     row_data <- react_status$action_data[TURN_ID == react_status$turn & loop_move == CYCLER_ID & PHASE == react_status$phase]

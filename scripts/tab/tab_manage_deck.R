@@ -139,11 +139,16 @@ required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK"))
 observeEvent(react_status$game_phase, {
 
   if (react_status$game_phase == 1) {
+    browser()
     #calculate first cycler
-
+    print(react_status$game_phase)
+    print(zoom(react_status$game_status))
+    aggr_deck <- react_status$deck_status[, .N, by = .(CYCLER_ID, MOVEMENT, Zone)][order(CYCLER_ID, MOVEMENT)]
+    print(dcast.data.table(aggr_deck, formula = CYCLER_ID + MOVEMENT ~ Zone, value.var = "N"))
     link_reactive$value <-  link_reactive$value + 1
 
   } else if (react_status$game_phase == 2){
+    print(react_status$game_phase)
     #wait for cards or auto deal
     if (react_status$AI_cards == "AI autocards") {
       for (loop_cyc in  react_status$AI_cyclers) {
@@ -153,14 +158,23 @@ observeEvent(react_status$game_phase, {
       updateTabItems(session, "sidebarmenu", selected = "tab_play_card")
     }
   } else if (react_status$game_phase == 3) {
+    print(react_status$game_phase)
     choose_and_play$now <-  choose_and_play$now + 1
-
   } else if (react_status$game_phase == 4) {
+    print(react_status$game_phase)
+
+    print(zoom(react_status$game_status))
+    aggr_deck <- react_status$deck_status[, .N, by = .(CYCLER_ID, MOVEMENT, Zone)][order(CYCLER_ID, MOVEMENT)]
+    print(dcast.data.table(aggr_deck, formula = CYCLER_ID + MOVEMENT ~ Zone, value.var = "N"))
+
     #"calculate" next cycler
     link_reactive$value <-  link_reactive$value + 1
   } else if (react_status$game_phase == 5) {
+
+    print(react_status$game_phase)
     #wait for cards or auto deal
     if (react_status$AI_cards == "AI autocards") {
+
       for (loop_cyc in  react_status$AI_cyclers) {
         react_status$deck_status <- draw_cards(loop_cyc,   react_status$deck_status, 4, FALSE)
       }
@@ -168,8 +182,12 @@ observeEvent(react_status$game_phase, {
       updateTabItems(session, "sidebarmenu", selected = "tab_play_card")
     }
   } else if (react_status$game_phase == 6) {
+    print(react_status$game_phase)
     # calculate move and wait for human input
+
     choose_and_play$now <-  choose_and_play$now + 1
+
+
   }
 },ignoreInit = )
 

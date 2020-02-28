@@ -125,7 +125,7 @@ observeEvent(choose_and_play$now,{
       simul_rs_p2 <-  simulate_and_scores_phase_2(phase_2_simul, STG_CYCLER, react_status$AI_team, second_cycler)
       move_amount <-  simul_rs_p2[, MOVEMENT]
     }
-    move_cyc <- simul_rs_p2[, CYCLER_ID]
+    move_cyc <- second_cycler
 
 
     #make sure exhaust is played if possible

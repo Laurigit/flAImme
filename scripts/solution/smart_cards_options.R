@@ -1,6 +1,6 @@
 smart_cards_options <- function(card_options, pre_aggr_game_status, cycler_id) {
 
-  pre_aggr_game_status$cycler_pos[CYCLER_ID == 8, cycler_pos :=8]
+  #pre_aggr_game_status$cycler_pos[CYCLER_ID == 8, cycler_pos :=8]
 #join track info
 
 track_info <- pre_aggr_game_status$aggr_to_slots[pre_aggr_game_status$cycler_pos, on = .(GAME_SLOT_ID = cycler_pos),. (CYCLER_ID, MAXIMUM_MOVEMENT, ascend_v)]

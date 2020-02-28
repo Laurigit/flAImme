@@ -25,6 +25,7 @@ con <- connDB(con, "flaimme")
   full_action <- NULL
   game_action <- NULL
   for (game_id in 1:200000) {
+    track <- as.integer(runif(1, 12, 17))
     winner_state <- data.table(TURN_ID = numeric(), CYCLER_ID = numeric(), POSITION = numeric(), GAME_ID = numeric(),
                                row_over_finish = numeric(), finish_square = numeric())
 
@@ -50,7 +51,7 @@ con <- connDB(con, "flaimme")
     #initial decks
     deck_status <- create_decks(input_STARTUP_DATA[, CYCLER_ID], ADM_CYCLER_DECK)
 
-    required_data(c("ADM_AI_CONF"), force_update =TRUE)
+   # required_data(c("ADM_AI_CONF"), force_update =TRUE)
     cyclers <- input_STARTUP_DATA[, CYCLER_ID]
     smart_cyclers <- c(3, 4)
     action_data <- data.table(CYCLER_ID = 1, EXHAUST = 1, GAME_SLOT_ID = 1,
@@ -105,7 +106,7 @@ con <- connDB(con, "flaimme")
 
 
       Exha_count <- deck_status[Zone != "Removed" & MOVEMENT == 2, .(Exhaust = .N), by = CYCLER_ID]
-      Mean_move <- deck_status[Zone != "Removed" & MOVEMENT > 2 , .(SUM_POWER_MOVE = sum(MOVEMENT)), by = CYCLER_ID]
+      Mean_move <- deck_status[Zone != "Removed" & MOVEMENT > 2 , .(SUM_POWER_MOVE = sum(MOVEMENT), MAX_MOVE = max(MOVEMENT)), by = CYCLER_ID]
       join_ex_move <- Exha_count[Mean_move, on = "CYCLER_ID"]
       join_tot_stat <- join_ex_move[joinaa, on = "CYCLER_ID"]
       action_data_aggr <- action_data[, .(EXHAUST = sum(EXHAUST), BLOCK_DIFF = sum(BLOCK_DIFF),
@@ -114,7 +115,8 @@ con <- connDB(con, "flaimme")
       join_stat_and_aggr <- join_tot_stat[action_data_aggr, on = "CYCLER_ID"]
       track_left_vs_deck <- orig_posits[join_stat_and_aggr, on = "CYCLER_ID"]
       track_left_vs_deck[, MISSING_MOVES := finish - GAME_SLOT_ID - SUM_POWER_MOVE]
-      sscols_status <- track_left_vs_deck[, .(CYCLER_ID, Best, EV, MISSING_MOVES, BLOCK_DIFF, ASCEND_GAIN, SLIP_BONUS, EXHAUST, EXH_LEFT = Exhaust)][order(Best)]
+
+      sscols_status <- track_left_vs_deck[, .(CYCLER_ID, Best, EV, MISSING_MOVES, BLOCK_DIFF, ASCEND_GAIN, SLIP_BONUS, EXHAUST, EXH_LEFT = Exhaust, MAX_MOVE, SUM_POWER_MOVE)][order(Best)]
       #print(join_tot_stat)
 
       for (phase_loop in 1:2) {
@@ -149,12 +151,12 @@ con <- connDB(con, "flaimme")
           team_id <- 2
 
           print(sscols_status)
-          print(sscols_status[CYCLER_ID %in% c(3,4)][order(CYCLER_ID)])
+          #print(sscols_status[CYCLER_ID %in% c(3,4)][order(CYCLER_ID)])
 
           #if anyone is finished, stop calc and to smart max
           if (nrow(winner_state) > 0) {
-            turn_cycler <- played_cards_data[CYCLER_ID %in% smart_phase_cycler & TURN_ID == turn_id & MOVEMENT == 0, min(CYCLER_ID)]
-            if (is.finite(turn_cycler)) {
+            turn_cycler <- played_cards_data[CYCLER_ID %in% smart_phase_cycler & TURN_ID == turn_id & MOVEMENT == 0, CYCLER_ID]
+            if (length(turn_cycler) > 0) {
               for (loop in turn_cycler) {
                 if (phase_loop == 1){
                 move_selected  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == loop & Zone == "Hand"], loop, "SMART_MAX",  aim_downhill = TRUE)[, MOVEMENT]
@@ -172,7 +174,7 @@ con <- connDB(con, "flaimme")
             if (phase_loop == 1) {
               #calculate move range before phase 1 actions
               range_joined_team <- calc_move_range(game_status, deck_status, ctM_data, STG_CYCLER)
-
+              print(range_joined_team[CYCLER_ID %in% smart_cyclers])
 
 
               simult_list_res <-  two_phase_simulation_score(game_status, deck_status, team_id, STG_CYCLER, turn_id,
@@ -205,7 +207,7 @@ con <- connDB(con, "flaimme")
 
               team_scores <- phase_1_simul$scores[CYCLER_ID %in% smart_cyclers]
               agg_score <- team_scores[Result != 0, .(Result = mean(Result)), by = .(CYCLER_ID, MOVEMENT, Setting, phase)][order(CYCLER_ID, MOVEMENT)]
-              print(agg_score)
+              print(dcast.data.table(agg_score, formula = CYCLER_ID + Setting ~ MOVEMENT, value.var = "Result"))
               ctM_data <- phase_1_simul$updated_ctm
         #  simul_res_p1 <-  simulate_and_scores_phase_1(phase_1_simul$scores, STG_CYCLER, move_first_cycler)
 
@@ -248,7 +250,10 @@ con <- connDB(con, "flaimme")
                                                            ADM_AI_CONF = ADM_AI_CONF)
               aggr2 <- phase_2_simul$scores[CYCLER_ID == second_cycler & Result != 0, .(Result = mean(Result)), by = .(MOVEMENT, Setting)]
 
-              print(aggr2)
+              #print(aggr2)
+              print(second_cycler)
+              print(dcast.data.table(aggr2, formula =  Setting ~ MOVEMENT, value.var = "Result"))
+
             simul_rs_p2 <-  simulate_and_scores_phase_2(phase_2_simul, STG_CYCLER, team_id, second_cycler)
             move_amount_p2 <-  simul_rs_p2[, MOVEMENT]
                 }
@@ -331,8 +336,8 @@ con <- connDB(con, "flaimme")
       #join_left_and_power <- deck_power[deck_left, on = "CYCLER_ID"]
       action_data <- rbind(action_data, action_row, fill = TRUE)
 
-      print(action_row)
-      print(ctM_data[CYCLER_ID %in% smart_cyclers])
+      #print(action_row)
+      #print(ctM_data[CYCLER_ID %in% smart_cyclers])
       #action_data <- join_left_and_power[action_row, on = "CYCLER_ID"]
       #aggr_action <- action_data[, .(Mean_power_mov = mean(Mean_power_mov, na.rm = TRUE),
       #                               Mean_Mov = mean(Mean_Mov, na.rm = TRUE),

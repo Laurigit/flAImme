@@ -3,11 +3,12 @@
 #required_data(c("STG_DECK", "ADM_CYCLER_DECK"))
 create_decks <- function(cyclers, ADM_CYCLER_DECK, extra_exhaust = NULL, breakaway_data = NULL) {
   res <- ADM_CYCLER_DECK[CYCLER_ID %in% cyclers, .(CYCLER_ID, CARD_ID, Count, Zone = "Deck", MOVEMENT)]
+  if  (!is.null(extra_exhaust)) {
+    if (sum(extra_exhaust) > 0) {
+      cyc_exh <- data.table(CYCLER_ID = cyclers, CARD_ID = 1, Count = extra_exhaust, Zone = "Deck", MOVEMENT = 2)[Count > 0]
+      res <- rbind(res, cyc_exh)
 
-  if (!is.null(extra_exhaust) & sum(extra_exhaust) > 0) {
-    cyc_exh <- data.table(CYCLER_ID = cyclers, CARD_ID = 1, Count = extra_exhaust, Zone = "Deck", MOVEMENT = 2)[Count > 0]
-    res <- rbind(res, cyc_exh)
-
+    }
   }
 
   if (!is.null(breakaway_data)) {
