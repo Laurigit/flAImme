@@ -173,7 +173,8 @@ model <- MILPModel() %>%
 
   if (turns_to_finish_res[, TURNS_TO_FINISH] > 22 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
     #not enough moves left
-  browser()
+    browser()
+    turns_to_finish_res <- data.table(TURNS_TO_FINISH = 100)
 
   }
 }
