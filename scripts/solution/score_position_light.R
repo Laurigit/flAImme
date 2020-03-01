@@ -25,10 +25,12 @@ score_position_light <- function(game_status, ADM_AI_CONF,  precalc_track, ctM_d
     second_turns <- leader_turns
   }
   turns_to_finish[, is_leader := turns_to_finish == leader_turns]
-  turns_to_finish[, ttf_score := ifelse(is_leader,
-                                        abs(second_turns - turns_to_finish),
-                                        leader_turns - turns_to_finish + 1), by = CYCLER_ID]
-  SPEED_CHANGE <- turns_to_finish[, .(Score = ttf_score * pmax(((12 - turns_to_finish)), 0.5) , CYCLER_ID, Setting = "Speed_change",
+  turns_to_finish[, ttf_score :=  turns_to_finish  - as.numeric(is_leader) * 0.5, by = CYCLER_ID]
+  # turns_to_finish[, ttf_score := ifelse(is_leader,
+  #                                       abs(second_turns - turns_to_finish),
+  #                                       leader_turns - turns_to_finish + 1), by = CYCLER_ID]
+
+  SPEED_CHANGE <- turns_to_finish[, .(Score = ttf_score * (pmax(((14 - turns_to_finish)), 2.5) / 2.5) , CYCLER_ID, Setting = "Speed_change",
                                       modifier = NA, Setting_modifier = "")]
 
   #exhaust

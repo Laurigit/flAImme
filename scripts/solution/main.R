@@ -1,5 +1,5 @@
   # required_data(c("STG_CYCLER", "STG_TRACK"))
-#kaadu
+kaadu
 input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8,9,10,11,12),
                                    PLAYER_ID = c(1,1,2,2,3,3,4,4,5,5,6,6),
                                    exhaust = c(0, 0, 0, 0, 0, 0,0,0,0,0,0,0),
@@ -26,7 +26,7 @@ con <- connDB(con, "flaimme")
   game_action <- NULL
   for (game_id in 1:200000) {
     track <- as.integer(runif(1, 12, 17))
-    track <- 12
+
     winner_state <- data.table(TURN_ID = numeric(), CYCLER_ID = numeric(), POSITION = numeric(), GAME_ID = numeric(),
                                row_over_finish = numeric(), finish_square = numeric())
 

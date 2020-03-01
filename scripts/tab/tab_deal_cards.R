@@ -85,7 +85,7 @@ observeEvent(choose_and_play$now,{
                                                    react_status$range_joined_team,
                                                    card_options = card_options_in_hand, cycler_id = move_first_cycler,
                                                    phase_one_actions = NULL,
-                                                   simul_rounds = 20,
+                                                   simul_rounds = 10,
                                                    simulate_until_stopped = TRUE,
                                                    ADM_AI_CONF = ADM_AI_CONF)
       react_status$ctM_data <- phase_1_simul$updated_ctm

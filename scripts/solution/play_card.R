@@ -22,6 +22,7 @@ play_card <- function(cycler_id, card_id, current_decks, game_id, turn_id, con =
   }
 
   #heres the phase where we take the card from anywhere
+
   if (force == TRUE) {
     if (!is.null(MOVEMENT_PLAYED)) {
       card_played <- current_decks[MOVEMENT == MOVEMENT_PLAYED & CYCLER_ID == cycler_id , max(row_id)]

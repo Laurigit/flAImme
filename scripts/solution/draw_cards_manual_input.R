@@ -34,7 +34,7 @@ draw_cards_manual_input <- function(cycler_id, current_decks_input, drawn_cards_
   if (card_count >= how_many_cards) {
     all_row_id <- NULL
     for (card_loop in drawn_cards_vec) {
-      card_row_id <- curr_deck_cards[CARD_ID == card_loop, min(row_id)]
+      card_row_id <- curr_deck_cards[CARD_ID == card_loop & !row_id %in% all_row_id , min(row_id)]
       all_row_id <- c(card_row_id, all_row_id)
     }
     curr_cards[row_id %in% all_row_id, Zone := "Hand"]
@@ -46,7 +46,7 @@ draw_cards_manual_input <- function(cycler_id, current_decks_input, drawn_cards_
     curr_deck_cards <- curr_cards[cycler_id == CYCLER_ID &  Zone == "Deck"]
     all_row_id <- NULL
     for (card_loop in drawn_cards_vec) {
-      card_row_id <- curr_deck_cards[CARD_ID == card_loop, min(row_id)]
+      card_row_id <- curr_deck_cards[CARD_ID == card_loop & !row_id %in% all_row_id, min(row_id)]
       all_row_id <- c(card_row_id, all_row_id)
     }
     curr_cards[row_id %in% all_row_id, Zone := "Hand"]

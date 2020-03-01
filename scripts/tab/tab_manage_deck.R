@@ -50,26 +50,20 @@ output$peloton_numeric_input <- renderUI({
 
 eR_startGrid <- eventReactive(input$continue_to_deck_handling, {
   required_data(c("STG_TRACK_PIECE", "STG_TRACK"))
-  temp_track <- create_track_table(input$select_track, STG_TRACK_PIECE, STG_TRACK)
-  start_width <- temp_track[START == 1, .N]
-
   grid_order <- data.table(UI_text = dragulaValue(input$dragula)$cyclersInput)
-  grid_order[, grid_order := seq_len(.N)]
-  grid_order[, starting_row := ceiling(grid_order / start_width)]
-  grid_order[, starting_lane := seq_len(.N), by = starting_row]
   grid_order[, type := "Grid"]
-  sscols_gris <- grid_order[, .(UI_text, starting_row, starting_lane, type)]
+  sscols_gris <- grid_order[, .(UI_text, type)]
   if (!is.null(dragulaValue(input$dragula)$cyclersPeloton)) {
   peloton_order <- data.table(UI_text = dragulaValue(input$dragula)$cyclersPeloton)
-  peloton_order[, starting_lane := seq_len(.N)]
-  peloton_order[, starting_row := -4]
+  #peloton_order[, starting_lane := seq_len(.N)]
+  #peloton_order[, starting_row := -4]
   peloton_order[, type := "Breakaway"]
-  sscols_peloton <- peloton_order[, .(UI_text, starting_row, starting_lane, type)]
+  sscols_peloton <- peloton_order[, .(UI_text, type)]
   } else {
     sscols_peloton <- sscols_gris[1 == 0]
   }
 
-  append <- rbind(sscols_peloton, sscols_gris)
+  append <- rbind(sscols_gris, sscols_peloton)
   #get ui_names back to cycler_ids
   join_ui_to_cycid <- eRstartPosData()[append, on = "UI_text"]
   #get slots
@@ -107,7 +101,21 @@ required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK"))
   } else {
     renamed <- NULL
   }
-  ss_input <- grid_data[, .(CYCLER_ID, exhaust, starting_row, starting_lane)]
+  #calc the correct position of breakaway
+
+
+  ss_input <- grid_data[, .(CYCLER_ID, exhaust, type)]
+
+  temp_track <- create_track_table(input$select_track, STG_TRACK_PIECE, STG_TRACK)
+  start_width <- temp_track[START == 1, .N, ]
+  start_row <- temp_track[START == 1, max(GAME_SLOT_ID)]
+  break_away_row <- start_row - 10 + 1
+  ss_input[, grid_order := seq_len(.N)]
+  ss_input[, starting_row := ceiling(grid_order / start_width)]
+  ss_input[, starting_lane := seq_len(.N), by = starting_row]
+  start_width <- temp_track[START == 1, .N]
+  ss_input[type == "Breakaway", starting_row := break_away_row]
+  ss_input[type == "Breakaway", starting_lane := seq_len(.N)]
   react_status$game_status <- start_game(ss_input, as.numeric(input$select_track), STG_TRACK_PIECE, STG_TRACK)
 
   react_status$deck_status <- create_decks(ss_input[, CYCLER_ID], ADM_CYCLER_DECK, ss_input[, exhaust], renamed)
@@ -215,7 +223,7 @@ required_data("ADM_AI_CONF")
                                                  STG_CYCLER, react_status$turn, react_status$ctM_data, react_status$precalc_track_agg,
                                                  react_status$range_joined_team,
                                                  card_options = NULL, cycler_id = NULL, phase_one_actions = NULL,
-                                                 simul_rounds = 5,
+                                                 simul_rounds = 3,
                                                  ADM_AI_CONF = ADM_AI_CONF)
   react_status$ctM_data <- simult_list_res$updated_ctm
 

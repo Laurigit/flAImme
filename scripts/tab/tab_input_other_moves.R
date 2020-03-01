@@ -103,7 +103,8 @@ observeEvent(input$save_played_cards, {
 
     react_status$deck_status <- play_card(cycler_id = loop_move,
                                           card_id = row_data[, CARD_ID],
-                                          current_decks = react_status$deck_status, 1, 1, FALSE)
+                                          current_decks = react_status$deck_status, 1, 1, FALSE,
+                                          force = TRUE)
     react_status$game_status <- move_cycler(react_status$game_status, loop_move, movement = row_data[, MOVEMENT])
 
   }
