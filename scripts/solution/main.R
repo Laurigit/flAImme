@@ -1,10 +1,10 @@
   # required_data(c("STG_CYCLER", "STG_TRACK"))
-kaadu
-input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8,9,10,11,12),
-                                   PLAYER_ID = c(1,1,2,2,3,3,4,4,5,5,6,6),
-                                   exhaust = c(0, 0, 0, 0, 0, 0,0,0,0,0,0,0),
-                                   starting_row =   c(1, 1, 1, 2, 2, 2,3,3,3,4,4,4),
-                                    starting_lane = c(1,2, 3, 1, 2, 3,1,2,3,1,2,3))
+#kaadu
+input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8,9,10),
+                                   PLAYER_ID = c(1,1,2,2,3,3,4,4,5,5),
+                                   exhaust = c(0, 0, 0, 0, 0, 0,0,0,0,0),
+                                   starting_row =   c(1, 1, 1, 2, 2, 2,3,3,3,4),
+                                    starting_lane = c(1,2, 3, 1, 2, 3,1,2,3,1))
    track <- 14
    # input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4),
    #                                  PLAYER_ID = c(1,1,2,2),
@@ -13,10 +13,10 @@ input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8,9,10,11,12),
    #                                  starting_lane = c(1,2, 1, 2))
    # track <- 3
 
- cycler_player_dt <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8,9,10,11,12), PLAYER_ID = c(1,1,2,2,3,3,4,4,5,5,6,6))
- lane_data <-    data.table(  exhaust = c(0, 0, 0, 0, 0, 0,0,0,0,0,0,0),
-                                  starting_row =   c(1, 1, 1, 2, 2, 2,3,3,3,4,4,4),
-                              starting_lane = c(1,2, 3, 1, 2, 3,1,2,3,1,2,3))
+ cycler_player_dt <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8,9,10), PLAYER_ID = c(1,1,2,2,3,3,4,4,5,5))
+ lane_data <-    data.table(  exhaust = c(0, 0, 0, 0, 0, 0,0,0,0,0),
+                                  starting_row =   c(1, 1, 1, 2, 2, 2,3,3,3,4),
+                              starting_lane = c(1,2, 3, 1, 2, 3,1,2,3,1))
 con <- connDB(con, "flaimme")
    required_data(c("ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
   total_winner <- NULL
