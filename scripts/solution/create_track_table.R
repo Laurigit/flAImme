@@ -27,6 +27,10 @@ create_track_table <- function(input_track, STG_TRACK_PIECE, STG_TRACK, force_la
                LANES = NULL,
                SQUARE_ID = seq_len(.N),
                CYCLER_ID = 0)]
+  sort <- slots_out_of_mountains(sort)
+  sort <- slots_out_of_mountains_to_track(sort)
+  sort[, MIMIMUM_MOVEMENT := ifelse(PIECE_ATTRIBUTE == "A", 5, ifelse(PIECE_ATTRIBUTE == "S", 4, 2))]
+
 
   return(sort)
 }

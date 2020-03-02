@@ -20,10 +20,10 @@ move_cycler <- function(current_game_status_diff_name, cycler_id, movement, slip
   current_position <- current_position_info[, GAME_SLOT_ID]
   #check if started from ascend
   terrain <- current_position_info[, PIECE_ATTRIBUTE]
+  track_min_movement <- current_position_info[, MINIMUM_MOVEMENT]
   adjusted_movement <- movement
-  if (terrain == "A" & slipstream == FALSE) {
-    adjusted_movement <- max(movement, 5)
-
+  if (slipstream == FALSE) {
+    adjusted_movement <- max(movement, track_min_movement)
   }
 
   #check if road contains mountains

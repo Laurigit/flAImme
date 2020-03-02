@@ -2,7 +2,8 @@
 #game_state <- game_status
 card_selector_by_stat <- function(game_state, turn_options, cycler_id, strategy,  aim_downhill = FALSE) {
   max_move <- min(max(slots_to_mountain(game_state, cycler_id), 5), 9)
-  min_move <- ifelse(game_state[CYCLER_ID == cycler_id, PIECE_ATTRIBUTE] == "A", 5, 2)
+  min_move <- ifelse(game_state[CYCLER_ID == cycler_id, PIECE_ATTRIBUTE] == "A", 5,
+                     ifelse(game_state[CYCLER_ID == cycler_id, PIECE_ATTRIBUTE] == "S", 4, 2))
   turn_options[, actual_movement := min(max(MOVEMENT, min_move), max_move), by = row_id]
   if (aim_downhill == TRUE) {
 

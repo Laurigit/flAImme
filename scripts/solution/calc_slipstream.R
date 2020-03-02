@@ -6,7 +6,7 @@ calc_slipstream <- function(game_state, SR_DATA = NULL) {
 
   #game_state<-move_cycler(game_state,5, 1, slipstream = TRUE)
   #game_state[PIECE_ATTRIBUTE != "M" & CYCLER_ID > 0]
-  potential_cyclers <- game_state[PIECE_ATTRIBUTE != "M" & CYCLER_ID > 0, .N, by = GAME_SLOT_ID][order(-GAME_SLOT_ID)]
+  potential_cyclers <- game_state[!PIECE_ATTRIBUTE %in% c("M", "C") & CYCLER_ID > 0, .N, by = GAME_SLOT_ID][order(-GAME_SLOT_ID)]
   potential_cyclers[, diff := GAME_SLOT_ID - shift(GAME_SLOT_ID )]
   potential_cyclers[, diff_giver := GAME_SLOT_ID - shift(GAME_SLOT_ID, type = "lead" )]
 

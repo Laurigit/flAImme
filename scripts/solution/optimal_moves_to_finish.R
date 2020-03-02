@@ -6,7 +6,6 @@
 optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_data, use_draw_odds = FALSE) {
 
 
-
 trRes <- tryCatch({
 
 
@@ -31,7 +30,7 @@ if (length(finish_slot) == 0 ) {
 }
 
 if (finish_slot <= 3) {
-  turns_to_finish_res <- data.table(TURNS_TO_FINISH = 0)
+  turns_to_finish_res <- data.table(TURNS_TO_FINISH = 1)
 } else {
 
 #cycler_id = -1 as we are not using it but need it for appending
@@ -54,7 +53,7 @@ kortit <-  appendaa[, MOVEMENT]
 card_count <- appendaa[, cards_in_hand]
 
 
-if (use_draw_odds != "") {
+if (use_draw_odds[[1]][1] != "") {
 
   odds_filtter <- use_draw_odds
  # odds_filtter <- draw_odds[1:8]# draw_odds[2:8, .(Turn_to_Draw = Turn_to_Draw + 1, MOVEMENT, prob = 0.5)]
@@ -129,7 +128,8 @@ cost_function <- function(i, j, k, length_k,  finish_line) {
   costdata <- data.table(i, j, k, length_k)
 
  # costdata[, cost := 1 + as.numeric(k == length_k * ((100 + 10 ) - j))]
-  costdata[, cost := pmax(finish_line - i - 2, 0) ^ 3 * (k == length_k)]
+  #length_k means that use extra exhaust after deck is finished
+  costdata[, cost := pmax(finish_line - i - 2, 0) ^ 3 * (k == length_k) + 1]
   return(costdata[, cost])
 
 }
@@ -173,7 +173,7 @@ model <- MILPModel() %>%
 
   if (turns_to_finish_res[, TURNS_TO_FINISH] > 22 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
     #not enough moves left
-    browser()
+
     turns_to_finish_res <- data.table(TURNS_TO_FINISH = 100)
 
   }
@@ -184,7 +184,7 @@ return(turns_to_finish_res)
 
   warning("Optmization failed on trycatch")
   if (length(finish_slot) == 0 | finish_slot ==1 ) {
-    res <- data.table(TURNS_TO_FINISH = 0)
+    res <- data.table(TURNS_TO_FINISH = 1)
   } else {
 
     if (turns_to_finish_res[, TURNS_TO_FINISH] > 22 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
