@@ -16,7 +16,7 @@
 move_cycler <- function(current_game_status_diff_name, cycler_id, movement, slipstream = FALSE, ignore_block = FALSE, ignore_end_of_track = FALSE, return_numeric_position = FALSE) {
 
    current_game_status <- copy(current_game_status_diff_name)
-  current_position_info <- current_game_status[cycler_id == CYCLER_ID, .(GAME_SLOT_ID, PIECE_ATTRIBUTE)]
+  current_position_info <- current_game_status[cycler_id == CYCLER_ID, .(GAME_SLOT_ID, PIECE_ATTRIBUTE, MINIMUM_MOVEMENT, MAXIMUM_MOVEMENT)]
   current_position <- current_position_info[, GAME_SLOT_ID]
   #check if started from ascend
   terrain <- current_position_info[, PIECE_ATTRIBUTE]

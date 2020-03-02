@@ -15,7 +15,7 @@ exact_draw_odds_calculator <- function(MOVEMENT_POOL, MOVEMENTS_wanted, MOVEMENT
   #p do
   white_balls_do <- dt_move[WANTED == TRUE, .N]
   black_balls_do <- dt_move[WANTED == FALSE & NOT_WANTED == FALSE, .N]
-  pDo <- 1 - phyper(0, white_balls_do, black_balls_do, 4)
+  pDo <- 1 - suppressWarnings(phyper(0, white_balls_do, black_balls_do, 4))
 
   result <- pDo * pDont
  return(result)

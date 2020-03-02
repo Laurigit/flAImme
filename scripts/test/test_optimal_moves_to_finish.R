@@ -6,7 +6,7 @@ input_STARTUP_DATA <- data.table(CYCLER_ID = c(1,2,3,4,5,6,7,8,9,10),
                                  starting_lane = c(1,2, 3, 1, 2, 3,1,2,3,1))
 track <- 1
 
-game_status <- start_game(used_startup_data,track, STG_TRACK_PIECE, STG_TRACK)
+game_status <- start_game(c(1),track, STG_TRACK_PIECE, STG_TRACK)
 game_status <- set_cycler_position(1, 64, 1,  game_status)
 deck_status <- create_decks(input_STARTUP_DATA[, CYCLER_ID], ADM_CYCLER_DECK)
 pre_track <- precalc_track(game_status)

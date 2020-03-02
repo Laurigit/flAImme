@@ -1,11 +1,13 @@
 
-finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_status, pre_aggr_game_status, cycler_at_slot, draw_odds_raw_data = NULL) {
+finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_game_status, cycler_at_slot,
+                            draw_odds_raw_data = NULL, save_to_DB = TRUE) {
   #cycler_id only needed for parsing the deck_left
   #cycler_at_slot <- 20
   #cycler_deck_status <- deck_status[CYCLER_ID == 5]
 
   #draw odds are in data table format and sql db format. raw = db. We use raw in joins and data.table to be sent to optimization
-  if (draw_odds_raw_data == "") {
+
+   if (draw_odds_raw_data == "") {
     draw_odds_input <- ""
   } else {
 
@@ -17,7 +19,7 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
   }
 
   #deck_copied_all <- copy(cycler_deck_status)
-  deck_copied <- cycler_deck_status[Zone != "Removed"]
+
   final_result_list <- NULL
   #db handling, memory
   #keep all data in memory
@@ -29,31 +31,31 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
 
   track_tot <- pre_aggr_game_status$aggr_to_slots
   finish_slot <- track_tot[FINISH == 1, GAME_SLOT_ID]
-  track_left <- track_tot[GAME_SLOT_ID >= cycler_at_slot & GAME_SLOT_ID <= finish_slot, paste0(PIECE_ATTRIBUTE, collapse = "")]
-  deck_left <- deck_copied[order(-MOVEMENT)][, paste0(MOVEMENT, collapse = "")]
 
-  res_data_row <- data.table(TRACK_LEFT = track_left, DECK_LEFT = deck_left, DRAW_ODDS = draw_odds_raw_data)
   #check if I have this observation
 
-  row_result <- ADM_OPTIMAL_MOVES[res_data_row, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][!is.na(TURNS_TO_FINISH)]
+  row_result <- ADM_OPTIMAL_MOVES[TRACK_LEFT == track_left_input & DECK_LEFT == cycler_deck_status & DRAW_ODDS == draw_odds_raw_data]
+
 
 
       if (nrow(row_result) == 0){
         #no we dont have it, lets create it
 
-        turns_to_finish_calc <- optimal_moves_to_finish(deck_copied,
+        turns_to_finish_calc <- optimal_moves_to_finish(cycler_deck_status,
                                                         cycler_at_slot,
                                                         pre_aggr_game_status,
                                                         use_draw_odds = draw_odds_input)
-        new_result_row <- cbind(res_data_row, turns_to_finish_calc)
+        new_result_row <- data.table(TRACK_LEFT = track_left_input, DECK_LEFT = cycler_deck_status,
+                                     DRAW_ODDS = draw_odds_raw_data, turns_to_finish_calc)
 
 
         tryIns <- tryCatch({
           dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
-          ADM_OPTIMAL_MOVES <<- rbind(ADM_OPTIMAL_MOVES, new_result_row)
           FALSE
         }, error = function(e) {
+
           warning("tried to insert duplicate to ADM_OPTIMAL")
+
         })
         # if (tryIns == TRUE) {
         #   browser()
@@ -61,13 +63,11 @@ finish_turns_db <- function(con, ADM_OPTIMAL_MOVES, game_status, cycler_deck_sta
         #   ADM_OPTIMAL_MOVES
         # }
 
-        final_result_list$turns_to_finish <- new_result_row[, TURNS_TO_FINISH]
-        final_result_list$new_ADM_OPT <- ADM_OPTIMAL_MOVES
+        final_result_list <- new_result_row[, TURNS_TO_FINISH]
       } else {
         #we had that one already, return original
 
-        final_result_list$turns_to_finish <- row_result[, TURNS_TO_FINISH]
-        final_result_list$new_ADM_OPT <- ADM_OPTIMAL_MOVES
+        final_result_list <- row_result[, TURNS_TO_FINISH]
       }
   return(final_result_list)
 }
