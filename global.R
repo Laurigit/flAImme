@@ -23,6 +23,7 @@ library(shinyWidgets)
 library(ROI.plugin.symphony)
 library(ompr)
 library(ompr.roi)
+library(testthat)
 
 
 options(shiny.trace=FALSE)
@@ -59,3 +60,4 @@ dbQ("SHOW TABLES", con)
 luettu <- dbSelectAll("ADM_OPTIMAL_MOVES", con)
 
 ADM_OPTIMAL_MOVES <- fix_colnames(luettu)
+setDTthreads(4)

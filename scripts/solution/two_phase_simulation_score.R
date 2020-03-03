@@ -151,12 +151,12 @@ two_phase_simulation_score <- function(game_status,
     #removed exrtra info
     player_and_pos[!CYCLER_ID %in% team_cyclers, DRAW_ODDS := ""]
     #joinaa
-    join_ctM <- ctM_data[player_and_pos, on = .(CYCLER_ID, MOVEMENT, new_slot_after_moving = GAME_SLOT_ID, DRAW_ODDS), .(DRAW_ODDS, new_slot_after_moving, CYCLER_ID, MOVEMENT, curr_pos, actual_movement, N = 0, turns_to_finish)][is.na(curr_pos)]
+    join_ctM <- ctM_data[player_and_pos, on = .(CYCLER_ID, MOVEMENT, new_slot_after_moving = GAME_SLOT_ID, DRAW_ODDS), .(DRAW_ODDS, new_slot_after_moving, CYCLER_ID, MOVEMENT, curr_pos, actual_movement, N = 0, TURNS_TO_FINISH)][is.na(curr_pos)]
 
 
 
 
-    #request new turns_to_finish
+    #request new TURNS_TO_FINISH
     if (nrow(join_ctM) > 0) {
       for (add_loop in 1:nrow(join_ctM)){
         loop_cycler <- join_ctM[add_loop, CYCLER_ID]
@@ -173,9 +173,9 @@ two_phase_simulation_score <- function(game_status,
 
         new_slot <- join_ctM[add_loop, new_slot_after_moving]
         ft_res <- finish_turns_db(con, ADM_OPTIMAL_MOVES, simul_phase2$game_status, cycler_deck_updated, pre_res, new_slot, draw_odds_raw_data)
-        #print(ft_res$turns_to_finish)
+        #print(ft_res$TURNS_TO_FINISH)
         ADM_OPTIMAL_MOVES <<- ft_res$new_ADM_OPT
-        join_ctM[add_loop, turns_to_finish := ft_res$turns_to_finish]
+        join_ctM[add_loop, TURNS_TO_FINISH := ft_res$TURNS_TO_FINISH]
         join_ctM[, curr_pos := ifelse(is.na(curr_pos), -100, curr_pos)]
         if (nrow(ctM_data[is.na(CYCLER_ID)]) > 1) {
           ctM_data <- ctM_data[!is.na(CYCLER_ID)]
@@ -187,7 +187,7 @@ two_phase_simulation_score <- function(game_status,
       }
     }
     #append to old ctm
-    ctM_data <- rbind(ctM_data, join_ctM)[!is.na(turns_to_finish)]
+    ctM_data <- rbind(ctM_data, join_ctM)[!is.na(TURNS_TO_FINISH)]
 #
 #     #in which slot am I? What is left in my deck?
 #     temp_stat <- play_card(3, 3, deck_status[CYCLER_ID == 3], 1, 1)

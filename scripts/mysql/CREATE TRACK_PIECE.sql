@@ -1,3 +1,4 @@
+#drop table TRACK_PIECE;
 use flaimme;
 create table TRACK_PIECE (
 SLOT_ID  int AUTO_INCREMENT,

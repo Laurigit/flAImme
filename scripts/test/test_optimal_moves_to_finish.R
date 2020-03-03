@@ -10,9 +10,9 @@ game_status <- start_game(c(1),track, STG_TRACK_PIECE, STG_TRACK)
 game_status <- set_cycler_position(1, 64, 1,  game_status)
 deck_status <- create_decks(input_STARTUP_DATA[, CYCLER_ID], ADM_CYCLER_DECK)
 pre_track <- precalc_track(game_status)
-options <- create_custom_deck(1, c(6, 2, 2), c(1, 1, 1))
+options <- "777666555444333"
 zoom(game_status, 17)
-optimal_moves_to_finish(options,  64, pre_track, use_draw_odds = "")
+
 library(testthat)
 test_that("downhill options", {
 
@@ -31,3 +31,14 @@ test_that("draw odds", {
   expect_equal(optimal_moves_to_finish(options,  62, pre_track, use_draw_odds = dodds)[, TURNS_TO_FINISH], 5)
   expect_equal(optimal_moves_to_finish(options,  62, pre_track, use_draw_odds = "")[, TURNS_TO_FINISH], 4)
 })
+
+test_that("full track", {
+  game_status <- start_game(c(1),12, STG_TRACK_PIECE, STG_TRACK)
+
+  options <- "777666555444333"
+  pre_track <- precalc_track(game_status)
+  expect_equal(optimal_moves_to_finish(options,  1, pre_track, use_draw_odds = "")[, TURNS_TO_FINISH], 15)
+  options <- "999555444333222"
+  expect_equal(optimal_moves_to_finish(options,  1, pre_track, use_draw_odds = "")[, TURNS_TO_FINISH], 18)
+
+  })

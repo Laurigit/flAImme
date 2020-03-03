@@ -36,7 +36,7 @@ calc_move_range <- function(game_status, deck_status, ctM_data, STG_TEAM) {
   #                                                ignore_block = TRUE,
   #                                                return_numeric_position = TRUE)), by = .(CYCLER_ID, MOVEMENT, odds, TURNS_TO_FINISH, actual_movement)]
    setnames(join_prio, "new_slot_after_moving", "new_slot")
-   join_prio[, splitted_odds_no_scale := odds / 2 + 0.05]
+   join_prio[, splitted_odds_no_scale := odds / 2]
 
 
   #join team to range

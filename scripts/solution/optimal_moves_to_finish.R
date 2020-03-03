@@ -29,13 +29,6 @@ if (finish_slot <= 3) {
   turns_to_finish_res <- data.table(TURNS_TO_FINISH = 1)
 } else {
 
-#cycler_id = -1 as we are not using it but need it for appending
-#kortit_Dt <-  rbind(data.table(CYCLER_ID = -1, CARD_ID = 2, Zone = "Deck", MOVEMENT = 2, row_id = 1:10), deck_status_input)
-
-#kortit_Dt <- deck_status_input
-# if (nrow(kortit_Dt) == 0) {
-#   kortit_Dt <-  rbind(data.table(CYCLER_ID = -1, CARD_ID = 2, Zone = "Deck", MOVEMENT = 2, row_id = 1:10), deck_status_input)
-# }
 
 
 kortit_Dt <- data.table(MOVEMENT = as.numeric(str_split(cycler_deck_status[[1]][1], "")[[1]]))
@@ -72,18 +65,6 @@ if (use_draw_odds[[1]][1] != "") {
   } else {
     append_pad <- NULL
 }
-# deck_status_input[CYCLER_ID == 1]
-# draw_odds
-#input_draw_odds_threshold <- 0.5
-#filtered <- draw_odds[prob > input_draw_odds_threshold]
-#input_draw_odds_threshold
-
-
-
-
-# distance_func <- function(i, j) {
-#   return(j - i)
-# }
 
 
 
@@ -100,8 +81,12 @@ model <- MILPModel() %>%
   #jatka siitä mihin jäit
 
   # add_constraint(x[i, j, k]  <= sum_expr(x[i + kortit[k], j, k], i = 1:7, j = 1:length(kortit), k = 1:5) , i = 1:10, j = 1:10, k = 1:5) %>%# )
-
+  #make sure that, normal cards are played before extra exhaust cards
+  add_constraint(sum_expr(x[i, n, k], i = 1:rivi_lkm, k = length(kortit)) <=
+                   sum_expr(x[n, j, k], j = 1:rivi_lkm, k = length(kortit)), n = 1:finish_slot) %>%
+  #dont use more cards than you have
   add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit)) # %>%
+
 
 #add_constraint(ruudut[i, j] * x[i, j, k] <= y[k] * kortit[k], j = 1:rivi_lkm, i = 1:rivi_lkm , k = 1:20) %>%
   #tätä ei tarvi, koska se on jo boundeissa
@@ -110,7 +95,7 @@ model <- MILPModel() %>%
   #käytä kortti vain kerran
   res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
    # set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
-    set_objective(sum_expr(x[i, j, k] * cost_function_for_optimization(i, j, k, length(kortit), finish_slot), i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
+    set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
     #maaliin on päästävä
     add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, k = 1:length(kortit), j = finish_slot:rivi_lkm) == 1) %>%
     #use only at the end the extra exhaust
