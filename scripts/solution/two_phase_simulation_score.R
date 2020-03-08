@@ -168,9 +168,6 @@ two_phase_simulation_score <- function(game_status,
         # cycler_deck_updated[row_id == min_row_id_played, Zone := "Removed"]
         # cycler_deck_updated[Zone == "Hand", Zone := "Recycled"]
         draw_odds_raw_data <- join_ctM[add_loop, DRAW_ODDS]
-
-
-
         new_slot <- join_ctM[add_loop, new_slot_after_moving]
         ft_res <- finish_turns_db(con, ADM_OPTIMAL_MOVES, simul_phase2$game_status, cycler_deck_updated, pre_res, new_slot, draw_odds_raw_data)
         #print(ft_res$TURNS_TO_FINISH)

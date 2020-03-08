@@ -13,11 +13,15 @@
 #movement <- 4
 #move_cycler
 
-move_cycler <- function(current_game_status_diff_name, cycler_id, movement, slipstream = FALSE, ignore_block = FALSE, ignore_end_of_track = FALSE, return_numeric_position = FALSE) {
+move_cycler <- function(current_game_status_input, cycler_id, movement, slipstream = FALSE, ignore_block = FALSE, ignore_end_of_track = FALSE, return_numeric_position = FALSE) {
+  if (return_numeric_position == TRUE) {
+    current_game_status <- copy(current_game_status_input)
+  } else {
+    current_game_status <- current_game_status_input
+  }
 
-   current_game_status <- copy(current_game_status_diff_name)
   current_position_info <- current_game_status[cycler_id == CYCLER_ID, .(GAME_SLOT_ID, PIECE_ATTRIBUTE, MINIMUM_MOVEMENT, MAXIMUM_MOVEMENT)]
-  current_position <- current_position_info[, GAME_SLOT_ID]
+  current_position <- current_game_status[cycler_id == CYCLER_ID, GAME_SLOT_ID]
   #check if started from ascend
   terrain <- current_position_info[, PIECE_ATTRIBUTE]
   track_min_movement <- current_position_info[, MINIMUM_MOVEMENT]
@@ -27,7 +31,7 @@ move_cycler <- function(current_game_status_diff_name, cycler_id, movement, slip
   }
 
   #check if road contains mountains
-  max_move <- current_game_status[GAME_SLOT_ID == current_position, max(MAXIMUM_MOVEMENT)]
+  max_move <- current_position_info[GAME_SLOT_ID == current_position, max(MAXIMUM_MOVEMENT)]
 
 
     adjusted_movement <- min(adjusted_movement, max_move)
@@ -50,11 +54,20 @@ move_cycler <- function(current_game_status_diff_name, cycler_id, movement, slip
 
  if (ignore_block == FALSE) {
  new_square <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position) & CYCLER_ID == 0, max(SQUARE_ID)]
+
  new_slot <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position) & CYCLER_ID == 0, max(GAME_SLOT_ID)]
  } else {
    new_square <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position), max(SQUARE_ID)]
    new_slot <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position), max(GAME_SLOT_ID)]
+   #check if it is occupied and who occupies it
+   slot_occupied_cycler <- current_game_status[SQUARE_ID == new_square, CYCLER_ID]
+   #if is occupied, push it
+   if (slot_occupied_cycler > 0) {
+     current_game_status <- push_cycler_down(current_game_status, slot_occupied_cycler)
+   }
+
  }
+
 
  if (return_numeric_position == TRUE) {
    result <- new_slot
