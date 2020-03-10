@@ -5,7 +5,8 @@
 
 phaseless_simulation <- function(game_status, my_first_cycler,
                                  my_second_cycler,
-                                 my_team, STG_CYCLER, move_simul_data) {
+                                 my_team, STG_CYCLER, move_simul_data,
+                                 return_pos_vec = FALSE) {
 
 cop_game <- copy(game_status)
 
@@ -37,7 +38,7 @@ option_teams <- join_team_reverse[CYCLER_ID %in% first_phase_cyclers, .N, by = T
 option_cycylers <- join_team_reverse[TEAM_ID %in% option_teams, CYCLER_ID]
 potential_slots <- move_simul_data[CYCLER_ID %in% option_cycylers]
 
-
+if (nrow(potential_slots) > 0) {
 potential_slots[, new_pos := move_cycler(cop_game, CYCLER_ID, MOVEMENT, FALSE, ignore_block = TRUE, return_numeric_position = TRUE), by = CYCLER_ID]
 for (loop_cyclers_distance in option_cycylers) {
   potential_slots[CYCLER_ID %% 2 == 1, ':=' (distance_to_my_cycler_if_moving_min_cycler = my_new_slot - new_pos,
@@ -63,10 +64,15 @@ drop_to_2nd_phase <- potential_slots[aggregate, on = .(join_help, TEAM_ID), CYCL
 
 
 adjusted_first_phase_cyclers <- setdiff(first_phase_cyclers, drop_to_2nd_phase)
+
+} else {
+  adjusted_first_phase_cyclers <- first_phase_cyclers
+}
 second_phase_cyclers <-  setdiff(move_order[, CYCLER_ID], adjusted_first_phase_cyclers)
 
 for (cyc_loop in adjusted_first_phase_cyclers) {
   loop_movement <- move_simul_data[CYCLER_ID == cyc_loop, MOVEMENT]
+
   cop_game <- move_cycler(cop_game, cyc_loop, loop_movement, FALSE, FALSE, FALSE, FALSE)
 
 }
@@ -105,7 +111,25 @@ for (cyc_loop in adjusted_second_phase) {
 
 }
 
- return(cop_game)
+#slipstream
+
+cop_game <- apply_slipstream(cop_game)
+
+
+if (return_pos_vec == TRUE) {
+
+  #new_pos <- cop_game[CYCLER_ID > 0, .(CYCLER_ID, GAME_SLOT_ID)]
+
+  #https://stackoverflow.com/questions/37878620/reorder-rows-in-data-table-in-a-specific-order
+  #order the cyclers in the original sorted order that was in the inpt data
+#new_pos <- setorder(new_pos[, .r := order(-move_simul_data[, CYCLER_ID])], .r)[, .r := NULL]
+
+
+  res <- cop_game[order(CYCLER_ID)][CYCLER_ID > 0, GAME_SLOT_ID]
+} else {
+  res <- cop_game
+}
+ return(res)
 }
   #create dummy cyclers
 

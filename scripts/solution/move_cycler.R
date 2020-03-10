@@ -62,6 +62,7 @@ move_cycler <- function(current_game_status_input, cycler_id, movement, slipstre
    #check if it is occupied and who occupies it
    slot_occupied_cycler <- current_game_status[SQUARE_ID == new_square, CYCLER_ID]
    #if is occupied, push it
+
    if (slot_occupied_cycler > 0) {
      current_game_status <- push_cycler_down(current_game_status, slot_occupied_cycler)
    }

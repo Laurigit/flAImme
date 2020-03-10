@@ -122,8 +122,6 @@ con <- connDB(con, "flaimme")
               moving_cycler <- intersect(smart_cycler_ids, leading_cyclers)
 
 
-
-
               # simult_list_res <-  two_phase_simulation_score(game_status, deck_status, team_id, STG_CYCLER, turn_id,
               #                                                ctM_data, pre_aggr_game_status, range_joined_team,
               #                                                card_options = NULL, cycler_id = NULL, phase_one_actions = NULL,
