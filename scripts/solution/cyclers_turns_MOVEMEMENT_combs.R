@@ -55,7 +55,9 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
                                                                       cycler_deck_status = DECK_LEFT,
                                                                       pre_aggr_game_status,
                                                                       cycler_at_slot = new_slot_after_moving,
-                                                                      draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)), by = row_id_calc]
+                                                                      draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)), by = .(TRACK_LEFT,
+                                                                                                                                  DECK_LEFT,
+                                                                                                                                  new_slot_after_moving)]
   #   for (opt_loop in 1:nrow(join_curr)) {
   #     loop_cycler <- join_curr[opt_loop, CYCLER_ID]
   #     cycler_deck_updated <- deck_copied[CYCLER_ID == join_curr[opt_loop, CYCLER_ID]]

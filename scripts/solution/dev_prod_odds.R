@@ -4,10 +4,21 @@ rm("ADM_OPTIMAL_MOVES")
 required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES"))
 
 track <- 2
-
-game_status <- start_game(c(1, 3, 5, 2, 4, 6),track, STG_TRACK_PIECE, STG_TRACK)
+cyclers <- c(1, 2, 3, 4, 5, 6)
+game_status <- start_game(cyclers,track, STG_TRACK_PIECE, STG_TRACK)
 #game_status <- set_cycler_position(1, 64, 1,  game_status)
-deck_status <- create_decks(c(1, 2, 3, 4, 5, 6), ADM_CYCLER_DECK)
+deck_status <- create_decks(cyclers, ADM_CYCLER_DECK)
+
+smart_cyclers <- c(5, 6)
+
+#everybody draws
+for(loop in cyclers) {
+  deck_status <- draw_cards(loop, deck_status)
+  # print(list(deck_status[CYCLER_ID == loop & Zone == "Hand", CARD_ID]))
+
+}
+
+
 pre_track <- precalc_track(game_status)
 ctM_res <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_track)
 ctM_data <- ctM_res$ctM_data
@@ -45,16 +56,58 @@ tot_data[, (1:3) := NULL]
 }
 filter_zero <- appendloop[order(case_id, CYCLER_ID)]
 
+
+#CALC DRAW ODDS HERE AS IT DEPENDS ON PLAYED CARD!
+range[, DRAW_ODDS :=  ifelse(CYCLER_ID %in% smart_cyclers, (calculate_draw_distribution_by_turn(CYCLER_ID,
+                                                                                                play_card(CYCLER_ID,
+                                                                                                          card_id = NULL,
+                                                                                                          deck_status,
+                                                                                                          game_id = 0,
+                                                                                                          turn_id = 0,
+                                                                                                          con = FALSE,
+                                                                                                          card_row_id = NULL,
+                                                                                                          MOVEMENT_PLAYED = MOVEMENT),
+                                                                                                4, db_res = TRUE)),
+                             ""), by = .(CYCLER_ID, MOVEMENT)]
+
+#join deck left
+cycler_movement <- range[, .(CYCLER_ID, MOVEMENT, DECK_LEFT, DRAW_ODDS)]
+join_deck_left <- cycler_movement[filter_zero, on = .(CYCLER_ID, MOVEMENT)]
+
+
+
+
+
 #curr pos
 currpos <- game_status[CYCLER_ID > 0, .(CYCLER_ID, GAME_SLOT_ID)]
+#add_drow_odds here
+
+#calculate draw odds for smart cyclers
 #jionteam
 currpos_team <- STG_CYCLER[currpos, on = "CYCLER_ID"][, .(CYCLER_ID, TEAM_ID, curr_pos = GAME_SLOT_ID)]
 #join tosimul
-join_info <- currpos_team[filter_zero, on = "CYCLER_ID"]
+join_info <- currpos_team[join_deck_left, on = "CYCLER_ID"]
 
-aggr_odds <- join_info[case_id == 1, .(case_odds = prod(odds), cyc_vec = list(phaseless_simulation(game_status, 5, 6, 3, STG_CYCLER, .SD, TRUE))), by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
-join_info[case_id < 15, cyc_vect := phaseless_simulation(game_status, 5, 6, 3, STG_CYCLER, .SD, TRUE), by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
-aggr_odds
+
+
+
+
+
+#aggr_odds <- join_info[case_id == 1, .(case_odds = prod(odds), cyc_vec = list(phaseless_simulation(game_status, 5, 6, 3, STG_CYCLER, .SD, TRUE))), by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
+join_info[, case_odds := prod(odds), by = case_id]
+join_info[case_id < 50, new_cyc_pos := phaseless_simulation(game_status, 5, 6, 3, STG_CYCLER, .SD, TRUE), by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
+
+#join track
+track_ss <- pre_track$aggr_to_slots[, .(new_cyc_pos = GAME_SLOT_ID, TRACK_LEFT)]
+join_track_left <- track_ss[join_info, on = .(new_cyc_pos)]
+join_track_left[!is.na(TRACK_LEFT), TURNS_TO_FINISH := as.double(finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_track, new_cyc_pos,
+                                                               draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)),
+                by = .(new_cyc_pos, TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
+#add draw_odds
+
+rm(ADM_OPTIMAL_MOVES)
+required_data("ADM_OPTIMAL_MOVES")
+
 sorted <- aggr_odds[order(-case_odds)]
 sorted[, cumsum_odds := cumsum(case_odds)]
 sorted[cumsum_odds < 0.2]
