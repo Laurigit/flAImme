@@ -10,7 +10,7 @@ phaseless_simulation <- function(game_status, my_first_cycler,
 
 cop_game <- copy(game_status)
 
-
+#IDEA INSTEAD OF COPY, set the cyclers to orig positions on track after done.
 move_order <- cop_game[CYCLER_ID > 0, .(CYCLER_ID, SQUARE_ID, GAME_SLOT_ID)][order(-SQUARE_ID)]
 
 #jion team
