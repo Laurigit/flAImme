@@ -118,8 +118,8 @@ join_info <- join_info_all[order(-case_odds)]
 #case_odds < 30
 
 max_new_cyc_pos <- join_info[, max(curr_pos, na.rm = TRUE)]
-thinking_time <- (max_new_cyc_pos + 20) ^ 1.15
-
+#thinking_time <- (max_new_cyc_pos + 20) ^ 1.15
+thinking_time <- 2
 join_info[case_odds_ranking_total < thinking_time, new_cyc_pos := phaseless_simulation(game_status, first_cycler, second_cycler, team_id, STG_CYCLER, .SD, TRUE), by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
 
 #join track
