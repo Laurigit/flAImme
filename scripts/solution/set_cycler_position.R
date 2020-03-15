@@ -19,6 +19,7 @@ set_cycler_position <- function(input_cycler_id, slot, lane = NULL, input_track_
   slot_occupied_cycler <- input_track_table[SQUARE_ID == new_square, CYCLER_ID]
   #if is occupied, push it
   if (slot_occupied_cycler > 0) {
+
     input_track_table <- push_cycler_down(input_track_table, slot_occupied_cycler)
   }
 

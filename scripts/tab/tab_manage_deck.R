@@ -48,6 +48,13 @@ output$peloton_numeric_input <- renderUI({
 
 })
 
+
+eR_initialGrid <- eventReactive(input$save_initial_grid,{
+
+
+})
+
+
 eR_startGrid <- eventReactive(input$continue_to_deck_handling, {
   required_data(c("STG_TRACK_PIECE", "STG_TRACK"))
   grid_order <- data.table(UI_text = dragulaValue(input$dragula)$cyclersInput)
@@ -116,7 +123,8 @@ required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK"))
   start_width <- temp_track[START == 1, .N]
   ss_input[type == "Breakaway", starting_row := break_away_row]
   ss_input[type == "Breakaway", starting_lane := seq_len(.N)]
-  react_status$game_status <- start_game(ss_input, as.numeric(input$select_track), STG_TRACK_PIECE, STG_TRACK)
+  browser()
+  react_status$game_status <- start_game(ss_input[, CYCLER_ID], as.numeric(input$select_track), STG_TRACK_PIECE, STG_TRACK)
 
   react_status$deck_status <- create_decks(ss_input[, CYCLER_ID], ADM_CYCLER_DECK, ss_input[, exhaust], renamed)
   react_status$game_status <- slots_out_of_mountains( react_status$game_status)

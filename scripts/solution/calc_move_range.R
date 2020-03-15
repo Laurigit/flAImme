@@ -20,12 +20,12 @@ calc_move_range <- function(game_status, deck_status, ctM_data, STG_TEAM) {
   options[, deck_size := sum(N), by = CYCLER_ID]
   sorted <-  options[order(CYCLER_ID, TURNS_TO_FINISH, -actual_movement, MOVEMENT)]
   sorted[, rowi := seq_len(.N)]
-  temp_aggr <- sorted[, .N, by = .(CYCLER_ID, TURNS_TO_FINISH, actual_movement, MOVEMENT)]
+  sorted[,random_sort := runif(1, 0, 7) * (MOVEMENT)]
+  temp_aggr <- sorted[, .N, by = .(CYCLER_ID, TURNS_TO_FINISH, random_sort, actual_movement, MOVEMENT)]
   temp_aggr[, prio_group := seq_len(.N), by = .(CYCLER_ID)][, N := NULL]
   join_prio <- temp_aggr[sorted, on = .(CYCLER_ID, TURNS_TO_FINISH, actual_movement, MOVEMENT)]
   join_prio[, prio_group_card_count := sum(N), by = .(prio_group, CYCLER_ID)]
-
-
+  join_prio[, i.random_sort := NULL]
 
   chosen_cols <- c("prio_group", "N")
 

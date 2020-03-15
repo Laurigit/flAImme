@@ -22,7 +22,7 @@ play_card <- function(cycler_id, card_id, current_decks_inpu, game_id, turn_id, 
     card_played <- current_decks[MOVEMENT == MOVEMENT_PLAYED & CYCLER_ID == cycler_id & Zone == "Hand", max(row_id)]
   } else if (is.null(card_row_id)) {
     card_played <- current_decks[CARD_ID == card_id & CYCLER_ID == cycler_id & Zone == "Hand", max(row_id)]
-    }else {
+    } else {
     card_played <- card_row_id
   }
 
@@ -30,6 +30,10 @@ play_card <- function(cycler_id, card_id, current_decks_inpu, game_id, turn_id, 
 
   if (force == TRUE) {
     if (!is.null(MOVEMENT_PLAYED)) {
+     #check if the card is in hand, play it if yes
+
+
+
       card_played <- current_decks[MOVEMENT == MOVEMENT_PLAYED & CYCLER_ID == cycler_id & Zone != "Removed", max(row_id)]
     } else if (is.null(card_row_id)) {
       card_played <- current_decks[CARD_ID == card_id & CYCLER_ID == cycler_id & Zone != "Removed" , max(row_id)]

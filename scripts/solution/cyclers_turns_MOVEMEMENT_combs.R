@@ -13,51 +13,57 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
   curr_posits <- used_game_status[CYCLER_ID > 0, .(CYCLER_ID, curr_pos = GAME_SLOT_ID)]
 
 
-    #we dont have data for this turn, lets calc it
-    not_played <- deck_copied[Zone != "Removed"]
-    #this can be improved to use the known information when exhaust has been added
-    options <- not_played[, .N, by = .(MOVEMENT, CYCLER_ID)][order(CYCLER_ID)]
-    #options[, turns_to_finish := 100]
+  #we dont have data for this turn, lets calc it
+  not_played <- deck_copied[Zone != "Removed"]
+  #this can be improved to use the known information when exhaust has been added
+  options <- not_played[, .N, by = .(MOVEMENT, CYCLER_ID)][order(CYCLER_ID)]
+  #options[, turns_to_finish := 100]
 
-    #join current position
-    #join_curr <- curr_posits[, on = "CYCLER_ID"]
-    join_curr <- options[curr_posits, on = "CYCLER_ID"]
+  #join current position
+  #join_curr <- curr_posits[, on = "CYCLER_ID"]
+  join_curr <- options[curr_posits, on = "CYCLER_ID"]
 
-    join_curr[, new_slot_after_moving := move_cycler(used_game_status, CYCLER_ID, MOVEMENT,
-                                        slipstream = FALSE,
-                                        ignore_block = TRUE,
-                                        return_numeric_position = TRUE), by = .(CYCLER_ID, MOVEMENT)]
+  join_curr[, new_slot_after_moving := move_cycler(used_game_status, CYCLER_ID, MOVEMENT,
+                                                   slipstream = FALSE,
+                                                   ignore_block = TRUE,
+                                                   return_numeric_position = TRUE), by = .(CYCLER_ID, MOVEMENT)]
 
 
-    join_curr[, DRAW_ODDS := ""]
-    join_curr[, row_id_calc := seq_len(.N)]
-    ss_cols_track_left <- pre_aggr_game_status$aggr_to_slots[, .(GAME_SLOT_ID, TRACK_LEFT)]
-    finish_slot <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
+  join_curr[, DRAW_ODDS := ""]
+  join_curr[, row_id_calc := seq_len(.N)]
+  ss_cols_track_left <- pre_aggr_game_status$aggr_to_slots[, .(GAME_SLOT_ID, TRACK_LEFT)]
+  finish_slot <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
 
-    join_track_left <- ss_cols_track_left[join_curr, on = .(GAME_SLOT_ID = new_slot_after_moving)]
-    setnames(join_track_left, "GAME_SLOT_ID", "new_slot_after_moving")
-    join_track_left[, DECK_LEFT := convert_deck_left_to_text(play_card(CYCLER_ID,
-                                                                 card_id = NULL,
-                                                                 deck_copied,
-                                                                 game_id = 0,
-                                                                 turn_id = 0,
-                                                                 con = FALSE,
-                                                                 card_row_id = FALSE,
-                                                                 MOVEMENT_PLAYED = MOVEMENT,
-                                                                 force = TRUE,
-                                                                 copy = TRUE),
-                                                       CYCLER_ID),
-              by = .(row_id_calc)]
+  join_track_left <- ss_cols_track_left[join_curr, on = .(GAME_SLOT_ID = new_slot_after_moving)]
+  setnames(join_track_left, "GAME_SLOT_ID", "new_slot_after_moving")
+  join_track_left[, DECK_LEFT := convert_deck_left_to_text(play_card(CYCLER_ID,
+                                                                     card_id = NULL,
+                                                                     deck_copied,
+                                                                     game_id = 0,
+                                                                     turn_id = 0,
+                                                                     con = FALSE,
+                                                                     card_row_id = FALSE,
+                                                                     MOVEMENT_PLAYED = MOVEMENT,
+                                                                     force = TRUE,
+                                                                     copy = TRUE),
+                                                           CYCLER_ID),
+                  by = .(row_id_calc)]
 
-    #check if we already have results
-    joined <- ADM_OPTIMAL_MOVES[join_track_left, on = .(DECK_LEFT, TRACK_LEFT, DRAW_ODDS)]
+  #check if we already have results
+  joined <- ADM_OPTIMAL_MOVES[join_track_left, on = .(DECK_LEFT, TRACK_LEFT, DRAW_ODDS)]
+  # joined[is.na(TURNS_TO_FINISH), TURNS_TO_FINISH := as.double(finish_turns_db(con, track_left_input = TRACK_LEFT,
+  #                                                                   cycler_deck_status = DECK_LEFT,
+  #                                                                   pre_aggr_game_status,
+  #                                                                   cycler_at_slot = new_slot_after_moving,
+  #                                                                   draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)), by = .(TRACK_LEFT,
+  #                                                                                                                               DECK_LEFT,
+  #                                                                                                                               new_slot_after_moving)]
+
     joined[is.na(TURNS_TO_FINISH), TURNS_TO_FINISH := as.double(finish_turns_db(con, track_left_input = TRACK_LEFT,
-                                                                      cycler_deck_status = DECK_LEFT,
-                                                                      pre_aggr_game_status,
-                                                                      cycler_at_slot = new_slot_after_moving,
-                                                                      draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)), by = .(TRACK_LEFT,
-                                                                                                                                  DECK_LEFT,
-                                                                                                                                  new_slot_after_moving)]
+                                                                                cycler_deck_status = DECK_LEFT,
+                                                                                pre_aggr_game_status,
+                                                                                cycler_at_slot = new_slot_after_moving,
+                                                                                draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)), by = .(row_id_calc)]
   #   for (opt_loop in 1:nrow(join_curr)) {
   #     loop_cycler <- join_curr[opt_loop, CYCLER_ID]
   #     cycler_deck_updated <- deck_copied[CYCLER_ID == join_curr[opt_loop, CYCLER_ID]]

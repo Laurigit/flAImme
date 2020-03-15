@@ -35,6 +35,13 @@ observeEvent(input$continue_to_deck_handling, {
 })
 
 
+observeEvent(input$save_initial_grid, {
+
+
+
+})
+
+
 
 eRstartPosData <- eventReactive(input$go_to_start_position_tab, {
   #CYCLER_ID, TYPE, COLOR,
