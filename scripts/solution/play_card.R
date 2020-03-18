@@ -12,7 +12,7 @@
 # card_id <- 9
 play_card <- function(cycler_id, card_id, current_decks_inpu, game_id, turn_id, con = FALSE, card_row_id = NULL, MOVEMENT_PLAYED = NULL, force = FALSE, copy = FALSE) {
 #force means play it anywhere even if it is not in hand or deck
-
+copy <- TRUE
   if (copy == TRUE) {
     current_decks <- copy(current_decks_inpu)
   } else {
@@ -21,7 +21,11 @@ play_card <- function(cycler_id, card_id, current_decks_inpu, game_id, turn_id, 
   if (!is.null(MOVEMENT_PLAYED)) {
     card_played <- current_decks[MOVEMENT == MOVEMENT_PLAYED & CYCLER_ID == cycler_id & Zone == "Hand", max(row_id)]
   } else if (is.null(card_row_id)) {
+    if (current_decks[CARD_ID == card_id & CYCLER_ID == cycler_id & Zone == "Hand", .N] == 0) {
+    #  browser()
+    }
     card_played <- current_decks[CARD_ID == card_id & CYCLER_ID == cycler_id & Zone == "Hand", max(row_id)]
+
     } else {
     card_played <- card_row_id
   }

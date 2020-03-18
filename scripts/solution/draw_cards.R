@@ -3,7 +3,7 @@
 
 #test <- draw_cards(1, current_decks_input)
 
-draw_cards <- function(cycler_id, current_decks_input, how_many_cards = 4, rest_of_deck = FALSE) {
+draw_cards <- function(cycler_id, current_decks_input, how_many_cards = 4, rest_of_deck = FALSE, con = NULL, game_id = NULL, turn_id = NULL) {
 
   #1 check if cards left in deck
   #for_debug <- current_decks_input#[cycler_id == CYCLER_ID]
@@ -57,6 +57,14 @@ draw_cards <- function(cycler_id, current_decks_input, how_many_cards = 4, rest_
   } else {
     #draw all
     curr_cards[cycler_id == CYCLER_ID & Zone %in% c("Deck", "Recycle"), Zone := "Hand"]
+  }
+  #save to db if asked
+
+  if (!is.null(con)) {
+    res_write <- curr_cards[CYCLER_ID == cycler_id, .(CYCLER_ID, CARD_ID, Zone)]
+    res_write[, TURN_ID := turn_id]
+    res_write[, GAME_ID := game_id]
+    dbWriteTable(con, "DECK_STATUS", res_write, append = TRUE, row.names = FALSE)
   }
   return(curr_cards)
 

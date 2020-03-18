@@ -118,8 +118,8 @@ select_smart_card_phase_2 <- function(game_status, deck_status, smart_cyclers,
 
 
   max_new_cyc_pos <- join_info[, max(curr_pos, na.rm = TRUE)]
- # thinking_time <- (max_new_cyc_pos + 80) ^ 1.1
-  thinking_time <- 2
+  thinking_time <- (max_new_cyc_pos + 75) ^ 1.13
+  #thinking_time <- 2
   join_info[case_odds_ranking_total < thinking_time, new_cyc_pos := simulation_phase_2(game_status, phase_two_cyclers,
 
                                                             move_simul_data = .SD,
