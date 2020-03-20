@@ -1,35 +1,45 @@
 
 
-select_smart_card_phase_2 <- function(game_status, deck_status, smart_cyclers,
-                                      pre_track, ctM_res, range, first_cycler, second_cycler, team_id, phase_two_cyclers,
-                                      smart_card_options) {
+select_smart_card_phase <- function(game_status, deck_status, pre_track, ctM_data, moving_cycler,
+                                     phase,
+                                    STG_TRACK,
+                                    STG_TRACK_PIECE,
+                                    ADM_CYCLER_DECK,
+                                    ADM_OPTIMAL_MOVES,
+                                    ADM_AI_CONF,
+                                    STG_CYCLER
+                                    ) {
+  #check if we hanve only one option
+  card_options_in_hand <- smart_cards_options(deck_status[CYCLER_ID == moving_cycler & Zone == "Hand", unique(MOVEMENT)], pre_track, moving_cycler)
+  if (length(card_options_in_hand) == 1) {
+    res_move <- card_options_in_hand
+  } else {
 
-  con <- connDB(con, dbname_input = "flaimme")
-  rm("ADM_OPTIMAL_MOVES")
-  required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES"))
-  required_data("ADM_AI_CONF")
-  #track <- 2
+    range <- suppressWarnings(calc_move_range(game_status, deck_status, ctM_data, STG_CYCLER))
+    if (phase == 2) {
+      phase_two_cyclers<-  deck_status[Zone == "Hand", .N, by = CYCLER_ID][, CYCLER_ID]
+      p2_score_outout <- phase2_slot_score(game_status, phase_two_cyclers, deck_status, range_joined_team, pre_aggr_game_status)
+      range <- suppressWarnings(calc_move_range_phase_2(game_status, deck_status, ctM_data, p2_score_outout, STG_CYCLER))
+    }
+
+
   cyclers <- game_status[CYCLER_ID > 0, CYCLER_ID]
 
-  ctM_data <- ctM_res$ctM_data
-
-
+  #pre_track <- precalc_track(game_status)
+  #ctM_res <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_track)
 
 
   sscols_all <- range[splitted_odds > 0, .(TEAM_ID, CYCLER_ID, odds, MOVEMENT)]
 
   #adjust odds based on what I have drawn
-  cyc_move_data <- data.table(CYCLER_ID = first_cycler,
+  cyc_move_data <- data.table(CYCLER_ID = moving_cycler,
                               MOVEMENT = smart_card_options,
                               TEAM_ID = team_id,
                               odds = 1 / length(smart_card_options))
 
 
-  removed_orig_data <- sscols_all[!CYCLER_ID %in% first_cycler]
+  removed_orig_data <- sscols_all[!CYCLER_ID %in% moving_cycler]
   sscols <- rbind(cyc_move_data, removed_orig_data)
-
-
-
 
 
   aggr <- sscols[, .N, by = CYCLER_ID]
@@ -67,15 +77,14 @@ select_smart_card_phase_2 <- function(game_status, deck_status, smart_cyclers,
                                                                                                             turn_id = 0,
                                                                                                             con = FALSE,
                                                                                                             card_row_id = NULL,
-                                                                                                            MOVEMENT_PLAYED = MOVEMENT),
+                                                                                                            MOVEMENT_PLAYED = MOVEMENT,
+                                                                                                            copy = TRUE),
                                                                                                   4, db_res = TRUE)),
                                ""), by = .(CYCLER_ID, MOVEMENT)]
 
   #join deck left
   cycler_movement <- range[, .(CYCLER_ID, MOVEMENT, DECK_LEFT, DRAW_ODDS)]
   join_deck_left <- cycler_movement[filter_zero, on = .(CYCLER_ID, MOVEMENT)]
-
-
 
 
 
@@ -90,29 +99,28 @@ select_smart_card_phase_2 <- function(game_status, deck_status, smart_cyclers,
   join_info_all <- currpos_team[join_deck_left, on = "CYCLER_ID"]
 
 
-
-
-
-
   #aggr_odds <- join_info[case_id == 1, .(case_odds = prod(odds), cyc_vec = list(phaseless_simulation(game_status, 5, 6, 3, STG_CYCLER, .SD, TRUE))), by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
   join_info_all[, case_odds := prod(odds), by = case_id]
   join_info_all[, case_odds_ranking_total := frank(-case_odds, ties.method = c("min"))]
   join_info <- join_info_all[order(-case_odds)]
-  #join_info[, cycler_odds_rank := frank(-case_odds), by = .(CYCLER_ID, MOVEMENT)]
-  # join_info[case_odds < 30
 
+  #join_info[, cycler_odds_rank := frank(-case_odds), by = .(CYCLER_ID, MOVEMENT)]
+  #case_odds < 30
 
   max_new_cyc_pos <- join_info[, max(curr_pos, na.rm = TRUE)]
-  thinking_time <- (max_new_cyc_pos + 75) ^ 1.13
+  if (phase == 1) {
+  thinking_time <- (max_new_cyc_pos + 20) ^ 1.15
   #thinking_time <- 2
-  join_info[case_odds_ranking_total < thinking_time, new_cyc_pos := simulation_phase_2(game_status, phase_two_cyclers,
+  join_info[case_odds_ranking_total < thinking_time, new_cyc_pos := phaseless_simulation(game_status, moving_cycler, second_cycler, team_id, STG_CYCLER, .SD, TRUE), by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
+  } else {
+    thinking_time <- (max_new_cyc_pos + 75) ^ 1.13
+    #thinking_time <- 2
+    join_info[case_odds_ranking_total < thinking_time, new_cyc_pos := simulation_phase_2(game_status, phase_two_cyclers,
 
-                                                            move_simul_data = .SD,
-                                                            return_pos_vec = TRUE)
-            , by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
-
-  # game_status, first_cycler, second_cycler, team_id, STG_CYCLER, .SD, TRUE), by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
-
+                                                                                         move_simul_data = .SD,
+                                                                                         return_pos_vec = TRUE)
+              , by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
+  }
   #join track
   track_ss <- pre_track$aggr_to_slots[, .(new_cyc_pos = GAME_SLOT_ID, TRACK_LEFT)]
   join_track_left <- track_ss[join_info, on = .(new_cyc_pos)]
@@ -165,20 +173,21 @@ select_smart_card_phase_2 <- function(game_status, deck_status, smart_cyclers,
                over_finish_square +
                exhaust_score * exh_eff +
                ttf_score * speed_eff +
-               actual_movement * move_gai_eff  +
+               actual_movement * move_gai_eff * 1.1+
                -MOVEMENT * card_spend_eff
              ,by = .(case_id, CYCLER_ID)]
 
   sscols_res <- onlycalced[, .(case_id, CYCLER_ID, TEAM_ID, MOVEMENT, Result, case_odds, ttf_score, exhaust_score, team_penalty_score, move_diff)]
-  sscols_res[CYCLER_ID == 5]
-  aggre <- sscols_res[CYCLER_ID %in% c(first_cycler, second_cycler), .(team_Result = mean(Result)), by = .( case_id)]#[order(CYCLER_ID, MOVEMENT)]
+
+  aggre <- sscols_res[CYCLER_ID %in% c(moving_cycler, second_cycler), .(team_Result = mean(Result)), by = .( case_id)]#[order(CYCLER_ID, MOVEMENT)]
 
   join_team_res <- aggre[sscols_res, on = "case_id"]
-  choose_move <- join_team_res[CYCLER_ID == first_cycler, mean(team_Result), by = MOVEMENT]
+  choose_move <- join_team_res[CYCLER_ID == moving_cycler, mean(team_Result), by = MOVEMENT]
   max_score <- choose_move[, max(V1)]
 
-  res_move <- max(choose_move[V1 == max_score, MOVEMENT])
 
+  res_move <- max(choose_move[V1 == max_score, MOVEMENT])
+  }
   return(res_move)
 }
 # sscols[, CJ(edge1 = individual, edge2 = individual), by = group][edge1 < edge2]

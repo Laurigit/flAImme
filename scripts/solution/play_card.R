@@ -10,39 +10,55 @@
 #
 # cycler_id <- 2
 # card_id <- 9
-play_card <- function(cycler_id, card_id, current_decks_inpu, game_id, turn_id, con = FALSE, card_row_id = NULL, MOVEMENT_PLAYED = NULL, force = FALSE, copy = FALSE) {
+play_card <- function(cycler_id,
+                      card_id,current_decks_inpu,
+                      game_id,
+                      turn_id,
+                      con = FALSE,
+                      card_row_id = NULL,
+                      MOVEMENT_PLAYED = NULL,
+                      force = FALSE,
+                      copy = TRUE) {
 #force means play it anywhere even if it is not in hand or deck
-copy <- TRUE
+
   if (copy == TRUE) {
     current_decks <- copy(current_decks_inpu)
   } else {
     current_decks <- current_decks_inpu
   }
+
+  #find the card
   if (!is.null(MOVEMENT_PLAYED)) {
-    card_played <- current_decks[MOVEMENT == MOVEMENT_PLAYED & CYCLER_ID == cycler_id & Zone == "Hand", max(row_id)]
+    card_id_played <- current_decks[MOVEMENT == MOVEMENT_PLAYED & CYCLER_ID == cycler_id & Zone == "Hand", min(CARD_ID)]
+    #then choose one row id
+    card_played <- current_decks[CARD_ID == card_id_played & CYCLER_ID == cycler_id & Zone == "Hand", max(row_id)]
   } else if (is.null(card_row_id)) {
-    if (current_decks[CARD_ID == card_id & CYCLER_ID == cycler_id & Zone == "Hand", .N] == 0) {
-    #  browser()
-    }
+      #in this case, we have input card_id
     card_played <- current_decks[CARD_ID == card_id & CYCLER_ID == cycler_id & Zone == "Hand", max(row_id)]
 
     } else {
-    card_played <- card_row_id
+    card_played <- current_decks[row_id == card_row_id & Zone == "Hand", row_id]
   }
 
   #heres the phase where we take the card from anywhere
+  #if we did not find the card from hand and force is true, play it from deck
 
-  if (force == TRUE) {
-    if (!is.null(MOVEMENT_PLAYED)) {
-     #check if the card is in hand, play it if yes
+  if (is.infinite(card_played)) {
+      if (force == TRUE) {
+        if (!is.null(MOVEMENT_PLAYED)) {
+          card_id_played <- current_decks[MOVEMENT == MOVEMENT_PLAYED & CYCLER_ID == cycler_id & Zone != "Removed", min(CARD_ID)]
+          #then choose one row id
+          card_played <- current_decks[CARD_ID == card_id_played & CYCLER_ID == cycler_id & Zone != "Removed", max(row_id)]
+        } else if (is.null(card_row_id)) {
+          #in this case, we have input card_id
+          card_played <- current_decks[CARD_ID == card_id & CYCLER_ID == cycler_id & Zone != "Removed", max(row_id)]
 
-
-
-      card_played <- current_decks[MOVEMENT == MOVEMENT_PLAYED & CYCLER_ID == cycler_id & Zone != "Removed", max(row_id)]
-    } else if (is.null(card_row_id)) {
-      card_played <- current_decks[CARD_ID == card_id & CYCLER_ID == cycler_id & Zone != "Removed" , max(row_id)]
-    }else {
-      card_played <- card_row_id
+        } else {
+          card_played <- current_decks[row_id == card_row_id & Zone != "Removed", row_id]
+        }
+    } else {
+      stop()
+      #tried to play removed card
     }
   }
 

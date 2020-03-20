@@ -3,9 +3,9 @@ kaadu
 #source("global.R")
 
 con <- connDB(con, "flaimme")
-   required_data(c("ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
+   required_data(c("ADM_CYCLER_INFO", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
   total_winner <- NULL
-
+  required_data("")
 game_status_data <- list()
   full_action <- NULL
   game_action <- NULL
@@ -59,113 +59,57 @@ game_status_data <- list()
 
 
     repeat{
-
+      phase_loop <- 1
       #for each player, choose cycler, draw cards
-      for (team_loop in playing_teams) {
+      ai_teams <- setdiff(playing_teams, smart_team)
+      for (team_loop in ai_teams) {
         loop_cycler <- choose_first_AI_cycler(team_loop, game_status, "leading", STG_CYCLER)
-        deck_status <- draw_cards(team_loop, deck_status, 4, con = con,  turn_id = turn_id, game_id = game_id)
-      }
-
-
-
-
-
-
-
-
-            move_range_data_actual_moves <- NULL
-
-      #everybody draws
-            con <- connDB(con, "flaimme")
-      for(loop in smart_cycler_ids) {
-        deck_status <- draw_cards(loop, deck_status, 4, con = con,  turn_id = turn_id, game_id = game_id)
-       # print(list(deck_status[CYCLER_ID == loop & Zone == "Hand", CARD_ID]))
-
-        played_cards_data[CYCLER_ID == loop & TURN_ID == turn_id,
+        deck_status <- draw_cards(team_loop, deck_status, 4, con = con,  turn_id = turn_id, game_id = game_id, phase = phase_loop)
+        played_cards_data[CYCLER_ID == loop_cycler & TURN_ID == turn_id,
                           OPTIONS := list(list(deck_status[CYCLER_ID == loop & Zone == "Hand", CARD_ID]))]
       }
 
-      deck_status_loop_before[[turn_id]] <- copy(deck_status)
+      #then smart cycler
+      loop_cycler <- choose_first_AI_cycler(smart_team, game_status, "leading", STG_CYCLER)
+      deck_status <- draw_cards(team_loop, deck_status, 4, con = con,  turn_id = turn_id, game_id = game_id, phase = phase_loop)
+
+
+      #wait for all the inputs
+
+      #now we do all the inputs in simulation
+
+
+
+
+
+
+
+
+
+
+
       #CTM handling.
       # load from DB
       # if playing with humans, dont update DB
       # update only new opt results in memory that have been generated during the game
-
+      move_range_data_actual_moves <- NULL
       ctM_res <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status)
       ctM_data <- ctM_res$ctM_data
 
 
 
-
-      # if(is.null(new_EV)) {
-      #   new_EV <- ctM_data[, .(Best = min(turns_to_finish), EV = sum(turns_to_finish * N) / sum(N)), by = CYCLER_ID][order(EV)]
-      # }
-      # prev_EV <- new_EV[, .(Best_old = Best, EV_old = EV, CYCLER_ID)]
-      # new_EV <- ctM_data[, .(Best = min(turns_to_finish), EV = sum(turns_to_finish * N) / sum(N)), by = CYCLER_ID][order(EV)]
-      # joinaa <- prev_EV[new_EV, on = "CYCLER_ID"]
-      #
-      #
-      # Exha_count <- deck_status[Zone != "Removed" & MOVEMENT == 2, .(Exhaust = .N), by = CYCLER_ID]
-      # Mean_move <- deck_status[Zone != "Removed" & MOVEMENT > 2 , .(SUM_POWER_MOVE = sum(MOVEMENT), MAX_MOVE = max(MOVEMENT)), by = CYCLER_ID]
-      # join_ex_move <- Exha_count[Mean_move, on = "CYCLER_ID"]
-      # join_tot_stat <- join_ex_move[joinaa, on = "CYCLER_ID"]
-      # action_data_aggr <- action_data[, .(EXHAUST = sum(EXHAUST), BLOCK_DIFF = sum(BLOCK_DIFF),
-      #                                                   ASCEND_GAIN = sum(ASCEND_GAIN),
-      #                                                   SLIP_BONUS = sum(SLIP_BONUS)), by = CYCLER_ID]
-      # join_stat_and_aggr <- join_tot_stat[action_data_aggr, on = "CYCLER_ID"]
-      # track_left_vs_deck <- orig_posits[join_stat_and_aggr, on = "CYCLER_ID"]
-      # track_left_vs_deck[, MISSING_MOVES := finish - GAME_SLOT_ID - SUM_POWER_MOVE]
-      #
-      # sscols_status <- track_left_vs_deck[, .(CYCLER_ID, Best, EV, MISSING_MOVES, BLOCK_DIFF, ASCEND_GAIN, SLIP_BONUS, EXHAUST, EXH_LEFT = Exhaust, MAX_MOVE, SUM_POWER_MOVE)][order(Best)]
-      # #print(join_tot_stat)
-
-      phase_loop <- 1
       repeat{
 
-        CYCLER_ORDER <- game_status[CYCLER_ID > 0][order(-SQUARE_ID)][, .(CYCLER_ID, move_order = seq_len(.N))]
-        #join team
-        join_team_to_order <- STG_CYCLER[CYCLER_ORDER, on = "CYCLER_ID"]
-        leading_cyclers <- join_team_to_order[join_team_to_order[, .I[which.min(move_order)], by= TEAM_ID]$V1][, CYCLER_ID]
+        all_phase_cyclers <- played_cards_data[TURN_ID == turn_id & PHASE == phase_loop, CYCLER_ID]
+        phase_ai_cyclers <- setdiff(all_phase_cyclers, smart_cycler_ids)
 
-        if (phase_loop == 1) {
-        phase_ai_cyclers <- setdiff(leading_cyclers, smart_cycler_ids)
-        } else {
-          phase_ai_cyclers <- setdiff(played_cards_data[TURN_ID == turn_id & PHASE == 0, CYCLER_ID], smart_cycler_ids)
-        }
-
-       # pelatut_kortit <- deck_status[sample(nrow(deck_status))][Zone == "Hand", .SD[1:1], .(CYCLER_ID)][, .(CYCLER_ID, CARD_ID, MOVEMENT)][CYCLER_ID %in% cyclers]
-
-          required_data("ADM_CYCLER_INFO")
-
-
-
-          smart_cyclers_left <- intersect(cycler_ids, smart_cycler_ids)
             if (phase_loop == 1) {
               #calculate move range before phase 1 actions
-              range_joined_team <- suppressWarnings(calc_move_range(game_status, deck_status, ctM_data, STG_CYCLER))
-
-              #until I know better, move leading cycler first
-              moving_cycler <- intersect(smart_cycler_ids, leading_cyclers)
-              second_cycler <- setdiff(smart_cycler_ids, moving_cycler)
 
 
-              # simult_list_res <-  two_phase_simulation_score(game_status, deck_status, team_id, STG_CYCLER, turn_id,
-              #                                                ctM_data, pre_aggr_game_status, range_joined_team,
-              #                                                card_options = NULL, cycler_id = NULL, phase_one_actions = NULL,
-              #                                                simul_rounds = 5,
-              #                                                simulate_until_stopped = FALSE,
-              #                                                ADM_AI_CONF = ADM_AI_CONF)
-              #ctM_data <- simult_list_res$updated_ctm
-             # move_first_cycler <- which_cycler_to_move_first(simult_list_res$scores, STG_CYCLER, team_id)
-
-             # simulation_data_from_which_cycler <- move_first_cycler_result$simulation
-              #look at my cards
+              moving_cycler <- intersect(smart_cycler_ids, all_phase_cyclers)
 
 
-              card_options_in_hand <- smart_cards_options(deck_status[CYCLER_ID == moving_cycler & Zone == "Hand", unique(MOVEMENT)], pre_aggr_game_status, moving_cycler)
-              if (length(card_options_in_hand) == 1) {
-                move_amount <- card_options_in_hand
-              } else {
 
 
              # print(zoom(game_status))
@@ -174,10 +118,7 @@ game_status_data <- list()
                                                          range_joined_team, moving_cycler, second_cycler, smart_team, card_options_in_hand)
 
 
-
               }
-
-
 
             print(paste0("Moved cycler ", moving_cycler, ". Options: ", paste0(card_options_in_hand, collapse = " "),
                          " Played card: ", move_amount))
