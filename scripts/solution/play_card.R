@@ -14,7 +14,7 @@ play_card <- function(cycler_id,
                       card_id,current_decks_inpu,
                       game_id,
                       turn_id,
-                      con = FALSE,
+                      con = NULL,
                       card_row_id = NULL,
                       MOVEMENT_PLAYED = NULL,
                       force = FALSE,
@@ -66,8 +66,13 @@ play_card <- function(cycler_id,
   current_decks[row_id == card_played, Zone := "Removed"]
   #set rest to recycle
   current_decks[cycler_id == CYCLER_ID & Zone == "Hand", Zone := "Recycle"]
-  if (con != FALSE) {
-    row <- data.table(CYCLER_ID, CARD_ID, GAME_ID = game_id, TURN_ID = turn_id)
+
+
+
+  if (!is.null(con)) {
+    #card_id to db
+    played_id <- current_decks[row_id == card_played, CARD_ID]
+      row <- data.table(CYCLER_ID = cycler_id, CARD_ID = played_id, GAME_ID = game_id, TURN_ID = turn_id)
     dbWriteTable(con, "MOVE_FACT", row, append = TRUE, row.names = FALSE)
   }
 
