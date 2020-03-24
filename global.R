@@ -63,3 +63,4 @@ luettu <- dbSelectAll("ADM_OPTIMAL_MOVES", con)
 
 ADM_OPTIMAL_MOVES <- fix_colnames(luettu)
 setDTthreads(4)
+required_data("ADM_CYCLER_DECK")

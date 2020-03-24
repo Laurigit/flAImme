@@ -1,0 +1,11 @@
+use flaimme;
+#drop table BREAKAWAY_BET;
+create table BREAKAWAY_BET (
+TOURNAMENT_NM char(50),
+TEAM_ID int,
+CYCLER_ID int,
+GAME_ID int,
+FIRST_BET int,
+SECOND_BET INT,
+PRIMARY KEY (TOURNAMENT_NM, TEAM_ID, GAME_ID));
+

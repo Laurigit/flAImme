@@ -1,7 +1,7 @@
   # required_data(c("STG_CYCLER", "STG_TRACK"))
 
 #source("global.R")
-
+kaadu
 con <- connDB(con, "flaimme")
    required_data(c("STG_TEAM","ADM_CYCLER_INFO", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
   total_winner <- NULL
@@ -17,9 +17,10 @@ game_status_data <- list()
   smart_cycler_ids <- STG_CYCLER[TEAM_ID == smart_team, CYCLER_ID]
 
   game_id <- 1
-  cycler_ids <- c(7, 4, 5, 6, 8, 1, 3, 2)
-  turn_id <- 0
+
   for (game_id in 1:200000) {
+    cycler_ids <- c(7, 4, 5, 6, 8, 1, 3, 2)
+    turn_id <- 0
     repeat{
     if (turn_id == 0) {
     turn_game_status <- NULL
@@ -175,6 +176,7 @@ game_status_data <- list()
     game_status_data[[game_id]] <- turn_game_status
     #print(winner_state)
     #}
+
     print(winner_state)
    # ssstartPos <- used_startup_data[,. (CYCLER_ID, starting_lane, starting_row)]
   #  join_sinner_pos <- ssstartPos[winner_state, on = "CYCLER_ID"]
@@ -189,6 +191,8 @@ game_status_data <- list()
   #  print(full_action[, .(
    #                       SLIP = mean(SLIP_BONUS, na.rm = TRUE), BLOCK = mean(BLOCK_DIFF, na.rm = TRUE), EXHAUST = mean(EXHAUST, na.rm = TRUE),
   #                        ASCEND = mean(ASCEND_GAIN, na.rm = TRUE)), by = CYCLER_ID][order(CYCLER_ID)])
+
+    turn_id <- 0
   }
 #print(total_winner[, .N, by = .(CYCLER_ID, POSITION)])[order(CYCLER_ID, POSITION)]
 

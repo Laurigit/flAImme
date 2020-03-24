@@ -26,7 +26,6 @@ updated_status <-   set_cycler_position(row_data[, CYCLER_ID],
                       updated_status)
 
 }
-updated_status <- slots_out_of_mountains_to_track(updated_status)
-updated_status <- slots_out_of_mountains(updated_status)
+
 return(updated_status)
 }

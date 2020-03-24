@@ -28,10 +28,6 @@ select_smart_card_phase_2 <- function(game_status, deck_status, smart_cyclers,
   removed_orig_data <- sscols_all[!CYCLER_ID %in% first_cycler]
   sscols <- rbind(cyc_move_data, removed_orig_data)
 
-
-
-
-
   aggr <- sscols[, .N, by = CYCLER_ID]
   poss_combs <- prod(aggr[, N])
   cyclers <- sscols[, .N, by = CYCLER_ID][, CYCLER_ID]

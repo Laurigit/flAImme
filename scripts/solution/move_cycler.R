@@ -75,6 +75,11 @@ move_cycler <- function(current_game_status_input, cycler_id, movement, slipstre
  } else {
    #clear old position
    current_game_status[cycler_id == CYCLER_ID, CYCLER_ID := 0]
+   #move cyclers to right
+      #check if there are cyclers on the slot where this one left with higher lane no
+      count_cyclers_orig_slot <- current_game_status[GAME_SLOT_ID == current_position]
+
+
 
    current_game_status[SQUARE_ID == new_square, CYCLER_ID := cycler_id]
    result <- current_game_status

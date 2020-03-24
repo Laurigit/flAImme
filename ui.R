@@ -30,14 +30,14 @@ uusi_peli <- dashboardBody(
   tabItems(
     #  source("./scripts/ui/ui_uusi_peli.R",local = TRUE)$value,
     #  source("./scripts/ui/ui_tallenna_peli.R",local = TRUE)$value,
-    source("./scripts/ui/ui_game_setup.R",local = TRUE)$value,
-    source("./scripts/ui/ui_add_track.R",local = TRUE)$value,
-    source("./scripts/ui/ui_start_positions.R",local = TRUE)$value,
-    source("./scripts/ui/ui_deal_cards.R",local = TRUE)$value,
-    source("./scripts/ui/ui_play_card.R",local = TRUE)$value,
-    source("./scripts/ui/ui_input_other_moves.R",local = TRUE)$value,
-    source("./scripts/ui/ui_manage_deck.R",local = TRUE)$value
-    # source("./scripts/ui/ui_pakkaupload.R",local = TRUE)$value,
+    # source("./scripts/ui/ui_game_setup.R",local = TRUE)$value,
+    # source("./scripts/ui/ui_add_track.R",local = TRUE)$value,
+    # source("./scripts/ui/ui_start_positions.R",local = TRUE)$value,
+    # source("./scripts/ui/ui_deal_cards.R",local = TRUE)$value,
+    # source("./scripts/ui/ui_play_card.R",local = TRUE)$value,
+    # source("./scripts/ui/ui_input_other_moves.R",local = TRUE)$value,
+    # source("./scripts/ui/ui_manage_deck.R",local = TRUE)$value
+    # # source("./scripts/ui/ui_pakkaupload.R",local = TRUE)$value,
     # source("./scripts/ui/ui_saavutusasetukset.R",local = TRUE)$value,
     # source("./scripts/ui/ui_boosterit.R",local = TRUE)$value,
     # source("./scripts/ui/ui_decks.R",local = TRUE)$value,
