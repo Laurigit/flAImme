@@ -9,7 +9,7 @@ cards <- data.table(CARD_ID = c(1, 2,3,4,5,6,7,9), MOVEMENT = c(2,2,3,4,5,6,7,9)
 pieses <- data.table(read_excel("./external_files/track_pieces.xlsx"))
 
 #dbWriteTable(con, "TRACK_PIECE", pieses, row.names = FALSE, append = TRUE)
-
+#dbWriteTable(con, "TRACK_PIECE", pieses, row.names = FALSE, append = TRUE)
 #CYCLER
 
 cycl <- data.table(CYCLER_ID =

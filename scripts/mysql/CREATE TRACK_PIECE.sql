@@ -2,11 +2,14 @@
 use flaimme;
 create table TRACK_PIECE (
 SLOT_ID  int AUTO_INCREMENT,
-TRCACK_PIECE_ID char(10),
+TRACK_PIECE_ID char(10),
 PIECE_SLOT int,
 LANES int,
 PIECE_ATTRIBUTE char(20),
 ALIGN char(20),
 FINISH bool,
+START bool,
+TRACK_PIECE_ID_GAME char(10),
+TRACK_PIECE_COLOR_GAME char(20),
 PRIMARY KEY (SLOT_ID));
 

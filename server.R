@@ -73,7 +73,8 @@ observe({
       info_joined <- copy(deck_status)
       info_joined[, ':=' (GAME_ID = new_game_id,
                           TOURNAMENT_NM = tour_name,
-                          TURN_ID = -1 )]
+                          TURN_ID = -1,
+                          HAND_OPTIONS = 0)]
       dbWriteTable(con, "DECK_STATUS", info_joined, append = TRUE, row.names = FALSE)
 
       #break away options
@@ -99,7 +100,7 @@ observe({
       }
 
 
-      #set cards back to hand
+      #set cards back to hand. "I dont know if this matters??
       deck_status[, Zone := "Deck"]
 
       #setup initial game status
@@ -152,7 +153,7 @@ observe({
     if (missing_bets == 0 &   turn_is_minus_one) {
       #move cycers to breakaway
       #who one?
-      winners <- ba_data[TOURNAMENT_NM == tour_name & GAME_ID == new_game_id, .(CYCLER_ID, TOTAL_BET = SECOND_BET + FIRST_BET)][order(-TOTAL_BET)][1:2]
+      winners <- ba_data[TOURNAMENT_NM == tour_name & GAME_ID == new_game_id, .(CYCLER_ID, TOTAL_BET = SECOND_BET + FIRST_BET, FIRST_BET, SECOND_BET)][order(-TOTAL_BET)][1:2]
      lane_counter <- 0
      #create game status if missing
      if (is.null(srv$game_status)) {
@@ -169,8 +170,40 @@ observe({
      simple_gs[, TOURNAMENT_NM := tour_name]
      simple_gs[, GAME_ID := new_game_id]
      simple_gs[, TURN_ID := 0]
-     dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
+
      srv$gs_simple <- simple_gs
+
+     #then update deck_status
+
+     deck_status <- dbSelectAll("DECK_STATUS", con )[TOURNAMENT_NM == tour_name & GAME_ID == new_game_id]
+     for (winner_loop in winners[, CYCLER_ID]) {
+browser()
+       deck_status <- play_card(cycler_id = winner_loop,
+                                card_id = winners[CYCLER_ID == winner_loop, FIRST_BET],
+                                current_decks_inpu = deck_status,
+                                game_id = -1,
+                                turn_id = 0,
+                                con = NULL,
+                                force = TRUE)
+       deck_status <- play_card(cycler_id = winner_loop,
+                                card_id = winners[CYCLER_ID == winner_loop, SECOND_BET],
+                                current_decks_inpu = deck_status,
+                                game_id = -1,
+                                turn_id = 0,
+                                con = NULL,
+                                force = TRUE)
+      #exh
+       deck_status <-  add_exhaustion(winner_loop, deck_status, "Deck")
+       deck_status <- add_exhaustion(winner_loop, deck_status, "Deck")
+     }
+     info_joined <- copy(deck_status)
+     info_joined[, ':=' (GAME_ID = new_game_id,
+                         TOURNAMENT_NM = tour_name,
+                         TURN_ID = 0,
+                         HAND_OPTIONS = 0)]
+     dbWriteTable(con, "DECK_STATUS", info_joined, append = TRUE, row.names = FALSE)
+     dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
+
     }
   } else {
     NULL
