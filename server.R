@@ -14,7 +14,7 @@ shinyServer(function(input, output, session) {
 #
 #   #monitor user inputs
 #   read_max_game_id <- function() {
-#     browser()
+#
 #     con <- connDB(con, "flaimme")
 #     dbQ("SELECT max(GAME_ID) from TOURNAMENT_RESULT", con)
 #   }
@@ -26,9 +26,85 @@ shinyServer(function(input, output, session) {
 
 
   #tour_info_data <-  my_reactivePoll(session, "TOURNAMENT_RESULT", "SELECT * FROM TOURNAMENT", 1000, con)
- tournament_data_reactive <- my_reactivePoll(session, "TOURNAMENT_RESULT", "SELECT * FROM TOURNAMENT_RESULT", 1000, con)
+ tournament_data_reactive <- my_reactivePoll(session, "TOURNAMENT_RESULT", "SELECT * FROM TOURNAMENT_RESULT", 2000, con)
+ tournament <- my_reactivePoll(session, "TOURNAMENT", "SELECT * FROM TOURNAMENT", 2000, con)
+ breakaway_bet_data <- my_reactivePoll(session, "BREAKAWAY_BET", "SELECT * FROM BREAKAWAY_BET", 3000, con)
 
- breakaway_bet_data <- my_reactivePoll(session, "BREAKAWAY_BET", "SELECT * FROM BREAKAWAY_BET", 5000, con)
+ breakaway_bet_cards_data <- my_reactivePoll(session, "BREAKAWAY_BET_CARDS", "SELECT * FROM BREAKAWAY_BET_CARDS", 2000, con)
+
+ move_fact_data  <- my_reactivePoll(session, "MOVE_FACT", "SELECT sum(CARD_ID) from MOVE_FACT", 1000, con)
+
+observe({
+
+  req(input$join_tournament)
+  #if CARD_ID > 0 for each cycler id where turn_id > max(turn_id) from GAME_STATUS
+  #find max turn from game_status
+  game <- srv$gs_simple[TOURNAMENT_NM == input$join_tournament, max(GAME_ID)]
+  gs_turn <- srv$gs_simple[TOURNAMENT_NM == input$join_tournament & GAME_ID == game, max(TURN_ID)]
+
+    how_many_unplayed <- move_fact_data()[TOURNAMENT_NM == input$join_tournament & CARD_ID == -1  & TURN_ID > gs_turn, .N]
+  how_many_played <- move_fact_data()[TOURNAMENT_NM == input$join_tournament & CARD_ID > -1  & TURN_ID > gs_turn, .N]
+
+  deck_status <- dbQ(paste0('SELECT * FROM DECK_STATUS WHERE GAME_ID = ',game,
+                            ' AND TOURNAMENT_NM = "', input$join_tournament, '"'), con)
+  browser()
+  if (how_many_unplayed == 0  & how_many_played > 0) {
+    #all played, then make the moves and play the cards
+    action_data <- move_fact_data()[TOURNAMENT_NM == input$join_tournament & TURN_ID > gs_turn]
+    #move order
+    move_order_cyclers <- srv$gs_simple[TURN_ID == gs_turn][order(-SQUARE_ID), CYCLER_ID]
+    for (loop_cycler in move_order_cyclers) {
+      card_id_played <- action_data[CYCLER_ID == loop_cycler, CARD_ID]
+      movement <- ifelse(card_id_played == 1, 2, card_id_played)
+      srv$game_status <- move_cycler(current_game_status_input = srv$game_status, cycler_id = loop_cycler, movement = movement)
+      deck_status <- play_card(loop_cycler, deck_status, game_id = -1, turn_id = -1, con = FALSE, card_id = card_id_played)
+    }
+   #slipstream and exhaustion
+    srv$game_status <- apply_slipstream(srv$game_status)
+
+    deck_status <- apply_exhaustion(deck_status, srv$game_status)
+
+  }
+})
+
+ observe({
+
+   #my job is to monitor breakaway_bet_cards and decide to deal first cards of the game
+   #rule, no breakaway_bet_cards in my tournament and tournament_result has been initialized
+   tournament_result <- tournament_data_reactive()
+   max_turn  <-  srv$gs_simple[, .(max_turn = max(TURN_ID)), by = .(TOURNAMENT_NM, GAME_ID)]
+
+   if (nrow(max_turn) > 0) {
+     inited_games <- max_turn[max_turn < 1, .(TOURNAMENT_NM, GAME_ID)]
+
+
+     cards_amount <- breakaway_bet_cards_data()
+     games_not_ready_to_start <- cards_amount[, .N, by = .(GAME_ID, TOURNAMENT_NM)]
+     #here we get list of games that can be started
+     joinai <- games_not_ready_to_start[inited_games, on = .(GAME_ID, TOURNAMENT_NM)][is.na(N)]
+    if (nrow(joinai) > 0) {
+     for (start_loop in 1:nrow(joinai)) {
+
+       deck_status <- dbQ(paste0('SELECT * FROM DECK_STATUS WHERE GAME_ID = ', joinai[start_loop, GAME_ID],
+                  ' AND TOURNAMENT_NM = "', joinai[start_loop, TOURNAMENT_NM], '"'), con)
+       #draw for each
+       cyclers <- tournament_result[TOURNAMENT_NM == joinai[start_loop, TOURNAMENT_NM], CYCLER_ID]
+       for (cycler_loop in cyclers) {
+         deck_status <- draw_cards(cycler_loop, deck_status, 4)
+       }
+
+       deck_status[, TOURNAMENT_NM := joinai[start_loop, TOURNAMENT_NM]]
+       deck_status[, GAME_ID := joinai[start_loop, GAME_ID]]
+       deck_status[, HAND_OPTIONS := 1]
+       deck_status[, TURN_ID := 1]
+       dbWriteTable(con, "DECK_STATUS", deck_status, append = TRUE, row.names = FALSE)
+
+     }
+
+
+    }
+    }
+ })
 
 observe({
 
@@ -123,6 +199,7 @@ observe({
 })
 
 observe({
+
 #THIS ONE MONITORS IF WE HAVE FINISHED BREAKAWAY BETTING
   req(srv$gs_simple)
   ####DEP
@@ -152,8 +229,26 @@ observe({
 
     if (missing_bets == 0 &   turn_is_minus_one) {
       #move cycers to breakaway
-      #who one?
-      winners <- ba_data[TOURNAMENT_NM == tour_name & GAME_ID == new_game_id, .(CYCLER_ID, TOTAL_BET = SECOND_BET + FIRST_BET, FIRST_BET, SECOND_BET)][order(-TOTAL_BET)][1:2]
+      #who won?
+
+      #tie breakers are solved in favour of who is back in the grid
+
+      ss_cyc <- srv$gs_simple[order(SQUARE_ID)][, .(CYCLER_ID)]
+      ss_cyc[, tie_breaker := seq_len(.N)]
+
+      winner_data <- ba_data[TOURNAMENT_NM == tour_name & GAME_ID == new_game_id, .(CYCLER_ID, TOTAL_BET = SECOND_BET + FIRST_BET, FIRST_BET, SECOND_BET)][order(-TOTAL_BET)]
+      join_tiebreaker <- ss_cyc[winner_data, on = "CYCLER_ID"]
+
+      #if there are 5 or 6 cyclers, then 2 breaks, otherwise 1
+      count_cyc <- nrow(ss_cyc)
+      if (count_cyc > 4) {
+        break_away_count <- 2
+      } else {
+        break_away_count <- 1
+      }
+      winners <- join_tiebreaker[order(-TOTAL_BET, tie_breaker)][1:break_away_count]
+
+
      lane_counter <- 0
      #create game status if missing
      if (is.null(srv$game_status)) {
@@ -177,7 +272,7 @@ observe({
 
      deck_status <- dbSelectAll("DECK_STATUS", con )[TOURNAMENT_NM == tour_name & GAME_ID == new_game_id]
      for (winner_loop in winners[, CYCLER_ID]) {
-browser()
+
        deck_status <- play_card(cycler_id = winner_loop,
                                 card_id = winners[CYCLER_ID == winner_loop, FIRST_BET],
                                 current_decks_inpu = deck_status,
@@ -204,12 +299,30 @@ browser()
      dbWriteTable(con, "DECK_STATUS", info_joined, append = TRUE, row.names = FALSE)
      dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
 
+     #clear breakaway bet cards
+
+     dbQ(paste0('DELETE FROM BREAKAWAY_BET_CARDS WHERE TOURNAMENT_NM = "', tour_name, '"'), con)
+
     }
   } else {
     NULL
   }
 
 })
+
+
+output$join_tournament <- renderUI({
+  con <- connDB(con, "flaimme")
+ tns <-   tournament()[, .N, by = TOURNAMENT_NM][, TOURNAMENT_NM]
+ selectInput(label = "Select tournament", inputId = "join_tournament", choices = tns)
+
+
+})
+
+
+#resolve game state after all moves are done
+
+
 
 
   react_status <- reactiveValues(phase = 0,
