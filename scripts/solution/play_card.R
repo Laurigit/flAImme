@@ -11,7 +11,8 @@
 # cycler_id <- 2
 # card_id <- 9
 play_card <- function(cycler_id,
-                      card_id,current_decks_inpu,
+                      card_id,
+                      current_decks_inpu,
                       game_id,
                       turn_id,
                       con = NULL,

@@ -1,0 +1,9 @@
+
+#drop table CLIENT_COMMANDS;
+create table CLIENT_COMMANDS (
+COMMAND_ID int auto_increment,
+CLIENT_COMMANDS int,
+TOURNAMENT_NM CHAR(30),
+COMMAND char(50),
+PRIMARY KEY ( COMMAND_ID));
+

@@ -16,9 +16,10 @@ apply_exhaustion <- function(current_deck, game_state) {
   exhaust_cyclers <- game_state[GAME_SLOT_ID %in% exhaust_slots & CYCLER_ID > 0, .(CYCLER_ID)]
 
   if (nrow(exhaust_cyclers) > 0) {
-    ex_cycler <-exhaust_cyclers[, CYCLER_ID]
-
-      current_deck <- add_exhaustion(ex_cycler, current_deck, "Recycle")
+    ex_cycler <- exhaust_cyclers[, CYCLER_ID]
+      for (ec_cyc_loop in ex_cycler ) {
+      current_deck <- add_exhaustion(ec_cyc_loop, current_deck, "Recycle")
+      }
      #print(paste0("EXHAUST CYCLER ", ex_cycler))
 
   }
