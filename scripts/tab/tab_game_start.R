@@ -172,6 +172,10 @@ req(input$join_tournament)
   if (nrow(joinai) > 0) {
 
 
+
+
+
+
   #clear breakaway bet cards
   con <- connDB(con, "flaimme")
   dbQ(paste0('DELETE FROM BREAKAWAY_BET_CARDS WHERE TOURNAMENT_NM = "', input$join_tournament, '"'), con)
@@ -187,6 +191,16 @@ req(input$join_tournament)
         deck_status_all <- dbQ(paste0('SELECT * FROM DECK_STATUS WHERE GAME_ID = ', joinai[start_loop, GAME_ID],
                                   ' AND TOURNAMENT_NM = "', joinai[start_loop, TOURNAMENT_NM], '"'), con)
         max_deck_turn <- deck_status_all[, max(TURN_ID)]
+        #check if we had breakaway bets. If not, update deck status and game status turn to 0
+
+        if (max_deck_turn == -1) {
+          dbQ(paste0('UPDATE DECK_STATUS SET TURN_ID = ', 0, ' WHERE GAME_ID = ', joinai[start_loop, GAME_ID],
+                     ' AND TOURNAMENT_NM = "', joinai[start_loop, TOURNAMENT_NM], '"'), con)
+          dbQ(paste0('UPDATE GAME_STATUS SET TURN_ID = ', 0, ' WHERE GAME_ID = ', joinai[start_loop, GAME_ID],
+                     ' AND TOURNAMENT_NM = "', joinai[start_loop, TOURNAMENT_NM], '"'), con)
+        }
+
+
         deck_status <- deck_status_all[TURN_ID == max_deck_turn]
         #draw for each
         cyclers <- tournament_result[TOURNAMENT_NM == joinai[start_loop, TOURNAMENT_NM] & GAME_ID == joinai[start_loop, GAME_ID], CYCLER_ID]
