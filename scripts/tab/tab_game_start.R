@@ -11,6 +11,7 @@ observe({
     first_command <- ""
   }
   if (first_command == "SETUP") {
+    print("running SETUP command")
   #CREATES DECKS AND GAME_STATE AT STARTUP.
   #we have also new game_id here
   req(tournament_data_reactive())
@@ -55,8 +56,9 @@ observe({
         deck_status <- add_startup_exhaustion(exh_add_amount, deck_status)
 
         #update to db too
-        for (ex_loop in 1:nrow(exh_add_amount)) {
-          dbQ(paste0('UPDATE TOURNAMENT_RESULT SET STARTING_EXHAUST = ', exh_add_amount[CYCLER_ID == ex_loop, EXHAUST_LEFT]), con)
+        for (ex_loop in exh_add_amount[, CYCLER_ID]) {
+          dbQ(paste0('UPDATE TOURNAMENT_RESULT SET STARTING_EXHAUST = ', exh_add_amount[CYCLER_ID == ex_loop, EXHAUST_LEFT],
+                     ' WHERE CYCLER_ID = ', ex_loop), con)
         }
       }
 
@@ -124,8 +126,7 @@ observe({
   }
   if (first_command == "BREAKAWAY") {
   #break away options
-
-
+    print("running BREAKAWAY command")
 
   #write options to db
   hand_numbers <- c(1, 2)
@@ -162,7 +163,7 @@ observe({
     first_command <- ""
   }
   if (first_command == "START") {
-
+print("running start command")
   #my job is to monitor commands and decide to deal first cards of the game
 req(input$join_tournament)
 

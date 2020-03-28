@@ -23,10 +23,18 @@ shinyServer(function(input, output, session) {
 
  breakaway_bet_cards_data <- my_reactivePoll(session, "BREAKAWAY_BET_CARDS", "SELECT * FROM BREAKAWAY_BET_CARDS", 2000, con)
 
- move_fact_data  <- my_reactivePoll(session, "MOVE_FACT", "SELECT sum(CARD_ID) from MOVE_FACT", 1000, con)
+ move_fact_data_all  <- my_reactivePoll(session, "MOVE_FACT", "SELECT sum(CARD_ID) from MOVE_FACT", 1000, con)
 
 command_data <-  my_reactivePoll(session, "CLIENT_COMMANDS", "SELECT * from CLIENT_COMMANDS", 1000, con)
 
+
+move_fact_data <- reactive({
+  req(move_fact_data_all())
+      req(input$join_tournament)
+
+  res <- move_fact_data_all()[GAME_ID == srv$game_id & TOURNAMENT_NM ==  input$join_tournament]
+  res
+})
 
 output$join_tournament <- renderUI({
   con <- connDB(con, "flaimme")
