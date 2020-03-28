@@ -38,6 +38,7 @@ observe({
     #game state is behind one turn
 
     move_order_cyclers <- srv$gs_simple[order(-SQUARE_ID), CYCLER_ID]
+
     for (loop_cycler in move_order_cyclers) {
       card_id_played <- action_data[CYCLER_ID == loop_cycler, CARD_ID]
       movement <- ifelse(card_id_played == 1, 2, card_id_played)
@@ -58,10 +59,11 @@ observe({
     if (nrow(finishers) > 0) {
       finished <- finishers[, CYCLER_ID]
       for (finish_loop in finished) {
-        sof <- srv$game_status[CYCLER_ID == finish_loop, GAME_SLOT_ID]
+        sof <- srv$game_status[CYCLER_ID == finish_loop, GAME_SLOT_ID] - finish_lane + 1
+        finish_turn <- srv$turn_id
         lane <- srv$game_status[CYCLER_ID == finish_loop, LANE_NO]
         ex_left <- deck_status[CYCLER_ID == finish_loop & CARD_ID == 1, .N]
-        dbQ(paste0('UPDATE TOURNAMENT_RESULT SET SLOTS_OVER_FINISH = ', sof ,', LANE = ', lane , ', EXHAUST_LEFT = ',ex_left ,' WHERE CYCLER_ID = ',finish_loop ))
+        dbQ(paste0('UPDATE TOURNAMENT_RESULT SET FINISH_TURN = ', finish_turn, ', SLOTS_OVER_FINISH = ', sof ,', LANE = ', lane , ', EXHAUST_LEFT = ',ex_left ,' WHERE CYCLER_ID = ',finish_loop ), con)
       }
       srv$game_status <- clear_finishers(srv$game_status, finished)
     }

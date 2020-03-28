@@ -3,6 +3,7 @@
 #curr_decks <- create_decks(input_STARTUP_DATA[, CYCLER_ID], ADM_CYCLER_DECK)
 #cycler_id_vect <- c(1,2,3)
 add_exhaustion <- function(cycler_id_vect, curr_decks, input_zone) {
+
   max_row_id <- (curr_decks[, max(row_id)] +1):(curr_decks[, max(row_id)]  + length(cycler_id_vect))
   #get columns
   new_row <- curr_decks[1]

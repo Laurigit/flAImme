@@ -3,8 +3,14 @@
 
 observe({
 
-
-
+  req(input$join_tournament)
+  #launch when gets a command to start
+  command_rows <- command_data()[TOURNAMENT_NM == input$join_tournament, .(COMMAND, COMMAND_ID)]
+  first_command <- command_rows[1, COMMAND]
+  if (is.na(first_command)) {
+    first_command <- ""
+  }
+  if (first_command == "SETUP") {
   #CREATES DECKS AND GAME_STATE AT STARTUP.
   #we have also new game_id here
   req(tournament_data_reactive())
@@ -12,6 +18,7 @@ observe({
   max_row <- new_game_found[, .N]
   tour_name <- new_game_found[max_row, TOURNAMENT_NM]
   srv$game_id <- new_game_found[max_row, GAME_ID]
+  srv$track_id_input <-new_game_found[max_row, TRACK_ID]
   #check if it is already running
   con <- connDB(con, "flaimme")
 
@@ -27,7 +34,7 @@ observe({
       #RUNNING
 
     } else {
-      browser()
+
       #not running. start the game
       #just in case delete partial rows if somehoe only deck_status or game_status was setup
       dbQ(paste0('DELETE FROM DECK_STATUS WHERE TOURNAMENT_NM = "', tour_name, '" AND GAME_ID = "',
@@ -46,7 +53,14 @@ observe({
       exh_add_amount <- new_game_found[GAME_ID == (srv$game_id - 1) & TOURNAMENT_NM == tour_name & EXHAUST_LEFT > 0, .(CYCLER_ID, EXHAUST_LEFT)]
       if (nrow(exh_add_amount) > 0) {
         deck_status <- add_startup_exhaustion(exh_add_amount, deck_status)
+
+        #update to db too
+        for (ex_loop in 1:nrow(exh_add_amount)) {
+          dbQ(paste0('UPDATE TOURNAMENT_RESULT SET STARTING_EXHAUST = ', exh_add_amount[CYCLER_ID == ex_loop, EXHAUST_LEFT]), con)
+        }
       }
+
+
 
       #write decks to db
       info_joined <- copy(deck_status)
@@ -55,33 +69,6 @@ observe({
                           TURN_ID = -1,
                           HAND_OPTIONS = 0)]
       dbWriteTable(con, "DECK_STATUS", info_joined, append = TRUE, row.names = FALSE)
-
-      #break away options
-
-
-
-      #write options to db
-      hand_numbers <- c(1, 2)
-      #delete previous
-
-      dbQ(paste0('DELETE FROM BREAKAWAY_BET_CARDS WHERE TOURNAMENT_NM = "', tour_name, '"'), con)
-
-      for (hand_loop in hand_numbers) {
-        for (cycler_loop in cycler_ids) {
-          deck_status <- draw_cards(cycler_loop, deck_status, 4)
-        }
-        only_hand_cards <- deck_status[Zone == "Hand", .(CYCLER_ID, CARD_ID,
-                                                         TOURNAMENT_NM = tour_name,
-                                                         GAME_ID = srv$game_id,
-                                                         HAND_NUMBER = hand_loop)]
-
-        dbWriteTable(con, "BREAKAWAY_BET_CARDS", only_hand_cards, row.names = FALSE, append = TRUE)
-        deck_status[Zone == "Hand", Zone := "Recycle"]
-      }
-
-
-      #set cards back to hand. "I dont know if this matters??
-      deck_status[, Zone := "Deck"]
 
       #setup initial game status
 
@@ -92,6 +79,7 @@ observe({
       simple_gs[, GAME_ID := srv$game_id]
       simple_gs[, TURN_ID := -1]
       srv$gs_simple <- simple_gs
+
       dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
 
     }
@@ -99,7 +87,28 @@ observe({
     returnV <- NULL
     returnV
   }
+  rel_com_id <- command_rows[1, COMMAND_ID]
+  dbQ(paste0('DELETE FROM CLIENT_COMMANDS WHERE COMMAND_ID = ', rel_com_id), con)
+  }
+})
 
+
+
+observe({
+
+  req(input$join_tournament)
+  #launch when gets a command to s
+  command_rows <- command_data()[TOURNAMENT_NM == input$join_tournament, .(COMMAND, COMMAND_ID)]
+  first_command <- command_rows[1, COMMAND]
+  if (is.na(first_command)) {
+    first_command <- ""
+  }
+  if (first_command == "UPDATE_TRACKS") {
+    required_data("SRC_TRACK", force_update = TRUE)
+    required_data("STG_TRACK", force_update = TRUE)
+    rel_com_id <- command_rows[1, COMMAND_ID]
+    dbQ(paste0('DELETE FROM CLIENT_COMMANDS WHERE COMMAND_ID = ', rel_com_id), con)
+  }
 
 })
 
@@ -107,22 +116,60 @@ observe({
 
 observe({
 
+  req(input$join_tournament)
+  command_rows <- command_data()[TOURNAMENT_NM == input$join_tournament, .(COMMAND, COMMAND_ID)]
+  first_command <- command_rows[1, COMMAND]
+  if (is.na(first_command)) {
+    first_command <- ""
+  }
+  if (first_command == "BREAKAWAY") {
+  #break away options
 
+
+
+  #write options to db
+  hand_numbers <- c(1, 2)
+  #delete previous
+
+  dbQ(paste0('DELETE FROM BREAKAWAY_BET_CARDS WHERE TOURNAMENT_NM = "', input$join_tournament, '"'), con)
+
+  for (hand_loop in hand_numbers) {
+    for (cycler_loop in cycler_ids) {
+      deck_status <- draw_cards(cycler_loop, deck_status, 4)
+    }
+    only_hand_cards <- deck_status[Zone == "Hand", .(CYCLER_ID, CARD_ID,
+                                                     TOURNAMENT_NM = input$join_tournament,
+                                                     GAME_ID = srv$game_id,
+                                                     HAND_NUMBER = hand_loop)]
+
+    dbWriteTable(con, "BREAKAWAY_BET_CARDS", only_hand_cards, row.names = FALSE, append = TRUE)
+    deck_status[Zone == "Hand", Zone := "Recycle"]
+  }
+
+  rel_com_id <- command_rows[1, COMMAND_ID]
+  dbQ(paste0('DELETE FROM CLIENT_COMMANDS WHERE COMMAND_ID = ', rel_com_id), con)
+}
+})
+
+
+
+observe({
+
+  req(input$join_tournament)
+  command_rows <- command_data()[TOURNAMENT_NM == input$join_tournament, .(COMMAND, COMMAND_ID)]
+  first_command <- command_rows[1, COMMAND]
+  if (is.na(first_command)) {
+    first_command <- ""
+  }
+  if (first_command == "START") {
 
   #my job is to monitor commands and decide to deal first cards of the game
-  #rule, no breakaway_bet_cards in my tournament and tournament_result has been initialized
-  #I also need cards dealt game status inited
 req(input$join_tournament)
-command_rows <- command_data()[TOURNAMENT_NM == input$join_tournament, .(COMMAND, COMMAND_ID)]
-first_command <- command_rows[1, COMMAND]
-if (is.na(first_command)) {
-  first_command <- ""
-}
-if (first_command == "START") {
+
   tournament_result <- tournament_data_reactive()
   joinai <- tournament_result[TOURNAMENT_NM == input$join_tournament & LANE == -1, .N, by = .(GAME_ID, TOURNAMENT_NM)]
   if (nrow(joinai) > 0) {
-browser()
+
 
   #clear breakaway bet cards
   con <- connDB(con, "flaimme")
@@ -142,6 +189,7 @@ browser()
         deck_status <- deck_status_all[TURN_ID == max_deck_turn]
         #draw for each
         cyclers <- tournament_result[TOURNAMENT_NM == joinai[start_loop, TOURNAMENT_NM] & GAME_ID == joinai[start_loop, GAME_ID], CYCLER_ID]
+
         for (cycler_loop in cyclers) {
           deck_status <- draw_cards(cycler_loop, deck_status, 4)
           if(deck_status[CYCLER_ID == cycler_loop & Zone == "Hand", .N ] != 4) {
@@ -155,10 +203,9 @@ browser()
         deck_status[, TURN_ID := 1]
         dbWriteTable(con, "DECK_STATUS", deck_status, append = TRUE, row.names = FALSE)
         srv$turn_id <- 1
-
-        rel_com_id <- command_rows[1, COMMAND_ID]
-        dbQ(paste0('DELETE FROM CLIENT_COMMANDS WHERE COMMAND_ID = ', rel_com_id), con)
     }
-}
 
+  rel_com_id <- command_rows[1, COMMAND_ID]
+  dbQ(paste0('DELETE FROM CLIENT_COMMANDS WHERE COMMAND_ID = ', rel_com_id), con)
+  }
 })

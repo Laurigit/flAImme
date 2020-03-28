@@ -3,10 +3,19 @@
 observe({
 #THIS ONE MONITORS IF WE HAVE FINISHED BREAKAWAY BETTING
 req(srv$gs_simple)
+
+  req(input$join_tournament)
 ####DEP
 breakaway_bet_data()
 ########DEPD#############
 
+
+command_rows <- command_data()[TOURNAMENT_NM == input$join_tournament, .(COMMAND, COMMAND_ID)]
+first_command <- command_rows[1, COMMAND]
+if (is.na(first_command)) {
+  first_command <- ""
+}
+if (first_command == "BREAKAWAY_DONE") {
 #how many inputs needed?
 new_game_found <- tournament_data_reactive()
 
@@ -105,8 +114,14 @@ if (nrow(new_game_found) > 0) {
     dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
 
 
+    rel_com_id <- command_rows[1, COMMAND_ID]
+    dbQ(paste0('DELETE FROM CLIENT_COMMANDS WHERE COMMAND_ID = ', rel_com_id), con)
+
     command <- data.table(TOURNAMENT_NM = input$join_tournament, COMMAND = "START")
     dbIns("CLIENT_COMMANDS", command, con)
+
+}
+
   }
 } else {
   NULL
