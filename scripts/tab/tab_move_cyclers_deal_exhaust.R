@@ -86,6 +86,7 @@ observe({
     deck_status[, HAND_OPTIONS := 0]
     deck_status[, TURN_ID := srv$turn_id]
     dbWriteTable(con, "DECK_STATUS", deck_status, append = TRUE, row.names = FALSE)
+
     dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
 
 

@@ -155,7 +155,7 @@ observe({
 
 
 observe({
-
+browser()
   req(input$join_tournament)
   command_rows <- command_data()[TOURNAMENT_NM == input$join_tournament, .(COMMAND, COMMAND_ID)]
   first_command <- command_rows[1, COMMAND]
