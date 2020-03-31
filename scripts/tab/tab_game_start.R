@@ -133,7 +133,13 @@ observe({
   #delete previous
 
   dbQ(paste0('DELETE FROM BREAKAWAY_BET_CARDS WHERE TOURNAMENT_NM = "', input$join_tournament, '"'), con)
+  new_game_found <- tournament_data_reactive()
+  max_row <- new_game_found[, .N]
+  tour_name <- new_game_found[max_row, TOURNAMENT_NM]
+  cycler_ids <- new_game_found[GAME_ID == srv$game_id & TOURNAMENT_NM == tour_name][order(START_POSITION), CYCLER_ID]
 
+  deck_status <- dbQ(paste0('SELECT * FROM DECK_STATUS WHERE TURN_ID = -1 AND GAME_ID = ', srv$game_id,
+                            ' AND TOURNAMENT_NM = "', input$join_tournament, '"'), con)
   for (hand_loop in hand_numbers) {
     for (cycler_loop in cycler_ids) {
       deck_status <- draw_cards(cycler_loop, deck_status, 4)
@@ -149,13 +155,14 @@ observe({
 
   rel_com_id <- command_rows[1, COMMAND_ID]
   dbQ(paste0('DELETE FROM CLIENT_COMMANDS WHERE COMMAND_ID = ', rel_com_id), con)
+
 }
 })
 
 
 
 observe({
-browser()
+
   req(input$join_tournament)
   command_rows <- command_data()[TOURNAMENT_NM == input$join_tournament, .(COMMAND, COMMAND_ID)]
   first_command <- command_rows[1, COMMAND]
@@ -202,6 +209,7 @@ req(input$join_tournament)
 
 
         deck_status <- deck_status_all[TURN_ID == max_deck_turn]
+
         #draw for each
         cyclers <- tournament_result[TOURNAMENT_NM == joinai[start_loop, TOURNAMENT_NM] & GAME_ID == joinai[start_loop, GAME_ID], CYCLER_ID]
 
