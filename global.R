@@ -24,7 +24,6 @@ library(ROI.plugin.symphony)
 library(ompr)
 library(ompr.roi)
 library(testthat)
-library(svDialogs)
 
 
 
