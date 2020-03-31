@@ -55,6 +55,7 @@ observe({
     finish_lane <- srv$game_status[FINISH == 1, max(GAME_SLOT_ID)]
     finish_slots <-  srv$game_status[GAME_SLOT_ID >= finish_lane]
     #any there?
+
     finishers <- finish_slots[order(-SQUARE_ID)][CYCLER_ID > 0]
     if (nrow(finishers) > 0) {
       finished <- finishers[, CYCLER_ID]
@@ -62,7 +63,7 @@ observe({
         sof <- srv$game_status[CYCLER_ID == finish_loop, GAME_SLOT_ID] - finish_lane + 1
         finish_turn <- srv$turn_id
         lane <- srv$game_status[CYCLER_ID == finish_loop, LANE_NO]
-        ex_left <- deck_status[CYCLER_ID == finish_loop & CARD_ID == 1, .N]
+        ex_left <- deck_status[CYCLER_ID == finish_loop & CARD_ID == 1 & TURN_ID == srv$turn_id, .N]
         dbQ(paste0('UPDATE TOURNAMENT_RESULT SET FINISH_TURN = ', finish_turn, ', SLOTS_OVER_FINISH = ', sof ,', LANE = ', lane , ', EXHAUST_LEFT = ',ex_left ,' WHERE CYCLER_ID = ',finish_loop ), con)
       }
       srv$game_status <- clear_finishers(srv$game_status, finished)
