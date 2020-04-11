@@ -10,6 +10,7 @@ select_smart_card_phase <- function(game_status, deck_status, pre_track, ctM_dat
                                     STG_CYCLER
                                     ) {
   #check if we hanve only one option
+
   card_options_in_hand <- smart_cards_options(deck_status[CYCLER_ID == moving_cycler & Zone == "Hand", unique(MOVEMENT)], pre_track, moving_cycler)
   if (length(card_options_in_hand) == 1) {
     res_move <- card_options_in_hand
@@ -33,9 +34,9 @@ select_smart_card_phase <- function(game_status, deck_status, pre_track, ctM_dat
 
   #adjust odds based on what I have drawn
   cyc_move_data <- data.table(CYCLER_ID = moving_cycler,
-                              MOVEMENT = smart_card_options,
+                              MOVEMENT = card_options_in_hand,
                               TEAM_ID = team_id,
-                              odds = 1 / length(smart_card_options))
+                              odds = 1 / length(card_options_in_hand))
 
 
   removed_orig_data <- sscols_all[!CYCLER_ID %in% moving_cycler]
@@ -69,18 +70,18 @@ select_smart_card_phase <- function(game_status, deck_status, pre_track, ctM_dat
 
 
   #CALC DRAW ODDS HERE AS IT DEPENDS ON PLAYED CARD!
-  range[, DRAW_ODDS :=  ifelse(CYCLER_ID %in% smart_cyclers, (calculate_draw_distribution_by_turn(CYCLER_ID,
-                                                                                                  play_card(CYCLER_ID,
-                                                                                                            card_id = NULL,
-                                                                                                            deck_status,
-                                                                                                            game_id = 0,
-                                                                                                            turn_id = 0,
-                                                                                                            con = FALSE,
-                                                                                                            card_row_id = NULL,
-                                                                                                            MOVEMENT_PLAYED = MOVEMENT,
-                                                                                                            copy = TRUE),
-                                                                                                  4, db_res = TRUE)),
-                               ""), by = .(CYCLER_ID, MOVEMENT)]
+  # range[, DRAW_ODDS :=  ifelse(CYCLER_ID %in% smart_cyclers, (calculate_draw_distribution_by_turn(CYCLER_ID,
+  #                                                                                                 play_card(CYCLER_ID,
+  #                                                                                                           card_id = NULL,
+  #                                                                                                           deck_status,
+  #                                                                                                           game_id = 0,
+  #                                                                                                           turn_id = 0,
+  #                                                                                                           con = NULL,
+  #                                                                                                           card_row_id = NULL,
+  #                                                                                                           MOVEMENT_PLAYED = MOVEMENT,
+  #                                                                                                           copy = TRUE),
+  #                                                                                                 4, db_res = TRUE)),
+  #                              ""), by = .(CYCLER_ID, MOVEMENT)]
 
   #join deck left
   cycler_movement <- range[, .(CYCLER_ID, MOVEMENT, DECK_LEFT, DRAW_ODDS)]
@@ -111,7 +112,10 @@ select_smart_card_phase <- function(game_status, deck_status, pre_track, ctM_dat
   if (phase == 1) {
   thinking_time <- (max_new_cyc_pos + 20) ^ 1.15
   #thinking_time <- 2
+  browser()
   join_info[case_odds_ranking_total < thinking_time, new_cyc_pos := phaseless_simulation(game_status, moving_cycler, second_cycler, team_id, STG_CYCLER, .SD, TRUE), by = case_id, .SDcols = c("MOVEMENT", "CYCLER_ID", "curr_pos", "TEAM_ID")]
+
+
   } else {
     thinking_time <- (max_new_cyc_pos + 75) ^ 1.13
     #thinking_time <- 2

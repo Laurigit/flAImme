@@ -87,10 +87,15 @@ game_status_data <- list()
 
 
 
-#CHOOSE WHICH DECISION MAKE FIRST
+#CHOOSE WHICH DECISION MAKE FIRST. The one with bettter winning chance goes last
 
               moving_cycler <- choose_first_AI_cycler(smart_team, game_status, "leading", STG_CYCLER)
+
+              #simulate and score
+
               if (!is.na(moving_cycler)) {
+
+
               card_id_selected  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == moving_cycler & Zone == "Hand"], moving_cycler, "SMART_MAX",  aim_downhill = TRUE)[, CARD_ID]
 
               played_cards_data[TURN_ID == turn_id & CYCLER_ID == moving_cycler,  CARD_ID := card_id_selected]

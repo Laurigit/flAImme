@@ -24,7 +24,7 @@ library(ROI.plugin.symphony)
 library(ompr)
 library(ompr.roi)
 library(testthat)
-
+library(Rcpp)
 
 
 options(shiny.trace=FALSE)

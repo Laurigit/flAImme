@@ -1,6 +1,7 @@
 #tab_move_cyclers_deal_exhaust
 
 observe({
+
   #UPDATE GAME STATE IF MOVES ARE PLAYED. OBSERVE MOVE FACT. ALSO UPDATE turn
   req(input$join_tournament)
   #if CARD_ID > 0 for each cycler id where turn_id > max(turn_id) from GAME_STATUS
@@ -58,13 +59,21 @@ observe({
 
     finishers <- finish_slots[order(-SQUARE_ID)][CYCLER_ID > 0]
     if (nrow(finishers) > 0) {
+
       finished <- finishers[, CYCLER_ID]
       for (finish_loop in finished) {
+        #check which game_id we are playing,
+        srv$game_id <- mf_local_all_turns[, max(GAME_ID)]
         sof <- srv$game_status[CYCLER_ID == finish_loop, GAME_SLOT_ID] - finish_lane + 1
         finish_turn <- srv$turn_id
         lane <- srv$game_status[CYCLER_ID == finish_loop, LANE_NO]
         ex_left <- deck_status[CYCLER_ID == finish_loop & CARD_ID == 1 & TURN_ID == srv$turn_id, .N]
-        dbQ(paste0('UPDATE TOURNAMENT_RESULT SET FINISH_TURN = ', finish_turn, ', SLOTS_OVER_FINISH = ', sof ,', LANE = ', lane , ', EXHAUST_LEFT = ',ex_left ,' WHERE CYCLER_ID = ',finish_loop ), con)
+        dbQ(paste0('UPDATE TOURNAMENT_RESULT SET FINISH_TURN = ', finish_turn,
+                   ',SLOTS_OVER_FINISH = ', sof ,
+                   ', LANE = ', lane ,
+                   ', EXHAUST_LEFT = ',ex_left ,
+                   ' WHERE CYCLER_ID = ',finish_loop,
+                   ' AND TOURNAMENT_NM = "', input$join_tournament, '" AND GAME_ID = ', srv$game_id ), con)
       }
       srv$game_status <- clear_finishers(srv$game_status, finished)
     }

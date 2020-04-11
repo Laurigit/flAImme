@@ -127,7 +127,7 @@ observe({
   if (first_command == "BREAKAWAY") {
   #break away options
     print("running BREAKAWAY command")
-
+browser(9)
   #write options to db
   hand_numbers <- c(1, 2)
   #delete previous
@@ -140,6 +140,7 @@ observe({
 
   deck_status <- dbQ(paste0('SELECT * FROM DECK_STATUS WHERE TURN_ID = -1 AND GAME_ID = ', srv$game_id,
                             ' AND TOURNAMENT_NM = "', input$join_tournament, '"'), con)
+  browser()
   for (hand_loop in hand_numbers) {
     for (cycler_loop in cycler_ids) {
       deck_status <- draw_cards(cycler_loop, deck_status, 4)
