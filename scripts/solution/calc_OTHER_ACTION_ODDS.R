@@ -77,8 +77,8 @@ calc_OTHER_ACTION_ODDS <- function(data_for_calculations) {
   join_prob_to_cases[TEAM_ID == 1 & MOVES == "3_4" & PROPABILITY > 0]
   #finally join case prob
 
-  data_for_calculations[, ':=' (PROB_PRODUCT = NULL, OTHER_ACTION_ODDS = NULL)]
-
+ # data_for_calculations[, ':=' (PROB_PRODUCT = NULL, OTHER_ACTION_ODDS = NULL)]
+browser()
   case_prob <- sscols_case[data_for_calculations, on = .(case_id, TEAM_ID)]
   return(case_prob)
 }

@@ -1,4 +1,5 @@
   # required_data(c("STG_CYCLER", "STG_TRACK"))
+#AWS docker IMAGE PITÄÄ REBUILDAA, ETTÄ TOIMII PILVESSÄ.
 
 #source("global.R")
 kaadu
