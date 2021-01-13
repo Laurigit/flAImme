@@ -37,6 +37,7 @@ sourcelist <- sourcelist[!grep("load_scripts.R", polku)]
 sourcelist[, kansio := ifelse(str_sub(kansio, -2, -1) == ".R", "root", kansio)]
 
 input_kansio_list <- c("utility",
+                       "c_functions",
                        "solution_functions",
                        "solution",
                        "UID")

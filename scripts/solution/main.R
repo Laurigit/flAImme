@@ -10,8 +10,8 @@ game_status_data <- list()
   full_action <- NULL
   game_action <- NULL
 
-  playing_teams <- c(1, 2, 3, 4)
-
+  #playing_teams <- c(1, 2, 3, 4)
+  playing_teams <- c(1, 2, 3)
 
   smart_team <- 3
   ai_teams <- setdiff(playing_teams, smart_team)
@@ -20,15 +20,17 @@ game_status_data <- list()
   game_id <- 1
 
   for (game_id in 1:200000) {
-    cycler_ids <- c(7, 4, 5, 6, 8, 1, 3, 2)
+   # cycler_ids <- c(7, 4, 5, 6, 8, 1, 3, 2)
+    cycler_ids <- c(4, 5, 6, 1, 3, 2)
     turn_id <- 0
-    repeat{
+    repeat {
     if (turn_id == 0) {
     turn_game_status <- NULL
     deck_status_loop <- NULL
     deck_status_loop_before <- NULL
     track <- 29#as.integer(runif(1, 12, 17))
-
+    #ijk map explanation: i = starting point, k = movement, j = ending slot
+    ijk <- ijk_map(track, STG_TRACK_PIECE, STG_TRACK)
     winner_state <- data.table(TURN_ID = numeric(), CYCLER_ID = numeric(), POSITION = numeric(), GAME_ID = numeric(),
                                row_over_finish = numeric(), finish_square = numeric())
 
@@ -83,12 +85,18 @@ game_status_data <- list()
       # if playing with humans, dont update DB
       # update only new opt results in memory that have been generated during the game
 
-     # ctM_res <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status)
-     # ctM_data <- ctM_res$ctM_data
+      ctM_res <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status)
+      ctM_data <- ctM_res$ctM_data
 
 
-
-#CHOOSE WHICH DECISION MAKE FIRST. The one with bettter winning chance goes last
+      #calculate mixed strategies
+      zoom(game_status)
+      MIXED_STRATEGY <- calculate_mixed_strategy(game_status, deck_status, ijk, ADM_AI_CONF, ADM_OPTIMAL_MOVES, ctM_data, STG_TEAM)
+      setkey(MIXED_STRATEGY, PROB_PRODUCT)
+      ress <- MIXED_STRATEGY[, tail(.SD, 3), by = TEAM_ID]
+      ress[, prio := seq_len(.N), by = TEAM_ID]
+      ress[order( -prio, TEAM_ID)]
+      #CHOOSE WHICH DECISION MAKE FIRST. The one with bettter winning chance goes last
 
               moving_cycler <- choose_first_AI_cycler(smart_team, game_status, "leading", STG_CYCLER)
 

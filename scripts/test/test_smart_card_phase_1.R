@@ -4,7 +4,7 @@ rm("ADM_OPTIMAL_MOVES")
 required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES"))
 required_data("ADM_AI_CONF")
 track <- 2
-cyclers <- c(1,2,3,4,5,6)
+cyclers <- c(4,1,3,6,2,5)
 game_status <- start_game(cyclers,track, STG_TRACK_PIECE, STG_TRACK)
 #game_status <- set_cycler_position(1, 64, 1,  game_status)
 deck_status <- create_decks(cyclers, ADM_CYCLER_DECK)
@@ -182,7 +182,8 @@ if (length(card_options_in_hand) == 1) {
 
       join_track_left[case_id == 1]
       res <- calc_OTHER_ACTION_ODDS(join_track_left)
-      res <- calc_OTHER_ACTION_ODDS(res)
+      res[, ':=' (PROB_PRODUCT = 0.1, OTHER_ACTION_ODDS = 0.5)]
+      #res <- calc_OTHER_ACTION_ODDS(res)
 
 
       aggr_to_team <- join_track_left[, .(CYCLERS , TEAM_SCORE = sum(TOT_SCORE), MOVES), by = .(TEAM_ID, case_id, opponent_moves, case_odds)]
@@ -190,7 +191,7 @@ if (length(card_options_in_hand) == 1) {
     #to lp solver
 
 
-    res <- calc_OTHER_ACTION_ODDS(res)
+  #  res <- calc_OTHER_ACTION_ODDS(res)
 
     check_res <- res[, .(CYCLERS, TEAM_SCORE = sum(TOT_SCORE), MOVES), by = .(TEAM_ID, case_id, opponent_moves, PROB_PRODUCT, OTHER_ACTION_ODDS, MIX_STRATEGY_CAP)]
     # check_res[MOVES == "7_9" & TEAM_ID == 1, sum(OTHER_ACTION_ODDS)]
@@ -222,8 +223,10 @@ if (length(card_options_in_hand) == 1) {
     check_res2[, new_prob := ifelse(new_prob_capped == MIX_STRATEGY_CAP, new_prob_capped, new_prob_uncapped  + new_prob_uncapped /  non_missing_prob_mass * missing_prob)]
     #WE MIGHT GET OVER MIX STRAT AGAIN AFTER SCALING. NEED TO BUILD LOOPING SOLVER
     check_res2[TEAM_ID == 3]
+    tot_res <- check_res2[, .(CYCLERS, MOVES, TEAM_ID, new_prob)]
     ######################
     check_res2[, sum(new_prob), by = TEAM_ID]
+    check_res2[order(-EV)]
     mixed_strategy <- check_res2[, .(CYCLERS, MOVES, TEAM_ID, new_prob)]
 
     #now calculate EV again
@@ -261,17 +264,20 @@ if (length(card_options_in_hand) == 1) {
     #scaling the uncapped
     check_res2[, new_prob := ifelse(new_prob_capped == MIX_STRATEGY_CAP, new_prob_capped, new_prob_uncapped  + new_prob_uncapped /  non_missing_prob_mass * missing_prob)]
     #WE MIGHT GET OVER MIX STRAT AGAIN AFTER SCALING. NEED TO BUILD LOOPING SOLVER
-    check_res2[TEAM_ID == 3]
-    check_res2[, sum(new_prob), by = TEAM_ID ]
-    #END HERE
 
+    round_res <- check_res2[, .(CYCLERS, MOVES, TEAM_ID, new_prob)]
+    tot_res <- round_res[tot_res, on = .(CYCLERS, MOVES, TEAM_ID)]
 
-
-
-
-
+  #END HERE
 
     zoom(game_status)
+
+
+
+
+
+
+
 
 
     orig <- join_track_left[, .(CYCLERS = paste0(CYCLER_ID, collapse = "_"), TEAM_SCORE = sum(TOT_SCORE), MOVES = paste0(MOVEMENT, collapse = "_")), by = .(TEAM_ID, case_id, opponent_moves, PROB_PRODUCT, OTHER_ACTION_ODDS)]

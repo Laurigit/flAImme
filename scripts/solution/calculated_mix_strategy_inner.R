@@ -1,5 +1,5 @@
 #calc new mixed strategy
-calculated_mix_strategy_inner <- function(input_current_ev_data, gamma = 0.9) {
+calculated_mix_strategy_inner <- function(input_current_ev_data, gamma = 0.9, combinations_data) {
  current_ev_data <- copy(input_current_ev_data)
   current_ev_data[, top := exp(1/gamma*EV) ]
   current_ev_data[, bottom := sum(top), by = TEAM_ID]
@@ -26,13 +26,14 @@ calculated_mix_strategy_inner <- function(input_current_ev_data, gamma = 0.9) {
   mixed_strategy <- current_ev_data[, .(CYCLERS, MOVES, TEAM_ID, new_prob)]
 
 
-  join_new_strat <- mixed_strategy[res, on = .(CYCLERS, MOVES, TEAM_ID)]
-  join_new_strat[, NEW_CASE_PROB := prod(new_prob)]
-  current_ev_data <- join_new_strat[, .(TEAM_SCORE = sum(TOT_SCORE)), by = .(MOVES, CYCLERS, TEAM_ID, case_id, opponent_moves, new_prob, MIX_STRATEGY_CAP)]
+  join_new_strat <- mixed_strategy[combinations_data, on = .(CYCLERS, MOVES, TEAM_ID)]
+ # join_new_strat[, NEW_CASE_PROB := prod(new_prob)]
+  current_ev_data <- join_new_strat[, .(TEAM_SCORE = sum(TOT_SCORE)), by = .(MOVES, CYCLERS, TEAM_ID, case_id, new_prob, MIX_STRATEGY_CAP)]
 
-  current_ev_data[, OPPONENT_CASE_PROB := prod(new_prob) / new_prob, by = case_id]
+   current_ev_data[, WEIGHTED_SCORE := prod(new_prob) / new_prob * TEAM_SCORE, by = case_id]
+ # current_ev_data[, OPPONENT_CASE_PROB := prod(new_prob) / new_prob, by = case_id]
 
-  current_ev_data[, WEIGHTED_SCORE := OPPONENT_CASE_PROB * TEAM_SCORE]
+  #current_ev_data[, WEIGHTED_SCORE := OPPONENT_CASE_PROB * TEAM_SCORE]
 
   result <- current_ev_data[, .(EV = sum(WEIGHTED_SCORE)), by = .(CYCLERS, MOVES, TEAM_ID, MIX_STRATEGY_CAP, PROB_PRODUCT = new_prob)]
   return(result)
