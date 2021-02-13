@@ -1,4 +1,6 @@
 #test_calculate_mix_strategy_cap.R
+
+#save(list = "MIXED_STRATEGY", file = "./test_data/calculate_mix_strategy.R")
 load(file = "./test_data/calculate_mix_strategy.R")
 testdata <- MIXED_STRATEGY
 
@@ -12,10 +14,10 @@ testdata <- MIXED_STRATEGY
 # <- function(data_for_calculations) {
 
 
-#aggr_to_team <- join_track_left[, .(CYCLERS = paste0(CYCLER_ID, collapse = "_"), TEAM_SCORE = sum(TOT_SCORE), MOVES = paste0(MOVEMENT, collapse = "_")), by = .(TEAM_ID, case_id, opponent_moves, case_odds)]
+#aggr_to_team <- join_track_left[, .(CYCLERS = paste0(CYCLER_ID, collapse = "_"),TEAM_SCORE = sum(TOT_SCORE), MOVES = paste0(MOVEMENT, collapse = "_")), by = .(TEAM_ID, case_id, opponent_moves, case_odds)]
 
 #browser()
-worse_move <- testdata
+worse_move <- testdata#[TEAM_ID == 1]
 # worse_move[, rank_ev := frank(-EV), by = TEAM_ID]
 # worse_move[, rank_ev_orig := frank(-ORIG_EV), by = TEAM_ID]
 # worse_move[TEAM_ID == 1]
@@ -28,22 +30,25 @@ worse_move[, M2 := str_sub(MOVES, 3, 3)]
 worse_move[, C1 := str_sub(CYCLERS, 1, 1)]
 worse_move[, C2 := str_sub(CYCLERS, 3, 3)]
 #aggr move1
-move1_aggr <- worse_move[, .(EV = mean(EV),
-                             VAR = var(EV)), by = .(TEAM_ID, MOVEMENT = as.numeric(M1), CYCLER_ID = as.numeric(C1))]
-aggr_card_count <- deck_status[Zone != "Removed", .(count = .N), by = .(CYCLER_ID, MOVEMENT)]
-join_count1 <- aggr_card_count[move1_aggr, on = .(MOVEMENT, CYCLER_ID)][order(TEAM_ID, -EV)]
-join_count1[, PRIO_GROUP := seq_len(.N), by = .(TEAM_ID)]
-join_count1[, draw_odds := exact_draw_odds_outer_vectorized(draw_odds_data = .SD), by = TEAM_ID, .SDcols = c("PRIO_GROUP", "count")]
-weighted_variance <- join_count1[, .(CYCLER_ID = mean(CYCLER_ID), WVAR = sum(VAR * draw_odds) / sum(draw_odds)), by = .(TEAM_ID)]
+# worse_move[, ':=' (,
+#                              VAR = var(EV)), by = .(TEAM_ID, MOVEMENT = as.numeric(M1), CYCLER_ID = as.numeric(C1))]
+# WVAR = sum(PROB_PRODUCT * (EV - WEIGH_EV) ^ 2)
+move1_aggr <- worse_move[, .(WEIGH_EV = sum((EV * PROB_PRODUCT)) / sum(PROB_PRODUCT)), by = .(TEAM_ID, MOVEMENT = as.numeric(M1), CYCLER_ID = as.numeric(C1))]
+weighted_variance <- move1_aggr[, .(CYCLER_ID = mean(CYCLER_ID), WVAR = var(WEIGH_EV)), by = .(TEAM_ID)]
 
-move2_aggr <- worse_move[, .(EV = mean(EV),
-                             VAR = var(EV)), by = .(TEAM_ID, MOVEMENT = as.numeric(M2), CYCLER_ID = as.numeric(C2))]
-join_count2 <- aggr_card_count[move2_aggr, on = .(MOVEMENT, CYCLER_ID)][order(TEAM_ID, -EV)]
-join_count2[, PRIO_GROUP := seq_len(.N), by = .(TEAM_ID)]
-join_count2[, draw_odds := exact_draw_odds_outer_vectorized(draw_odds_data = .SD), by = TEAM_ID, .SDcols = c("PRIO_GROUP", "count")]
-weighted_variance2 <- join_count2[, .(CYCLER_ID = mean(CYCLER_ID), WVAR = sum(VAR * draw_odds) / sum(draw_odds)), by = .(TEAM_ID)]
+move2_aggr <- worse_move[, .(WEIGH_EV = sum((EV * PROB_PRODUCT)) / sum(PROB_PRODUCT)), by = .(TEAM_ID, MOVEMENT = as.numeric(M2), CYCLER_ID = as.numeric(C2))]
+
+weighted_variance2 <- move2_aggr[, .(CYCLER_ID = mean(CYCLER_ID), WVAR = var(WEIGH_EV)), by = .(TEAM_ID)]
+total_ev_data <- rbind(move1_aggr, move2_aggr)
 append_vars <- rbind(weighted_variance2, weighted_variance)
 first_cycler_per_team <- append_vars[ , .SD[which.min(WVAR)], by = TEAM_ID]
+
+first_cycler_ev <- total_ev_data[CYCLER_ID %in% first_cycler_per_team[, CYCLER_ID]]
+gamma <- 0.9
+first_cycler_ev[, top := exp(1 / gamma * WEIGH_EV) ]
+first_cycler_ev[, bottom := sum(top), by = TEAM_ID]
+first_cycler_ev[, new_prob_uncapped := top / bottom]
+first_cycler_ev[, new_prob_provisional := top / bottom]
 
 
 append_long <- rbind(join_count1, join_count2)
@@ -62,6 +67,14 @@ join_first_cyc_long[, PRIO_GROUP_2 := seq_len(.N), by = .(TEAM_ID, PRIO_GROUP_1)
 rename_card_data <- aggr_card_count[, .(OTHER_CYCLER = CYCLER_ID, OTHER_MOVE = MOVEMENT, count_2nd = count)]
 join_card_count <- rename_card_data[join_first_cyc_long, on = .(OTHER_CYCLER, OTHER_MOVE)]
 
+join_card_count[TEAM_ID == 1]
+
+
+
+
+
+
+#join_card_count[TEAM_ID == 2 & PRIO_GROUP_1 == 1, draw_odds_test := exact_draw_odds_outer_vectorized(.SD), by = .(TEAM_ID, PRIO_GROUP_1), .SDcols = c("PRIO_GROUP_2", "count_2nd")]
 join_card_count[, draw_odds_2 := exact_draw_odds_outer_vectorized(.SD), by = .(TEAM_ID, PRIO_GROUP_1), .SDcols = c("PRIO_GROUP_2", "count_2nd")]
 join_card_count[, PROPABILITY := draw_odds_1 * draw_odds_2]
 join_card_count[, prob_case_id := seq_len(.N)]
@@ -73,9 +86,9 @@ setorder(result_long, TEAM_ID, prob_case_id, CYCLER_ID)
 # join_back_to_track_left <- result_long[join_track_left, on = .(CYCLER_ID, TEAM_ID, MOVEMENT)]
 
 aggregate_result <- result_long[, .(CYCLERS = paste0(CYCLER_ID, collapse = "_"), MOVES = paste0(MOVEMENT, collapse = "_")),
-                                by = .(prob_case_id, TEAM_ID, PROPABILITY)][, prob_case_id := NULL]
+                                by = .(prob_case_id, TEAM_ID, PROPABILITY)][, prob_case_id := NULL][order(TEAM_ID, -PROPABILITY)]
 #ready to join!
-join_prob_to_cases <- aggregate_result[aggr_to_team, on = .(TEAM_ID, CYCLERS, MOVES)]
+join_prob_to_cases <- aggregate_result[testdata, on = .(TEAM_ID, CYCLERS, MOVES)]
 join_prob_to_cases[, helper_odds_for_other_odds_calc := ifelse(PROPABILITY == 0, 0.000000001, PROPABILITY)]
 join_prob_to_cases[, ':=' (OTHER_ACTION_ODDS = (prod(helper_odds_for_other_odds_calc) / helper_odds_for_other_odds_calc),
                            PROB_PRODUCT = prod(PROPABILITY)), by = case_id]
