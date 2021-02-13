@@ -1,14 +1,14 @@
 #calc new mixed strategy
 calculated_mix_strategy_inner <- function(input_current_ev_data, gamma = 0.9, combinations_data) {
  current_ev_data <- copy(input_current_ev_data)
-  current_ev_data[, top := exp(1/gamma*EV) ]
+  current_ev_data[, top := exp(1 / gamma * EV) ]
   current_ev_data[, bottom := sum(top), by = TEAM_ID]
   current_ev_data[, new_prob_uncapped := top / bottom]
   current_ev_data[, new_prob_provisional := top / bottom]
   #check if results are acceptable
   acceptable <- current_ev_data[, min(new_prob_provisional <= MIX_STRATEGY_CAP)]
   safety_counter <- 0
-  while ( acceptable == 0) {
+  while ( acceptable < -999) {#disabling the capping
     safety_counter <- safety_counter +1
     current_ev_data[, new_prob_capped := pmin(new_prob_provisional, MIX_STRATEGY_CAP)]
 

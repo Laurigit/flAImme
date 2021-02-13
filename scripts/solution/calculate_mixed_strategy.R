@@ -168,6 +168,12 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
 
       check_res2 <- check_res[, .(EV = sum(TEAM_SCORE * OTHER_ACTION_ODDS) / sum(OTHER_ACTION_ODDS)), by = .(CYCLERS, MOVES, TEAM_ID, MIX_STRATEGY_CAP)][order(-EV)]
 
+      #calculate which cycler to move first
+      #calculate pick-order 1
+      #calculate prick order 2
+      #calculate combined mix_strat_cap
+
+
 
 
       iteration_limit <- 30
@@ -197,7 +203,7 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
       ##########
 
       discard_threshold <- 0.005
-      remove_max_moves_per_iter_per_team <- 1
+      remove_max_moves_per_iter_per_team <- 0
 
       while (continue == 1) {
 
