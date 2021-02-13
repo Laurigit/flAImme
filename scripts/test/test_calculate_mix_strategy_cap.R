@@ -76,12 +76,17 @@ target <- function(i, j, input_data) {
 }
 
 modelli <- MILPModel() %>%
-  #i = pelaaja,
-  #j = action
+  #i = movement,
+  #j = team
+  #x = mixed strategy henk koht osa
+  #s = mixed strategy level change part
+  #x+s = mixed strategy
   add_variable(x[i, j], i = 2:9, j = 1:3, type = "continuous") %>%
   add_variable(y[i, j], i = 2:9, j = 1:3, type = "continuous") %>% #soft constraint penalty positive
   add_variable(z[i, j], i = 2:9, j = 1:3, type = "continuous") %>% #soft constraint penalty negative
+  #s is level increase to reach total p = 1.
   add_variable(s[i, j, d], i = 2:9 ,j = 1:3, d = 1, type = "continuous") %>%
+  #level incerase s is has always same value
   add_constraint(sum_expr(s[n, j, d], d = 1) == sum_expr(s[n + 1, j, d], d = 1), n = 2:8, j = 1:3) %>%
   # add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) ==
   #                  sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(finish_slot - 1)) %>%
@@ -90,11 +95,15 @@ modelli <- MILPModel() %>%
   set_bounds(y[i, j], i = 2:9, j = 1:3, lb = 0) %>%
   set_bounds(x[i, j], i = 2:9, j = 1:3, lb = -1, ub = 1) %>%
   set_bounds(s[i, j, d], i = 2:9, j = 1:3, d = 1, lb = 0, ub = 1) %>%
+  #total strategy must be 1
   add_constraint(sum_expr(x[i, j] + s[i, j, d], i = 2:9,  d = 1) == 1, j = 1:3) %>%
+  #hard constraint to ensure that start is possible
   add_constraint(x[i, j] + s[i, j, d] <=  mix_strat_cap(i, j, join_count1), i = 2:9 , j = 1:3, d = 1)  %>%
   #total probabilitiy must be greater than 0
   add_constraint(x[i, j] + s[i, j, d] >=  0, i = 2:9 , j = 1:3, d = 1)  %>%
+  #soft constraint fot meeting target. makes x as close as possible to uncapped prob
   add_constraint((x[i, j] - z[i, j] + y[i, j] + s[i, j, d]) ==  target(i, j, join_count1), i = 2:9 , j = 1:3, d = 1)  %>%
+  #only level increase from s is allowed
   add_constraint((x[i, j]) <=  target(i, j, join_count1), i = 2:9 , j = 1:3)  %>%
 
   set_objective(sum_expr(z[i, j] + y[i, j], i = 2:9, j = 1:3)  , "min") %>%
