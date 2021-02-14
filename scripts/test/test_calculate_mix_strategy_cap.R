@@ -52,87 +52,35 @@ first_cycler_ev[, new_prob_provisional := top / bottom]
 aggr_card_count <- deck_status[Zone != "Removed", .(count = .N), by = .(CYCLER_ID, MOVEMENT)]
 join_count1 <- aggr_card_count[first_cycler_ev, on = .(MOVEMENT, CYCLER_ID)][order(TEAM_ID, - new_prob_uncapped)]
 join_count1[, PRIO_GROUP := seq_len(.N), by = .(TEAM_ID)]
-join_count1[, draw_odds := exact_draw_odds_outer_vectorized(draw_odds_data = .SD), by = TEAM_ID, .SDcols = c("PRIO_GROUP", "count")]
-join_count1[, P_played_if_drawn := new_prob_uncapped / draw_odds]
+#join_count1[, draw_odds := exact_draw_odds_outer_vectorized(draw_odds_data = .SD), by = TEAM_ID, .SDcols = c("PRIO_GROUP", "count")]
+join_count1[, draw_odds := 1 - suppressWarnings(phyper(0, count, sum(count) - count, 4)), by = CYCLER_ID]
 
+total_res <- constrained_mixed_strategy(join_count1)
 
-}
-
-mix_strat_cap <- function(i, j, input_data) {
-  ss_data <- input_data[, .(TEAM_ID, MOVEMENT, draw_odds)]
-  dt_input <- data.table(i, j)
-  joinaa <- ss_data[dt_input, on = .(MOVEMENT == i, TEAM_ID == j)]
-  joinaa[, fixed_res := ifelse(is.na(draw_odds), 0, draw_odds)]
- return(joinaa[, fixed_res])
-  #return(0.23)
-}
-
-target <- function(i, j, input_data) {
-  ss_data <- input_data[, .(TEAM_ID, MOVEMENT, new_prob_uncapped)]
-  dt_input <- data.table(i, j)
-  joinaa <- ss_data[dt_input, on = .(MOVEMENT == i, TEAM_ID == j)]
-  joinaa[, fixed_res := ifelse(is.na(new_prob_uncapped), 0, new_prob_uncapped)]
-  return(joinaa[, fixed_res])
-}
-
-modelli <- MILPModel() %>%
-  #i = movement,
-  #j = team
-  #x = mixed strategy henk koht osa
-  #s = mixed strategy level change part
-  #x+s = mixed strategy
-  add_variable(x[i, j], i = 2:9, j = 1:3, type = "continuous") %>%
-  add_variable(y[i, j], i = 2:9, j = 1:3, type = "continuous") %>% #soft constraint penalty positive
-  add_variable(z[i, j], i = 2:9, j = 1:3, type = "continuous") %>% #soft constraint penalty negative
-  #s is level increase to reach total p = 1.
-  add_variable(s[i, j, d], i = 2:9 ,j = 1:3, d = 1, type = "continuous") %>%
-  #level incerase s is has always same value
-  add_constraint(sum_expr(s[n, j, d], d = 1) == sum_expr(s[n + 1, j, d], d = 1), n = 2:8, j = 1:3) %>%
-  # add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) ==
-  #                  sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(finish_slot - 1)) %>%
-
-  set_bounds(z[i, j], i = 2:9, j = 1:3, lb = 0) %>%
-  set_bounds(y[i, j], i = 2:9, j = 1:3, lb = 0) %>%
-  set_bounds(x[i, j], i = 2:9, j = 1:3, lb = -1, ub = 1) %>%
-  set_bounds(s[i, j, d], i = 2:9, j = 1:3, d = 1, lb = 0, ub = 1) %>%
-  #total strategy must be 1
-  add_constraint(sum_expr(x[i, j] + s[i, j, d], i = 2:9,  d = 1) == 1, j = 1:3) %>%
-  #hard constraint to ensure that start is possible
-  add_constraint(x[i, j] + s[i, j, d] <=  mix_strat_cap(i, j, join_count1), i = 2:9 , j = 1:3, d = 1)  %>%
-  #total probabilitiy must be greater than 0
-  add_constraint(x[i, j] + s[i, j, d] >=  0, i = 2:9 , j = 1:3, d = 1)  %>%
-  #soft constraint fot meeting target. makes x as close as possible to uncapped prob
-  add_constraint((x[i, j] - z[i, j] + y[i, j] + s[i, j, d]) ==  target(i, j, join_count1), i = 2:9 , j = 1:3, d = 1)  %>%
-  #only level increase from s is allowed
-  add_constraint((x[i, j]) <=  target(i, j, join_count1), i = 2:9 , j = 1:3)  %>%
-
-  set_objective(sum_expr(z[i, j] + y[i, j], i = 2:9, j = 1:3)  , "min") %>%
-  # set_objective(sum_expr(fun_payoff(i, j, orig), i = 1:2, j = 1:2), "min") %>%
-  solve_model(with_ROI(solver = "symphony", verbosity = -1))
-
-dt_model_x <- data.table(get_solution(modelli, x[i, j]))
-dt_model_s <- data.table(get_solution(modelli, s[i, j, d]))
-join_x_s <- dt_model_x[dt_model_s, on = .(i, j)]
-total_res <- join_x_s[, .(TEAM_ID = j, MOVEMENT = i, strategy = value + i.value)]
 join_to_input <- total_res[join_count1, on = .(TEAM_ID, MOVEMENT)]
-join_to_input <- join_count1[total_res, on = .(TEAM_ID, MOVEMENT), .(MOVEMENT, TEAM_ID, new_prob_uncapped, draw_odds, strategy)]
-join_to_input
-join_to_input[, capped := strategy == draw_odds]
 
-dt_model_x[, sum(value), by = j]
+second_cycler_ev <- total_ev_data[!CYCLER_ID %in% first_cycler_per_team[, CYCLER_ID]]
 
 
 
 join_to_input[, sum(value), by = j]
 append_long <- rbind(join_count1, join_count2)
 #join first cyc
-join_first_cyc <- first_cycler_per_team[append_long, on = .(TEAM_ID, CYCLER_ID),. (WVAR, MOVEMENT, CYCLER_ID, TEAM_ID, draw_odds_1 = draw_odds, PRIO_GROUP_1 = PRIO_GROUP)]
+#join_first_cyc <- first_cycler_per_team[append_long, on = .(TEAM_ID, CYCLER_ID),. (WVAR, MOVEMENT, CYCLER_ID, TEAM_ID, draw_odds_1 = draw_odds, PRIO_GROUP_1 = PRIO_GROUP)]
 
 #make worse move to long format
 worse_move1 <- worse_move[, .(MOVEMENT = as.numeric(M1), CYCLER_ID = as.numeric(C1), OTHER_MOVE = as.numeric(M2), OTHER_CYCLER = as.numeric(C2), TEAM_ID, EV)]
 worse_move2 <- worse_move[, .(MOVEMENT = as.numeric(M2), CYCLER_ID = as.numeric(C2), OTHER_MOVE = as.numeric(M1),  OTHER_CYCLER = as.numeric(C1),TEAM_ID, EV)]
 append_worse <- rbind(worse_move1, worse_move2)
-join_first_cyc_long <- join_first_cyc[append_worse, on = .(TEAM_ID, CYCLER_ID, MOVEMENT)][!is.na(WVAR)]
+second_cycler_data <- append_worse[!CYCLER_ID %in% first_cycler_per_team[, CYCLER_ID]]
+join_card_count_to_second <- aggr_card_count[second_cycler_data, on = .(MOVEMENT, CYCLER_ID)]#[order(TEAM_ID, - new_prob_uncapped)]
+join_card_count_to_second[, mixed_cap := 1 - suppressWarnings(phyper(0, count, sum(count) - count, 4)), by = .(CYCLER_ID, OTHER_MOVE)]
+join_card_count_to_second[, top := exp(1 / gamma * EV) ]
+join_card_count_to_second[, bottom := sum(top), by = .(CYCLER_ID, OTHER_MOVE)]
+join_card_count_to_second[, target_strat := top / bottom]
+join_card_count_to_second[, capped_strategy := constrained_mixed_strategy_simple(.SD), by = .(CYCLER_ID, OTHER_MOVE), .SDcols = c("MOVEMENT", "target_strat", "mixed_cap")]
+
+#join_first_cyc_long <- join_first_cyc[append_worse, on = .(TEAM_ID, CYCLER_ID, MOVEMENT)][!is.na(WVAR)]
 #calc second prio grou
 setorder(join_first_cyc_long, TEAM_ID, PRIO_GROUP_1, -EV)
 join_first_cyc_long[, PRIO_GROUP_2 := seq_len(.N), by = .(TEAM_ID, PRIO_GROUP_1)]

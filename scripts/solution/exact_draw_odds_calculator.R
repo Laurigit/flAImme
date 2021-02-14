@@ -2,6 +2,9 @@ exact_draw_odds_calculator <- function(MOVEMENT_POOL, MOVEMENTS_wanted, MOVEMENT
   #MOVEMENTS_wanted<- c(3,4)
   #MOVEMENTS_not_drawn <- 7
   #MOVEMENT_POOL <- c(3,3,3,4,4,5,6,7,8,8,8)
+  #MOVEMENTS_wanted<- c(3)
+  #MOVEMENTS_not_drawn <- NA
+  #MOVEMENT_POOL <- c(3,3,3,4,4,4,5,5,5,7,7,7,8,8,8)
 
   dt_move <- data.table(MOVEMENT = MOVEMENT_POOL)
   dt_move[, WANTED := MOVEMENT %in% MOVEMENTS_wanted]

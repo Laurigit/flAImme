@@ -95,7 +95,7 @@ game_status_data <- list()
       setkey(MIXED_STRATEGY, PROB_PRODUCT)
       ress <- MIXED_STRATEGY[, tail(.SD, 3), by = TEAM_ID]
       ress[, prio := seq_len(.N), by = TEAM_ID]
-      ress[order( -prio, TEAM_ID)]
+      ress[order(TEAM_ID, -prio )]
       #CHOOSE WHICH DECISION MAKE FIRST. The one with bettter winning chance goes last
 
               moving_cycler <- choose_first_AI_cycler(smart_team, game_status, "leading", STG_CYCLER)

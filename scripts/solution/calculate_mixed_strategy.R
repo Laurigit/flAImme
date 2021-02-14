@@ -147,10 +147,10 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
       #join_track_left[,  opponent_moves := create_other_moves(all_moves, CYCLER_ID), by = .(case_id, TEAM_ID)]
       join_track_left[, ':=' (ORIG_DECK_LEFT = paste0(MOVEMENT, DECK_LEFT))]
       #join_track_left[, ODDS_OF_DRAWING_MOVEMENT2 := calculate_odds_of_drawing_card(ORIG_DECK_LEFT, MOVEMENT)]
-      join_track_left[, ODDS_OF_DRAWING_MOVEMENT := calculate_odds_of_drawing_card(ORIG_DECK_LEFT, MOVEMENT), by = .(ORIG_DECK_LEFT, MOVEMENT)]
+     # join_track_left[, ODDS_OF_DRAWING_MOVEMENT := calculate_odds_of_drawing_card(ORIG_DECK_LEFT, MOVEMENT), by = .(ORIG_DECK_LEFT, MOVEMENT)]
 
 
-      join_track_left[, MIX_STRATEGY_CAP := prod(ODDS_OF_DRAWING_MOVEMENT), by = .(case_id, TEAM_ID)]
+     # join_track_left[, MIX_STRATEGY_CAP := prod(ODDS_OF_DRAWING_MOVEMENT), by = .(case_id, TEAM_ID)]
 
 
       join_track_left[, ':=' (PROB_PRODUCT = 0.1, OTHER_ACTION_ODDS = 0.5,
