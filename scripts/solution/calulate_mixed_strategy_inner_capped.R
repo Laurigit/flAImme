@@ -28,20 +28,10 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, de
   #join_count1[, draw_odds := exact_draw_odds_outer_vectorized(draw_odds_data = .SD), by = TEAM_ID, .SDcols = c("PRIO_GROUP", "count")]
   join_count1[, mixed_cap := 1 - suppressWarnings(phyper(0, count, sum(count) - count, 4)), by = CYCLER_ID]
   join_count1[, OTHER_MOVE := 8] #this is here to fit into the general function. 8 is funny number as we don't have a card for that
-  join_count1[, strat_over_cap := mixed_cap < target_strat]
-  join_count1[, recalculate := max(strat_over_cap), by = .(TEAM_ID, OTHER_MOVE)]
-  #THIS SORT IS ENEEDED!!
-  setorder(join_count1, TEAM_ID, MOVEMENT, OTHER_MOVE)
-  #############
-
-  join_count1[recalculate == TRUE, capped_strat := constrained_mixed_strategy_long(.SD),
-              by = .(TEAM_ID, OTHER_MOVE), .SDcols = c("TEAM_ID", "MOVEMENT", "OTHER_MOVE", "mixed_cap", "target_strat")]
-
-  join_count1[, strategy := ifelse(is.na(capped_strat), target_strat, capped_strat)]
-
-  join_count1[, OTHER_MOVE := NULL]
+  total_res <- constrained_mixed_strategy_long(join_count1)
+  total_res[, OTHER_MOVE := NULL]
   #aggr_rs <- total_res[, .N, by = .(TEAM_ID, MOVEMENT, strategy)]
-  join_to_input <- join_count1[join_count1, on = .(TEAM_ID, MOVEMENT)]
+  join_to_input <- total_res[join_count1, on = .(TEAM_ID, MOVEMENT)]
   ss_first_result <- join_to_input[, .(TEAM_ID, FIRST_MOVEMENT = MOVEMENT,
                                        FIRST_P = strategy,
                                        FIRST_CYCLER = CYCLER_ID)]
@@ -58,18 +48,10 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, de
   join_card_count_to_second[, bottom := sum(top), by = .(CYCLER_ID, OTHER_MOVE)]
   join_card_count_to_second[, target_strat := top / bottom]
   #join_card_count_to_second[, capped_strategy := constrained_mixed_strategy_long(.SD), by = .(TEAM_ID, OTHER_MOVE), .SDcols = c("MOVEMENT", "target_strat", "mixed_cap")]
-  join_card_count_to_second[, strat_over_cap := mixed_cap > target_strat]
-  join_card_count_to_second[, recalculate := max(strat_over_cap), by = .(TEAM_ID, OTHER_MOVE)]
-  #THIS SORT IS ENEEDED!!
-  setorder(join_card_count_to_second, TEAM_ID, MOVEMENT, OTHER_MOVE)
-  #############
+  capped_strat <- constrained_mixed_strategy_long(join_card_count_to_second)
 
-  join_card_count_to_second[recalculate == TRUE, capped_strat := constrained_mixed_strategy_long(.SD),
-              by = .(TEAM_ID, OTHER_MOVE), .SDcols = c("TEAM_ID", "MOVEMENT", "OTHER_MOVE", "mixed_cap", "target_strat")]
-  join_card_count_to_second[, strategy := ifelse(is.na(capped_strat), target_strat, capped_strat)]
-
-
-  ss_res_second <- join_card_count_to_second[, .(SECOND_CYCLER = CYCLER_ID, TEAM_ID, SECOND_MOVEMENT = MOVEMENT, SECOND_P = strategy, FIRST_MOVEMENT = OTHER_MOVE)]
+  join_back <- capped_strat[join_card_count_to_second, on = .(TEAM_ID, MOVEMENT, OTHER_MOVE)]
+  ss_res_second <- join_back[, .(SECOND_CYCLER = CYCLER_ID, TEAM_ID, SECOND_MOVEMENT = MOVEMENT, SECOND_P = strategy, FIRST_MOVEMENT = OTHER_MOVE)]
 
   join_first_cyc <- ss_first_result[ss_res_second, on = .(TEAM_ID, FIRST_MOVEMENT)]
   join_first_cyc[, TOTAL_P := FIRST_P * SECOND_P]
