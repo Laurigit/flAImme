@@ -6,6 +6,7 @@
 #calculate_mixed_strategy
 calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF, ADM_OPTIMAL_MOVES, ctM_data, STG_TEAM) {
 
+      while (continue == 1) {
 
   slots_squares <- as.matrix(game_status[, .(SQUARE_ID, GAME_SLOT_ID)])
   reverse_slots_squares <- slots_squares[nrow(slots_squares):1,]
@@ -176,7 +177,7 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
 
 
 
-      iteration_limit <- 30
+      iteration_limit <- 5
       #gamma goes down first and then starts increasing. At which iteration, we are on bottom?
       bottom_iteration <- 4
       var_threshold <- 0.01
@@ -205,7 +206,6 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
       discard_threshold <- 0.005
       remove_max_moves_per_iter_per_team <- 1
 
-      while (continue == 1) {
 
         iter_loop_count <- iter_loop_count + 1
         print("iter")
