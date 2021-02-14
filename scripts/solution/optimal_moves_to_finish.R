@@ -69,7 +69,7 @@ if (use_draw_odds[[1]][1] != "") {
 
 
 
-model <- MILPModel() %>%
+res <- MILPModel() %>%
   #  add_variable(y[k], k = 1:20, type = "binary") %>%
   add_variable(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), type = "binary") %>%
   #set_objective(sum_expr(y[k], k = 1), "max") %>%
@@ -85,7 +85,7 @@ model <- MILPModel() %>%
   add_constraint(sum_expr(x[i, n, k], i = 1:rivi_lkm, k = length(kortit)) <=
                    sum_expr(x[n, j, k], j = 1:rivi_lkm, k = length(kortit)), n = 1:finish_slot) %>%
   #dont use more cards than you have
-  add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit)) # %>%
+  add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit))  %>%
 
 
 #add_constraint(ruudut[i, j] * x[i, j, k] <= y[k] * kortit[k], j = 1:rivi_lkm, i = 1:rivi_lkm , k = 1:20) %>%
@@ -93,7 +93,7 @@ model <- MILPModel() %>%
   #model %>% add_constraint(colwise(ruudut[i, j] * x[i, j, k] <=  kortit[k], j = 1:rivi_lkm, i = 1:rivi_lkm , k = 1:length(kortit)) #%>%
 
   #käytä kortti vain kerran
-  res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
+  #res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
    # set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
     set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
     #maaliin on päästävä
@@ -103,13 +103,14 @@ model <- MILPModel() %>%
     #makse sure to continue where I left last turn.
     add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(finish_slot - 1)) %>%
   #add_constraint(sum_expr(x[i, j], i = length(kortit)) == 1, j = 1:n) %>%
-  solve_model(with_ROI(solver = "symphony", verbosity = -2)) %>%
+  solve_model(with_ROI(solver = "symphony", verbosity = -2))
    # objective_value(res)
-  get_solution(x[i, j, k]) %>%
-  filter(value > 0) %>%
-  arrange(i)
-  #print(res)
-  dt_result <-data.table(res)
+    dt_result <- data.table(get_solution(res, x[i, j, k]))[value > 0][order(i)]
+  # #%>%
+  # filter(value > 0) %>%
+  # arrange(i)
+  # #print(res)
+  # dt_result <-data.table(res)
 
   turns_to_finish_res <- dt_result[, .(TURNS_TO_FINISH = .N)]
 

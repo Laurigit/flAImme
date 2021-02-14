@@ -127,11 +127,11 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
 
      # join_track_left[, MOVE_ORDER := seq_len(.N), by = case_id]
       setkeyv(join_track_left, cols = c("case_id", "TEAM_ID", "CYCLER_ID"))
-
+        #PELKÄSTÄ LIIKKUMISESTA PITÄÄ ANTAA PISTEITÄ MYÖS, vähintääb tie breakeraita varten, jos sama ev muuten
      # join_track_left[, MOVE_DIFF_RELATIVE := MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1), by = case_id]
       join_track_left[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_RELATIVE * 1,
                               EXHAUST_SCORE = EXHAUST * -1,
-                              TTF_SCORE = TTF_RELATIVE * 2,
+                              TTF_SCORE = TTF_RELATIVE * 3,
                               CYC_DIST_SCORE = DIST_TO_TEAM * - 0.1,
                               MOVE_ORDER_SCORE = MOVE_ORDER * 0.1,
                               OVER_FINISH_SCORE = OVER_FINISH * 100
@@ -153,7 +153,7 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
      # join_track_left[, MIX_STRATEGY_CAP := prod(ODDS_OF_DRAWING_MOVEMENT), by = .(case_id, TEAM_ID)]
 
 
-      join_track_left[, ':=' (PROB_PRODUCT = 0.1, OTHER_ACTION_ODDS = 0.5,
+      join_track_left[, ':=' (
 
                               ORIG_DECK_LEFT = NULL)]
       #ODDS_OF_DRAWING_CASE_MOVEMENTS_BY_TEAM = capped mixed strategy weight
@@ -164,10 +164,26 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
 
 
 
-      check_res <- join_track_left[, .(CYCLERS, TEAM_SCORE = sum(TOT_SCORE), MOVES), by = .(TEAM_ID, case_id, PROB_PRODUCT, OTHER_ACTION_ODDS)]
+      check_res <- join_track_left[, .(CYCLERS, TEAM_SCORE = sum(TOT_SCORE), MOVES), by = .(TEAM_ID, case_id)]
 
-      check_res2 <- check_res[, .(EV = sum(TEAM_SCORE * OTHER_ACTION_ODDS) / sum(OTHER_ACTION_ODDS)), by = .(CYCLERS, MOVES, TEAM_ID)][order(-EV)]
+      check_res2 <- check_res[, .(EV = mean(TEAM_SCORE)), by = .(CYCLERS, MOVES, TEAM_ID)][order(-EV)]
       check_res2[, PROB_PRODUCT := 0.1]
+      check_res2[, M1 := as.numeric(str_sub(MOVES, 1, 1))]
+      check_res2[, M2 := as.numeric(str_sub(MOVES, 3, 3))]
+      check_res2[, C1 := as.numeric(str_sub(CYCLERS, 1, 1))]
+      check_res2[, C2 := as.numeric(str_sub(CYCLERS, 3, 3))]
+      cap_data <- deck_status[Zone != "Removed", .(count = .N), by = .(CYCLER_ID, MOVEMENT)]
+      cap_data[,  mixed_cap := 1 - suppressWarnings(phyper(0,  count, sum( count) -  count, 4)), by =.(CYCLER_ID)]
+      #cap_data[, OTHER_MOVE := 8]
+      # aggr_card_count <- deck_status[Zone != "Removed", .(count = .N), by = .(CYCLER_ID, MOVEMENT)]
+      # join_count1 <- aggr_card_count[check_res2, on = .(MOVEMENT == M1, CYCLER_ID == C1)]#[order(TEAM_ID, - new_prob_uncapped)]
+      # setnames(join_count1, c("CYCLER_ID", "MOVEMENT", "count"), c("C1", "M1", "card_count_C1"))
+      # join_count2 <- aggr_card_count[join_count1, on = .(MOVEMENT == M2, CYCLER_ID == C2)]#[order(TEAM_ID, - new_prob_uncapped)]
+      # setnames(join_count2, c("CYCLER_ID", "MOVEMENT", "count"), c("C2", "M2", "card_count_C2"))
+      # join_count2[, mixed_cap_C1 := 1 - suppressWarnings(phyper(0, card_count_C1, sum(card_count_C1) - card_count_C1, 4)), by = .(C1, M1)]
+      # join_count2[, mixed_cap_C2 := 1 - suppressWarnings(phyper(0, card_count_C2, sum(card_count_C2) - card_count_C2, 4)), by =.(C2, M2)]
+
+      static_model <- constrained_mixed_strategy_long_static(cap_data)
       #calculate which cycler to move first
       #calculate pick-order 1
       #calculate prick order 2
@@ -176,12 +192,12 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
 
 
 
-      iteration_limit <- 30
+      iteration_limit <- 10
       #gamma goes down first and then starts increasing. At which iteration, we are on bottom?
       bottom_iteration <- 4
       var_threshold <- 0.01
       #gamma level
-      input_gamma <- 0.65
+      input_gamma <- 0.75
       #gamma delta coefficient. The sin formula varies from -1 to 1. Ending to 1. Going to -1 on the bottom iteration
       gamma_addition <- 0.4
 
@@ -189,7 +205,7 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
 
       first_round_gamma <- -sin(pi / 2 - gamma_step * bottom_iteration) * gamma_addition + input_gamma
 
-      prev_result <- calulate_mixed_strategy_inner_capped(check_res2, join_track_left, deck_status, ADM_CYCLER_INFO, first_round_gamma)
+      prev_result <- calulate_mixed_strategy_inner_capped(check_res2, join_track_left, static_model, ADM_CYCLER_INFO, first_round_gamma)
       #this is initializing data that tracks which combinations are still inthe simulation. Initially all
       remove_moves <- prev_result[, .(CYCLERS, MOVES, remove_me_if_na = FALSE)][1 == 0]
       drop_cases <- join_track_left[, .(case_id, remove_if_na = TRUE)]
@@ -203,13 +219,13 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
       ##########
 
       discard_threshold <- 0.005
-      remove_max_moves_per_iter_per_team <- 1
+      remove_max_moves_per_iter_per_team <- 0
 
       while (continue == 1) {
 
         iter_loop_count <- iter_loop_count + 1
-        print("iter")
-        print(iter_loop_count)
+       # print("iter")
+       # print(iter_loop_count)
         #always change gamma initially
         if (iter_loop_count <= bottom_iteration) {
         total_gamma <- -sin(pi / 2 - gamma_step * bottom_iteration + gamma_step * iter_loop_count) * gamma_addition + input_gamma
@@ -218,8 +234,8 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
           total_gamma <- -sin(pi / 2 - gamma_step * bottom_iteration + gamma_step * (bottom_iteration + no_converge_counter)) * gamma_addition + input_gamma
           add_more_gamma <- 0
         }
-     print("gamma")
-      print(total_gamma)
+   #  print("gamma")
+   #   print(total_gamma)
      if (total_gamma > 0.2) {
       drop_cases_all_rows <- remove_moves[join_track_left, on = .(MOVES, CYCLERS)][!is.na(remove_me_if_na)]
       if (nrow(drop_cases_all_rows) > 0) {
@@ -233,8 +249,8 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
 
 
 
+      new_result <- calulate_mixed_strategy_inner_capped(prev_result, join_track_left, static_model, ADM_CYCLER_INFO, total_gamma)
 
-      new_result <- calulate_mixed_strategy_inner_capped(prev_result, join_track_left, deck_status, ADM_CYCLER_INFO, total_gamma)
 
       setnames(prev_result, "PROB_PRODUCT", "PREV_PROB_PRODUCT")
       joinaa <- prev_result[new_result, on = .(CYCLERS, MOVES, TEAM_ID)]
@@ -249,15 +265,15 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
       #remove only max n per iteration
       n_bottom <- joinaa[, head(.SD, remove_max_moves_per_iter_per_team), by = TEAM_ID]
       remove_moves <- n_bottom[!(current_less_than_threshold | prev_less_than_threshold), .(CYCLERS, MOVES, remove_me_if_na = FALSE)]
-      print("REMOVING")
-      print(remove_moves)
+    #  print("REMOVING")
+     # print(remove_moves)
       setkey(joinaa, prob_diff)
       #top 4 biggest changes by team
       ress <- joinaa[, tail(.SD, 4), by = TEAM_ID]
      # print(ress)
       #max change in prob
       varia <-  ress[, max(prob_diff)]
-      print("maxdiff")
+    #  print("maxdiff")
       print(varia)
       if (varia > prev_max_prob_diff & iter_loop_count > bottom_iteration) {
         no_converge_counter <- no_converge_counter + 1
@@ -265,12 +281,12 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
       }
       prev_result <- new_result
       prev_max_prob_diff <- varia
+
       if (varia < var_threshold | iter_loop_count >= iteration_limit) {
         continue <- 0
       }
       }
      # new_result[order(- EV)][1:30]
-
 
 
 

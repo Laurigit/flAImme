@@ -84,13 +84,14 @@ game_status_data <- list()
       # load from DB
       # if playing with humans, dont update DB
       # update only new opt results in memory that have been generated during the game
-
+      print(zoom(game_status))
+      print(deck_status[CYCLER_ID %in% smart_cycler_ids  & Zone == "Hand"][order(CYCLER_ID, CARD_ID)])
       ctM_res <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status)
       ctM_data <- ctM_res$ctM_data
 
 
       #calculate mixed strategies
-      zoom(game_status)
+
       MIXED_STRATEGY <- calculate_mixed_strategy(game_status, deck_status, ijk, ADM_AI_CONF, ADM_OPTIMAL_MOVES, ctM_data, STG_TEAM)
       setkey(MIXED_STRATEGY, PROB_PRODUCT)
       ress <- MIXED_STRATEGY[, tail(.SD, 3), by = TEAM_ID]
@@ -98,16 +99,24 @@ game_status_data <- list()
       ress[order(TEAM_ID, -prio )]
       #CHOOSE WHICH DECISION MAKE FIRST. The one with bettter winning chance goes last
 
-              moving_cycler <- choose_first_AI_cycler(smart_team, game_status, "leading", STG_CYCLER)
-
+              #moving_cycler <- choose_first_AI_cycler(smart_team, game_status, "leading", STG_CYCLER)
+             #rouler first
+              moving_cycler <- ADM_CYCLER_INFO[CYCLER_ID %in% smart_cycler_ids, min(CYCLER_ID)]
               #simulate and score
 
               if (!is.na(moving_cycler)) {
 
 
-              card_id_selected  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == moving_cycler & Zone == "Hand"], moving_cycler, "SMART_MAX",  aim_downhill = TRUE)[, CARD_ID]
-
-              played_cards_data[TURN_ID == turn_id & CYCLER_ID == moving_cycler,  CARD_ID := card_id_selected]
+             # card_id_selected  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == moving_cycler & Zone == "Hand"], moving_cycler, "SMART_MAX",  aim_downhill = TRUE)[, CARD_ID]
+                  options <- deck_status[CYCLER_ID == moving_cycler & Zone == "Hand", .N, by = .(MOVEMENT)][, MOVEMENT]
+                  cards_in_hand <- MIXED_STRATEGY[C1 == moving_cycler & M1 %in% options]
+                  EV <- cards_in_hand[, .(EV = sum(EV *  PROB_PRODUCT) / sum(PROB_PRODUCT)), by = M1]
+                  print(EV)
+                  first_movement <- EV[, M1[which.max(EV)]]
+                  #convert exhaust if possible
+                  first_move <- deck_status[CYCLER_ID == moving_cycler & Zone == "Hand" & MOVEMENT == first_movement, min(CARD_ID)]
+                  print(paste0("rouler played: ", first_move))
+              played_cards_data[TURN_ID == turn_id & CYCLER_ID == moving_cycler,  CARD_ID := first_move]
               }
        #CHOOSE FIRST CARD
                    #    move_amount <- select_smart_card_phase(game_status, deck_status, smart_cycler_ids, pre_aggr_game_status, ctM_res,
@@ -121,8 +130,16 @@ game_status_data <- list()
                 #still playing?
                 second_cycler <- intersect(cycler_ids, second_cycler_in_team)
                 if (length(second_cycler) == 1) {
-                card_id_2nd  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == second_cycler & Zone == "Hand"], second_cycler, "SMART_MAX",  aim_downhill = TRUE)[, CARD_ID]
-                played_cards_data[TURN_ID == turn_id & CYCLER_ID == second_cycler,  CARD_ID := card_id_2nd]
+               # card_id_2nd  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == second_cycler & Zone == "Hand"], second_cycler, "SMART_MAX",  aim_downhill = TRUE)[, CARD_ID]
+                options <- deck_status[CYCLER_ID == second_cycler & Zone == "Hand", .N, by = MOVEMENT][, MOVEMENT]
+                cards_in_hand <- MIXED_STRATEGY[M1 == first_movement & C2 == second_cycler & M2 %in% options]
+                print(cards_in_hand)
+                second_movement <-  cards_in_hand[, M2[which.max(EV)]]
+                second_move <- deck_status[CYCLER_ID == second_cycler & Zone == "Hand" & MOVEMENT == second_movement, min(CARD_ID)]
+                print(paste0("sprinteur played: ", second_move))
+
+
+                 played_cards_data[TURN_ID == turn_id & CYCLER_ID == second_cycler,  CARD_ID := second_move]
                 }
             #  phase_one_actions <-  played_cards_data[TURN_ID == turn_id & PHASE == 1,. (CYCLER_ID, MOVEMENT, phase = PHASE)]
 
@@ -184,7 +201,7 @@ game_status_data <- list()
       #turn_game_status[[turn_id]] <- copy(game_status)
       #deck_status_loop[[turn_id]] <- copy(deck_status)
       turn_id <- turn_id + 1
-      print(zoom(game_status))
+      #print(zoom(game_status))
     }
 
     game_status_data[[game_id]] <- turn_game_status
