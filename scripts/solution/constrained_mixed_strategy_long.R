@@ -150,5 +150,5 @@ join_q <- join_x_s[dt_model_q, on = .(i, j, k)]
 total_res <- join_q[j %in% teams & q_val == 0, .(CYCLER_ID = j, MOVEMENT = i, OTHER_MOVE = k, strategy = value + i.value)]
 #total_res[strategy > 0]
 
-return( total_res[strategy > 0])
+return( total_res[strategy > 0.0001])
 }

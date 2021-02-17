@@ -5,12 +5,13 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   worse_move <- EV_TABLE#[TEAM_ID == 1]
 
 
-  move1_aggr <- worse_move[, .(WEIGH_EV = sum((EV * PROB_PRODUCT)) / sum(PROB_PRODUCT)), by = .(TEAM_ID, MOVEMENT = (M1), CYCLER_ID = (C1))]
+  move1_aggr <- worse_move[, .(WEIGH_EV = sum(EV * PROB_PRODUCT, na.rm = TRUE) / sum(PROB_PRODUCT, na.rm = TRUE)), by = .(TEAM_ID, MOVEMENT = (M1), CYCLER_ID = (C1))]
   weighted_variance <- move1_aggr[, .(CYCLER_ID = mean(CYCLER_ID), WVAR = var(WEIGH_EV)), by = .(TEAM_ID)]
-
-  move2_aggr <- worse_move[, .(WEIGH_EV = sum((EV * PROB_PRODUCT)) / sum(PROB_PRODUCT)), by = .(TEAM_ID, MOVEMENT = (M2), CYCLER_ID = (C2))]
+  weighted_variance[, WVAR := ifelse(is.na(WVAR), 1, WVAR)]
+  move2_aggr <- worse_move[!is.na(M2), .(WEIGH_EV = sum((EV * PROB_PRODUCT)) / sum(PROB_PRODUCT)), by = .(TEAM_ID, MOVEMENT = (M2), CYCLER_ID = (C2))]
 
   weighted_variance2 <- move2_aggr[, .(CYCLER_ID = mean(CYCLER_ID), WVAR = var(WEIGH_EV)), by = .(TEAM_ID)]
+  weighted_variance2[, WVAR := ifelse(is.na(WVAR), 1, WVAR)]
   total_ev_data <- rbind(move1_aggr, move2_aggr)
   append_vars <- rbind(weighted_variance2, weighted_variance)
   first_cycler_per_team <- append_vars[ , .SD[which.min(WVAR)], by = TEAM_ID]
@@ -19,7 +20,7 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   gamma <- input_gamma
   first_cycler_ev[, top := exp(1 / gamma * WEIGH_EV) ]
   first_cycler_ev[, bottom := sum(top), by = TEAM_ID]
-  first_cycler_ev[, target_strat := top / bottom]
+  first_cycler_ev[, target_strat := round(top / bottom, 5)]
 
 
   first_cycler_ev[, OTHER_MOVE := 8] #this is here to fit into the general function. 8 is funny number as we don't have a card for that
@@ -30,12 +31,14 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   if (nrow(first_cycler_ev) == 0) {browser()}
 
   total_res <- constrained_mixed_strategy_long_target(first_cycler_ev, static_model, second_cycler_per_team[, CYCLER_ID], other_move_vec)
+
   #let's fix NA with 0
   total_res[, strategy := ifelse(is.na(strategy), 0.00001, strategy)]
   total_res[, OTHER_MOVE := NULL]
   #aggr_rs <- total_res[, .N, by = .(TEAM_ID, MOVEMENT, strategy)]
 
   join_to_input <- total_res[first_cycler_ev, on = .(CYCLER_ID, MOVEMENT)]
+  join_to_input[, strategy := ifelse(is.na(strategy), 0, strategy)]
   ss_first_result <- join_to_input[, .(TEAM_ID, FIRST_MOVEMENT = MOVEMENT,
                                        FIRST_P = strategy,
                                        FIRST_CYCLER = CYCLER_ID)]
@@ -45,11 +48,11 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   worse_move1 <- worse_move[, .(MOVEMENT = as.numeric(M1), CYCLER_ID = as.numeric(C1), OTHER_MOVE = as.numeric(M2), OTHER_CYCLER = as.numeric(C2), TEAM_ID, EV)]
   worse_move2 <- worse_move[, .(MOVEMENT = as.numeric(M2), CYCLER_ID = as.numeric(C2), OTHER_MOVE = as.numeric(M1),  OTHER_CYCLER = as.numeric(C1),TEAM_ID, EV)]
   append_worse <- rbind(worse_move1, worse_move2)
-  second_cycler_data <- append_worse[!CYCLER_ID %in% first_cycler_per_team[, CYCLER_ID]]
-  join_card_count_to_second <- aggr_card_count[second_cycler_data, on = .(MOVEMENT, CYCLER_ID)]#[order(TEAM_ID, - new_prob_uncapped)]
+  join_card_count_to_second <- append_worse[CYCLER_ID %in% second_cycler_per_team[, CYCLER_ID]]#[!is.na()]
+  #join_card_count_to_second <- aggr_card_count[second_cycler_data, on = .(MOVEMENT, CYCLER_ID)]#[order(TEAM_ID, - new_prob_uncapped)]
   join_card_count_to_second[, top := exp(1 / gamma * EV) ]
   join_card_count_to_second[, bottom := sum(top), by = .(CYCLER_ID, OTHER_MOVE)]
-  join_card_count_to_second[, target_strat := top / bottom]
+  join_card_count_to_second[, target_strat := round(top / bottom, 5)]
 
   #join_card_count_to_second[, capped_strategy := constrained_mixed_strategy_long(.SD), by = .(TEAM_ID, OTHER_MOVE), .SDcols = c("MOVEMENT", "target_strat", "mixed_cap")]
   if (nrow(join_card_count_to_second) == 0) {browser()}
@@ -103,16 +106,31 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   join_new_strat <- combined_data[combinations_data, on = .(CYCLERS, MOVES, TEAM_ID)]
  # join_new_strat[case_id == 1]
   # join_new_strat[, NEW_CASE_PROB := prod(new_prob)]
-  current_ev_data <- join_new_strat[, .(TEAM_SCORE = sum(TOT_SCORE)), by = .(MOVES, CYCLERS, TEAM_ID, case_id, new_prob, C1, C2, M1, M2)]
+  temp <- join_new_strat[new_prob > 0, .(TEAM_SCORE = sum(TOT_SCORE),
 
-  current_ev_data[, WEIGHTED_SCORE := prod(new_prob) / new_prob * TEAM_SCORE, by = case_id]
+                                        MOVE_DIFF_SCORE  = sum(MOVE_DIFF_SCORE),
+                                        EXHAUST_SCORE = sum(EXHAUST_SCORE),
+                                        TTF_SCORE = sum(TTF_SCORE),
+                                        TURNS_TO_FINISH = sum(TURNS_TO_FINISH),
+                                    #    CYC_DIST_SCORE = sum(CYC_DIST_SCORE),
+                                        MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE),
+                                        OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE)),
+                                    by = .(MOVES, CYCLERS, TEAM_ID, case_id, new_prob, C1, C2, M1, M2)]
+
+  #temp[, WEIGHTED_SCORE := prod(new_prob) * TEAM_SCORE, by = case_id]
  # current_ev_data[case_id == 1]
-  # current_ev_data[, OPPONENT_CASE_PROB := prod(new_prob) / new_prob, by = case_id]
+  temp[, OPPONENT_CASE_PROB := prod(new_prob) / new_prob, by = case_id]
 
-  #current_ev_data[, WEIGHTED_SCORE := OPPONENT_CASE_PROB * TEAM_SCORE]
+  temp[, WEIGHTED_SCORE := OPPONENT_CASE_PROB * TEAM_SCORE]
 
-  result <- current_ev_data[, .(EV = sum(WEIGHTED_SCORE)), by = .(CYCLERS, MOVES, TEAM_ID, PROB_PRODUCT = new_prob, C1, C2, M1, M2)]
-
+  result <- temp[, .(EV = sum(WEIGHTED_SCORE),
+                     MOVE_DIFF_SCORE  = sum(MOVE_DIFF_SCORE * OPPONENT_CASE_PROB),
+                     EXHAUST_SCORE = sum(EXHAUST_SCORE * OPPONENT_CASE_PROB),
+                     TTF_SCORE = sum(TTF_SCORE * OPPONENT_CASE_PROB),
+                     TURNS_TO_FINISH = sum(TURNS_TO_FINISH * OPPONENT_CASE_PROB),
+                 #    CYC_DIST_SCORE = sum(CYC_DIST_SCORE * OPPONENT_CASE_PROB),
+                     MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE * OPPONENT_CASE_PROB),
+                     OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * OPPONENT_CASE_PROB)), by = .(CYCLERS, MOVES, TEAM_ID, PROB_PRODUCT = new_prob, C1, C2, M1, M2)]
 
   return(result)
 

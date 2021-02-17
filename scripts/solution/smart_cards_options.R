@@ -1,10 +1,12 @@
-smart_cards_options <- function(card_options, pre_aggr_game_status, cycler_id) {
+smart_cards_options <- function(deck_status, pre_aggr_game_status, cycler_id, game_status) {
 
   #pre_aggr_game_status$cycler_pos[CYCLER_ID == 8, cycler_pos :=8]
 #join track info
+  #cycler_id <- 5
+  card_options <- deck_status[CYCLER_ID == cycler_id & Zone == "Hand", MOVEMENT ]
+positions <- game_status[CYCLER_ID > 0, .(CYCLER_ID, cycler_pos = GAME_SLOT_ID)]
 
-
-track_info <- pre_aggr_game_status$aggr_to_slots[pre_aggr_game_status$cycler_pos, on = .(GAME_SLOT_ID = cycler_pos),. (CYCLER_ID, MAXIMUM_MOVEMENT, ascend_v)]
+track_info <- pre_aggr_game_status$aggr_to_slots[positions, on = .(GAME_SLOT_ID = cycler_pos),. (CYCLER_ID, MAXIMUM_MOVEMENT, ascend_v)]
 me_cycler <- track_info[CYCLER_ID == cycler_id]
 
 #check ascend

@@ -10,7 +10,7 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
 
   used_game_status <- copy(game_status)
   deck_copied <- copy(deck_status)
-  curr_posits <- used_game_status[CYCLER_ID > 0, .(CYCLER_ID, curr_pos = GAME_SLOT_ID)]
+  curr_posits <- used_game_status[CYCLER_ID > 0, .(CYCLER_ID, curr_pos = GAME_SLOT_ID, MAXIMUM_MOVEMENT, MINIMUM_MOVEMENT)]
 
 
   #we dont have data for this turn, lets calc it
@@ -21,7 +21,14 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
 
   #join current position
   #join_curr <- curr_posits[, on = "CYCLER_ID"]
-  join_curr <- options[curr_posits, on = "CYCLER_ID"]
+  join_curr_all <- options[curr_posits, on = "CYCLER_ID"]
+ # join_curr_all[CYCLER_ID == 1, MAXIMUM_MOVEMENT := 5]
+  # join_curr_all[MOVEMENT >= MAXIMUM_MOVEMENT, MIN_CARD_GTE_MAX_MOVE := min(MOVEMENT), by = CYCLER_ID]
+  # join_curr_all[MOVEMENT <= MINIMUM_MOVEMENT, MIN_CARD_LTE_MIN_MOVE := min(MOVEMENT), by = CYCLER_ID]
+  # join_curr_all[, REMOVE_ME_MIN := MOVEMENT <= MINIMUM_MOVEMENT & MOVEMENT > MIN_CARD_LTE_MIN_MOVE]
+  # join_curr_all[, REMOVE_ME_MAX := MOVEMENT >= MAXIMUM_MOVEMENT & MOVEMENT > MIN_CARD_GTE_MAX_MOVE]
+  join_curr <- join_curr_all#[!REMOVE_ME_MIN & !REMOVE_ME_MAX]
+
 
   join_curr[, new_slot_after_moving := move_cycler(used_game_status, CYCLER_ID, MOVEMENT,
                                                    slipstream = FALSE,
