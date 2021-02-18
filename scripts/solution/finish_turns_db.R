@@ -6,7 +6,6 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
   #cycler_deck_status <- deck_status[CYCLER_ID == 5]
 
   #draw odds are in data table format and sql db format. raw = db. We use raw in joins and data.table to be sent to optimization
-
    if (draw_odds_raw_data == "") {
     draw_odds_input <- ""
   } else {

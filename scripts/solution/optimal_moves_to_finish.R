@@ -103,8 +103,9 @@ res <- MILPModel() %>%
     #makse sure to continue where I left last turn.
     add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(finish_slot - 1)) %>%
   #add_constraint(sum_expr(x[i, j], i = length(kortit)) == 1, j = 1:n) %>%
-  solve_model(with_ROI(solver = "symphony", verbosity = -2))
-   # objective_value(res)
+  #solve_model(with_ROI(solver = "symphony", verbosity = -2))
+  solve_model(with_ROI(solver = "glpk", verbose = FALSE))
+  # objective_value(res)
     dt_result <- data.table(get_solution(res, x[i, j, k]))[value > 0][order(i)]
   # #%>%
   # filter(value > 0) %>%

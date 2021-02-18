@@ -106,12 +106,12 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   join_new_strat <- combined_data[combinations_data, on = .(CYCLERS, MOVES, TEAM_ID)]
  # join_new_strat[case_id == 1]
   # join_new_strat[, NEW_CASE_PROB := prod(new_prob)]
-  temp <- join_new_strat[new_prob > 0, .(TEAM_SCORE = sum(TOT_SCORE),
+  temp <- join_new_strat[, .(TEAM_SCORE = sum(TOT_SCORE),
 
                                         MOVE_DIFF_SCORE  = sum(MOVE_DIFF_SCORE),
                                         EXHAUST_SCORE = sum(EXHAUST_SCORE),
                                         TTF_SCORE = sum(TTF_SCORE),
-                                        TURNS_TO_FINISH = sum(TURNS_TO_FINISH),
+                                        TURNS_TO_FINISH = mean(TURNS_TO_FINISH),
                                     #    CYC_DIST_SCORE = sum(CYC_DIST_SCORE),
                                         MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE),
                                         OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE)),
@@ -123,14 +123,14 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
 
   temp[, WEIGHTED_SCORE := OPPONENT_CASE_PROB * TEAM_SCORE]
 
-  result <- temp[, .(EV = sum(WEIGHTED_SCORE),
-                     MOVE_DIFF_SCORE  = sum(MOVE_DIFF_SCORE * OPPONENT_CASE_PROB),
-                     EXHAUST_SCORE = sum(EXHAUST_SCORE * OPPONENT_CASE_PROB),
-                     TTF_SCORE = sum(TTF_SCORE * OPPONENT_CASE_PROB),
-                     TURNS_TO_FINISH = sum(TURNS_TO_FINISH * OPPONENT_CASE_PROB),
+  result <- temp[, .(EV = sum(WEIGHTED_SCORE) / sum(OPPONENT_CASE_PROB),
+                     MOVE_DIFF_SCORE  = sum(MOVE_DIFF_SCORE * OPPONENT_CASE_PROB) / sum(OPPONENT_CASE_PROB),
+                     EXHAUST_SCORE = sum(EXHAUST_SCORE * OPPONENT_CASE_PROB) / sum(OPPONENT_CASE_PROB),
+                     TTF_SCORE = sum(TTF_SCORE * OPPONENT_CASE_PROB) / sum(OPPONENT_CASE_PROB),
+                     TURNS_TO_FINISH = sum(TURNS_TO_FINISH * OPPONENT_CASE_PROB) / sum(OPPONENT_CASE_PROB),
                  #    CYC_DIST_SCORE = sum(CYC_DIST_SCORE * OPPONENT_CASE_PROB),
-                     MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE * OPPONENT_CASE_PROB),
-                     OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * OPPONENT_CASE_PROB)), by = .(CYCLERS, MOVES, TEAM_ID, PROB_PRODUCT = new_prob, C1, C2, M1, M2)]
+                     MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE * OPPONENT_CASE_PROB) / sum(OPPONENT_CASE_PROB),
+                     OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * OPPONENT_CASE_PROB) / sum(OPPONENT_CASE_PROB) ), by = .(CYCLERS, MOVES, TEAM_ID, PROB_PRODUCT = new_prob, C1, C2, M1, M2)]
 
   return(result)
 

@@ -1,6 +1,7 @@
 
 #prepare most likely needed optimal moves
-cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status) {
+cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status, calc_ttf = TRUE, calc_draw_odds = FALSE,
+                                           subset_cyclers = NULL) {
 
   #what = precalculates turns
 
@@ -35,14 +36,23 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
                                                    ignore_block = TRUE,
                                                    return_numeric_position = TRUE), by = .(CYCLER_ID, MOVEMENT)]
 
-
+  if (calc_draw_odds == FALSE) {
   join_curr[, DRAW_ODDS := ""]
+  } else {
+
+    join_curr[, DRAW_ODDS := calculate_draw_distribution_by_turn(CYCLER_ID, deck_status, how_many_cards = 4, db_res = TRUE), by = .(CYCLER_ID, MOVEMENT)]
+  }
   join_curr[, row_id_calc := seq_len(.N)]
   ss_cols_track_left <- pre_aggr_game_status$aggr_to_slots[, .(GAME_SLOT_ID, TRACK_LEFT)]
   finish_slot <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
 
   join_track_left <- ss_cols_track_left[join_curr, on = .(GAME_SLOT_ID = new_slot_after_moving)]
+  if (!is.null(subset_cyclers)) {
+    join_track_left <- join_track_left[CYCLER_ID %in% subset_cyclers]
+  }
+
   setnames(join_track_left, "GAME_SLOT_ID", "new_slot_after_moving")
+
   join_track_left[, DECK_LEFT := convert_deck_left_to_text(play_card(CYCLER_ID,
                                                                      card_id = NULL,
                                                                      deck_copied,
@@ -55,7 +65,7 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
                                                                      copy = TRUE),
                                                            CYCLER_ID),
                   by = .(row_id_calc)]
-
+  if (calc_ttf == TRUE) {
   #check if we already have results
   joined <- ADM_OPTIMAL_MOVES[join_track_left, on = .(DECK_LEFT, TRACK_LEFT, DRAW_ODDS)]
   # joined[is.na(TURNS_TO_FINISH), TURNS_TO_FINISH := as.double(finish_turns_db(con, track_left_input = TRACK_LEFT,
@@ -71,6 +81,10 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
                                                                                 pre_aggr_game_status,
                                                                                 cycler_at_slot = new_slot_after_moving,
                                                                                 draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)), by = .(row_id_calc)]
+  } else {
+    joined <- join_track_left
+    joined[, TURNS_TO_FINISH := 10]
+  }
   #   for (opt_loop in 1:nrow(join_curr)) {
   #     loop_cycler <- join_curr[opt_loop, CYCLER_ID]
   #     cycler_deck_updated <- deck_copied[CYCLER_ID == join_curr[opt_loop, CYCLER_ID]]
