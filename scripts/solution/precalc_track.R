@@ -28,7 +28,7 @@ aggr_to_slots[, slipstream_possible := ifelse(!PIECE_ATTRIBUTE %in% c("M", "C") 
 aggr_to_slots[, slipstream_possible := ifelse(is.na(slipstream_possible), 1, slipstream_possible)]
 
 res_list <- NULL
-print(aggr_to_slots[1])
+#print(aggr_to_slots[1])
 res_list$aggr_to_slots <- aggr_to_slots
 res_list$cycler_pos <- all_cycler_pos
 return(res_list)

@@ -10,8 +10,8 @@ game_status_data <- list()
   full_action <- NULL
   game_action <- NULL
 
-  #playing_teams <- c(1, 2, 3, 4)
-  playing_teams <- c(1, 2, 3)
+  playing_teams <- c(1, 2, 3, 4)
+ # playing_teams <- c(1, 2, 3)
 
   smart_team <- 3
   ai_teams <- setdiff(playing_teams, smart_team)
@@ -31,11 +31,17 @@ game_status_data <- list()
     track <- 13#as.integer(runif(1, 12, 17))
     #ijk map explanation: i = starting point, k = movement, j = ending slot
     ijk <- ijk_map(track, STG_TRACK_PIECE, STG_TRACK)
+
+    slip_map <- slipstream_map(track, STG_TRACK_PIECE, STG_TRACK)
+    slip_map_matrix <- as.matrix(slip_map)
+   # reverse_slip_map <- slip_map_matrix[nrow(slip_map_matrix):1,]
+
     winner_state <- data.table(TURN_ID = numeric(), CYCLER_ID = numeric(), POSITION = numeric(), GAME_ID = numeric(),
                                row_over_finish = numeric(), finish_square = numeric())
 
 
-    cycler_ids <- sample(c(1,2,3,4,5,6))
+    cycler_ids <- sample(c(1,2,3,4,5,6,7,8))
+  #  cycler_ids <- sample(c(3,4,5,6))
     total_cyclers <- length(cycler_ids)
     game_status <- start_game(cycler_ids ,track, STG_TRACK_PIECE, STG_TRACK)
    # game_status <- randomize_start_grid(game_status)
@@ -88,8 +94,6 @@ game_status_data <- list()
       # load from DB
       # if playing with humans, dont update DB
       # update only new opt results in memory that have been generated during the game
-      print(zoom(game_status))
-      print(deck_status[CYCLER_ID %in% smart_cycler_ids  & Zone == "Hand", .N, by = .(CYCLER_ID, MOVEMENT)][order(CYCLER_ID, MOVEMENT)])
 
       #are smart cyclers still playing?
       if (length(in_game_smart_cyclers) > 0) {
@@ -114,10 +118,12 @@ game_status_data <- list()
           } else {
             calc_ttf <- FALSE
           }
+          rm("ADM_OPTIMAL_MOVES")
+          required_data("ADM_OPTIMAL_MOVES")
           ctM_res <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status, calc_ttf)
           ctM_data <- ctM_res$ctM_data
 
-
+          min_ttf <- ctM_data[, min(TURNS_TO_FINISH)]
           if (calc_ttf == FALSE) {
           own_TTF <- cyclers_turns_MOVEMEMENT_combs(con, ADM_OPTIMAL_MOVES, game_status,
                                                     deck_status, pre_aggr_game_status, TRUE, calc_draw_odds = TRUE, subset_cyclers = smart_cycler_ids)
@@ -145,7 +151,8 @@ game_status_data <- list()
           #calculate mixed strategies
           rm("ADM_OPTIMAL_MOVES")
           required_data("ADM_OPTIMAL_MOVES")
-          MIXED_STRATEGY_all <- calculate_mixed_strategy(game_status, deck_status, ijk, ADM_AI_CONF, ADM_OPTIMAL_MOVES, ctM_data, STG_TEAM, TRUE, min_ttf)
+          MIXED_STRATEGY_all <- calculate_mixed_strategy(game_status, deck_status, ijk,
+                                                         slip_map_matrix, ADM_AI_CONF, ADM_OPTIMAL_MOVES, ctM_data, STG_TEAM, TRUE, min_ttf)
           MIXED_STRATEGY <- MIXED_STRATEGY_all$opponent_strat
           combinations_with_p <- MIXED_STRATEGY_all$combinations
           if (calc_ttf == FALSE) {
@@ -180,12 +187,21 @@ game_status_data <- list()
           join_my_ttf[, OVER_FINISH := pmax(NEW_GAME_SLOT_ID - finish_slot, 0)]
           #setkeyv sorts cyclers by case_id and new_square
           setorder(join_my_ttf, case_id, -NEW_SQUARE)
+         # join_my_ttf[, ':=' (MY_TEAM_ROW = ifelse(CYCLER_ID %in% smart_cycler_ids, 1,NA))]
+         # join_my_ttf[, ':=' (MY_TEAM_MIN_TTF = min(TURNS_TO_FINISH * MY_TEAM_ROW, na.rm = TRUE)), by = case_id]
+          #-1 so that we include cases where we push opponent back
+         # join_my_ttf[, ':=' (RELEVANT_OPPONENT = MY_TEAM_MIN_TTF >= (TURNS_TO_FINISH - 1)), by = case_id]
           join_my_ttf[, ':=' (CYCLER_MEAN_TTF = mean(TURNS_TO_FINISH)), by = .(CYCLER_ID)]
-          join_my_ttf[, ':=' (TTF_DIFF_OF_MEAN = CYCLER_MEAN_TTF - TURNS_TO_FINISH)]
+          nemesis <- join_my_ttf[!CYCLER_ID %in% smart_cycler_ids, CYCLER_ID[which.min(CYCLER_MEAN_TTF)]]
+          if (length(nemesis) == 0) {nemesis <- min(smart_cycler_ids)}
+          join_my_ttf[, ':=' (NEMESIS_ROW = ifelse(CYCLER_ID %in% nemesis, 1, NA))]
+          join_my_ttf[, ':=' (NEMESIS_TTF = min(TURNS_TO_FINISH * NEMESIS_ROW, na.rm = TRUE)), by = case_id]
+
+        #  join_my_ttf[, ':=' (TTF_DIFF_OF_MEAN = CYCLER_MEAN_TTF - TURNS_TO_FINISH)]
         #  join_track_left[, ':=' (TEAM_TTF_MEAN = mean(TURNS_TO_FINISH), cycs = .N), by = .(case_id, TEAM_ID)]
-          join_my_ttf[, ':=' (CASE_DIFF = sum(TTF_DIFF_OF_MEAN), tot_cycs = .N), by = .(case_id)]
-          join_my_ttf[, ':=' (COMPETITOR_AVG_TTF = (CASE_DIFF - TTF_DIFF_OF_MEAN) / (tot_cycs - 1))]
-          join_my_ttf[, ':=' (RELATIVE_TTF = (TTF_DIFF_OF_MEAN - COMPETITOR_AVG_TTF))]#positive is good
+       #   join_my_ttf[, ':=' (CASE_DIFF = sum(TTF_DIFF_OF_MEAN * RELEVANT_OPPONENT), tot_cycs = sum(RELEVANT_OPPONENT)), by = .(case_id)]
+        #  join_my_ttf[, ':=' (COMPETITOR_AVG_TTF = (CASE_DIFF - TTF_DIFF_OF_MEAN) / (tot_cycs - 1))]
+          join_my_ttf[, ':='(RELATIVE_TTF = (NEMESIS_TTF - TURNS_TO_FINISH))]#positive is good
           join_my_ttf[, ':=' (SLOTS_PROGRESSED = NEW_GAME_SLOT_ID - curr_pos)]
           join_my_ttf[, ':=' (MOVE_ORDER = seq_len(.N),
             MOVE_DIFF_RELATIVE = MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1)
@@ -198,13 +214,14 @@ game_status_data <- list()
 
           # join_track_left[, MOVE_DIFF_RELATIVE := MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1), by = case_id]
 
-          join_my_ttf[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_RELATIVE * 0.15 * pmax(min_ttf - 3, 0),
+          join_my_ttf[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_RELATIVE * 0.25 * pmax(min_ttf - 4, 0.1),
                                   EXHAUST_SCORE = ((1 + MOVE_ORDER) / total_cyclers) * EXHAUST * pmax(min_ttf - 3, 0) ^ 1.2 * -0.2,
-                                  TTF_SCORE = RELATIVE_TTF * 8 * ((total_cyclers - MOVE_ORDER + 1) / total_cyclers),
+                               #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
+                              TTF_SCORE = RELATIVE_TTF * 5,
                                   # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
-                                  MOVE_ORDER_SCORE = - MOVE_ORDER * 0.05 * (20 - min_ttf),
+                                  MOVE_ORDER_SCORE = - MOVE_ORDER * 0.015 * (22 - min_ttf),
                                   OVER_FINISH_SCORE = OVER_FINISH * 100,
-                                  SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.005 * (16 - min_ttf))]
+                                  SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf))]
 
           join_my_ttf[, TOT_SCORE := (MOVE_DIFF_SCORE +
                                             EXHAUST_SCORE +
@@ -265,13 +282,24 @@ game_status_data <- list()
                                       MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE * OPPONENT_CASE_PROB) / sum(OPPONENT_CASE_PROB),
                                       OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * OPPONENT_CASE_PROB) / sum(OPPONENT_CASE_PROB)
           ), by = .(CYCLERS, MOVES, TEAM_ID)][order(-EV)]
+          print(zoom(game_status))
+          print(deck_status[CYCLER_ID %in% smart_cycler_ids  & Zone == "Hand", .(CARDS = paste0(sort(unique(MOVEMENT)), collapse = "-")), by = .(CYCLER_ID)][order(CYCLER_ID)])
+          scalued <- check_res2[ ,.(MOVES, EV = round(EV - max(EV), 2),
+                                   MOVE_DIFF_SCORE = round(MOVE_DIFF_SCORE, 2),
+                                   EXHAUST_SCORE = round(EXHAUST_SCORE - max(EXHAUST_SCORE), 2),
+                                   SLOTS_PROGRESSED_SCORE = round(SLOTS_PROGRESSED_SCORE - max(SLOTS_PROGRESSED_SCORE), 2),
+                                   TTF_SCORE = round(TTF_SCORE, 2),
+                                   TURNS_TO_FINISH = round(TURNS_TO_FINISH, 2),
+                                   MOVE_ORDER_SCORE = round(MOVE_ORDER_SCORE - mean(MOVE_ORDER_SCORE), 2),
+                                   OVER_FINISH_SCORE = round(OVER_FINISH_SCORE, 2))]
 
-          print(check_res2[order(-EV)])
+          print(scalued[1:10][order(-EV)])
 
           check_res2[, M1 := as.numeric(str_sub(MOVES, 1, 1))]
           check_res2[, M2 := as.numeric(str_sub(MOVES, 3, 3))]
-          check_res2[, C1 := as.numeric(str_sub(CYCLERS, 1, 1))]
-          check_res2[, C2 := as.numeric(str_sub(CYCLERS, 3, 3))]
+
+          check_res2[, C1 := as.numeric(word(CYCLERS, 1, 1, sep = fixed("_")))]
+          check_res2[, C2 := as.numeric(word(CYCLERS, 2, 2, sep = fixed("_")))]
 
 
                   check_res2[,  DECK_LEFT_C1 := convert_deck_left_to_text(deck_status, C1), by = .(MOVES )]
@@ -294,7 +322,7 @@ game_status_data <- list()
           EVs[, ':=' (PRIO = seq_len(.N), OTHER_CYCLER = CYCLER_ID, OTHER_MOVE = MOVEMENT), by = CYCLER_ID]
           EVs[, playing_prob_me := calculate_draw_distribution_by_turn_with_prio(.SD, turn_start_deck), by = .(CYCLER_ID), .SDcols = c("OTHER_CYCLER", "OTHER_MOVE", "PRIO")]
           EV_OF_PLAYING_FIRST <- EVs[, sum(WEIGHTED_EV * playing_prob_me), by = CYCLER_ID]
-          print(EVs)
+
 
           first_selected_cycler <- EV_OF_PLAYING_FIRST[which.max(V1), CYCLER_ID]
       #    p1_data <- check_res2[, ]
@@ -319,7 +347,7 @@ game_status_data <- list()
             # card_id_selected  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == moving_cycler & Zone == "Hand"], moving_cycler, "SMART_MAX",  aim_downhill = TRUE)[, CARD_ID]
             options <- deck_status[CYCLER_ID == moving_cycler & Zone == "Hand", .N, by = .(MOVEMENT)][, MOVEMENT]
             cards_in_hand <- EVs[CYCLER_ID == moving_cycler & MOVEMENT %in% options]
-            print(cards_in_hand)
+         #   print(cards_in_hand)
             # cards_in_hand <- check_res2[C1 == moving_cycler & M1 %in% options,
             #                                 .N, by = .(M1, MOVES, EV, draw_odds_C2,
             #                                            MOVE_DIFF_SCORE,
@@ -357,7 +385,7 @@ game_status_data <- list()
 
 
 
-            print(cards_in_hand)
+          #  print(cards_in_hand)
             second_movement <-  cards_in_hand[, MOVEMENT [which.max(EV)]]
             second_move <- deck_status[CYCLER_ID == second_cycler & Zone == "Hand" & MOVEMENT == second_movement, min(CARD_ID)]
             if (second_cycler == 6 ) {
@@ -449,6 +477,7 @@ game_status_data <- list()
 
     #print(full_action[, .(m)])
     print(total_winner[, mean(POSITION), by = CYCLER_ID][order(V1)])
+    print(total_winner[TURN_ID == 13])
     #full_action[, .(SLIP = mean(SLIP), BLOCK = mean(BLOCK), EXHAUST = mean(EXHAUST), ASCEND = mean(ASCEND)), by = CYCLER_ID][order(CYCLER_ID)]
   #  print(full_action[, .(
    #                       SLIP = mean(SLIP_BONUS, na.rm = TRUE), BLOCK = mean(BLOCK_DIFF, na.rm = TRUE), EXHAUST = mean(EXHAUST, na.rm = TRUE),

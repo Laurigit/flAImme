@@ -95,7 +95,16 @@ res <- MILPModel() %>%
   #käytä kortti vain kerran
   #res <- model %>% # add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= 1, k = 1:length(kortit)) %>%
    # set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
-    set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)), "min") %>%
+
+
+    set_objective(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit))
+                    - sum_expr(x[i, j, k] * 0.01, i = 1:rivi_lkm, j = (finish_slot + 1), k = 1:length(kortit))
+                    - sum_expr(x[i, j, k]  * 0.02, i = 1:rivi_lkm, j = (finish_slot + 2), k = 1:length(kortit))
+                     - sum_expr(x[i, j, k] * 0.03, i = 1:rivi_lkm, j = (finish_slot + 3), k = 1:length(kortit))
+                    - sum_expr(x[i, j, k] * 0.04, i = 1:rivi_lkm, j = (finish_slot + 4), k = 1:length(kortit))
+                     - sum_expr(x[i, j, k] * 0.05, i = 1:rivi_lkm, j = (finish_slot + 5):rivi_lkm, k = 1:length(kortit))
+
+, "min") %>%
     #maaliin on päästävä
     add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, k = 1:length(kortit), j = finish_slot:rivi_lkm) == 1) %>%
     #use only at the end the extra exhaust

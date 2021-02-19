@@ -27,8 +27,8 @@ worse_move <- testdata#[TEAM_ID == 1]
 
 worse_move[, M1 := str_sub(MOVES, 1, 1)]
 worse_move[, M2 := str_sub(MOVES, 3, 3)]
-worse_move[, C1 := str_sub(CYCLERS, 1, 1)]
-worse_move[, C2 := str_sub(CYCLERS, 3, 3)]
+worse_move[, C1 := word(CYCLERS, 1, 1, sep = fixed("_"))]
+worse_move[, C2 := word(CYCLERS, 2, 2, sep = fixed("_"))]
 #aggr move1
 # worse_move[, ':=' (,
 #                              VAR = var(EV)), by = .(TEAM_ID, MOVEMENT = as.numeric(M1), CYCLER_ID = as.numeric(C1))]

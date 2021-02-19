@@ -4,7 +4,7 @@
 # ijk <- ijk_map(track, STG_TRACK_PIECE, STG_TRACK)
 
 #calculate_mixed_strategy
-calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF, ADM_OPTIMAL_MOVES, ctM_data, STG_TEAM, calc_ttf = TRUE, min_ttf = 10) {
+calculate_mixed_strategy <- function(game_status, deck_status, ijk, slip_map, ADM_AI_CONF, ADM_OPTIMAL_MOVES, ctM_data, STG_TEAM, calc_ttf = TRUE, min_ttf = 10) {
 
 
   slots_squares <- as.matrix(game_status[, .(SQUARE_ID, GAME_SLOT_ID)])
@@ -88,13 +88,15 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
       setorder(join_info, case_id, -curr_square)
 
       matr_ijk <- as.matrix(ijk)
+
+
       join_info[, c("cyc_id_copy",
                     "MOVE_DIFF",
                     "NEW_GAME_SLOT_ID",
                     "EXHAUST",
-                    "NEW_SQUARE") := as.data.table(move_cycler_c(as.matrix(.SD), matr_ijk, reverse_slots_squares)),
+                    "NEW_SQUARE") := as.data.table(move_cycler_c(as.matrix(.SD), matr_ijk, reverse_slots_squares, slip_map)),
                 by = .(case_id), .SDcols = c("CYCLER_ID", "MOVEMENT", "curr_pos")]
-
+        vardiff <- join_info[, var(MOVE_DIFF)]
 
      # join_info <-
 
@@ -114,14 +116,15 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
         how_many_missing[, .N, by = .(TRACK_LEFT, DECK_LEFT)][, .N]
       missing <- how_many_missing[is.na(TURNS_TO_FINISH), .N, by = .(TRACK_LEFT, DECK_LEFT)][, .N]
       print(missing)
-      print(coverage)
+     # print(coverage)
       start_time <- Sys.time()
+
       join_track_left[!is.na(TRACK_LEFT), TURNS_TO_FINISH := as.double(finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_track, NEW_GAME_SLOT_ID,
                                                                                        draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)),
                       by = .(NEW_GAME_SLOT_ID, TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
       time_diff <- difftime(Sys.time(), start_time, "seconds")
-      print(time_diff)
-      print(as.numeric(time_diff) / missing)
+     # print(time_diff)
+    #  print(as.numeric(time_diff) / missing)
       } else {
         print("EITÄNNE")
         join_track_left[, TURNS_TO_FINISH := 10]
@@ -144,12 +147,20 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
       join_track_left[, OVER_FINISH := pmax(NEW_GAME_SLOT_ID - finish_slot, 0)]
       #setkeyv sorts cyclers by case_id and new_square
       setorder(join_track_left, case_id, -NEW_SQUARE)
+
+    #  join_track_left[, ':=' (MY_TEAM_ROW = ifelse(CYCLER_ID %in% smart_cycler_ids, 1,NA))]
+      #join_track_left[, ':=' (MY_TEAM_MIN_TTF = min(TURNS_TO_FINISH * MY_TEAM_ROW, na.rm = TRUE)), by = case_id]
+     # join_track_left[, ':=' (RELEVANT_OPPONENT = MY_TEAM_MIN_TTF >= (TURNS_TO_FINISH - 1)), by = case_id]
       join_track_left[, ':=' (CYCLER_MEAN_TTF = mean(TURNS_TO_FINISH)), by = .(CYCLER_ID)]
-      join_track_left[, ':=' (TTF_DIFF_OF_MEAN = CYCLER_MEAN_TTF - TURNS_TO_FINISH)]
+     # nemesis <- join_track_left[!CYCLER_ID %in% smart_cycler_ids, CYCLER_ID[which.min(CYCLER_MEAN_TTF)]]
+     # join_track_left[, ':=' (NEMESIS_ROW = ifelse(CYCLER_ID %in% nemesis, 1, NA))]
+      #join_track_left[, ':=' (NEMESIS_TTF = min(TURNS_TO_FINISH * NEMESIS_ROW, na.rm = TRUE)), by = case_id]
+      #join_track_left[, ':=' (TTF_DIFF_OF_MEAN = CYCLER_MEAN_TTF - TURNS_TO_FINISH)]
       #  join_track_left[, ':=' (TEAM_TTF_MEAN = mean(TURNS_TO_FINISH), cycs = .N), by = .(case_id, TEAM_ID)]
-      join_track_left[, ':=' (CASE_DIFF = sum(TTF_DIFF_OF_MEAN), tot_cycs = .N), by = .(case_id)]
-      join_track_left[, ':=' (COMPETITOR_AVG_TTF = (CASE_DIFF - TTF_DIFF_OF_MEAN) / (tot_cycs - 1))]
-      join_track_left[, ':=' (RELATIVE_TTF = (TTF_DIFF_OF_MEAN - COMPETITOR_AVG_TTF))]#positive is good
+      #join_track_left[, ':=' (CASE_DIFF = sum(TTF_DIFF_OF_MEAN * RELEVANT_OPPONENT), tot_cycs = sum(RELEVANT_OPPONENT)), by = .(case_id)]
+     # join_track_left[, ':=' (COMPETITOR_AVG_TTF = (CASE_DIFF - TTF_DIFF_OF_MEAN) / (tot_cycs - 1))]
+      join_track_left[, ':=' (RELATIVE_TTF = (CYCLER_MEAN_TTF - TURNS_TO_FINISH))]#positive is good
+
       join_track_left[, ':=' (SLOTS_PROGRESSED = NEW_GAME_SLOT_ID - curr_pos)]
       # join_track_left[, ':=' (TEAM_TTF = sum(TURNS_TO_FINISH), cycs = .N), by = .(case_id, TEAM_ID)]
       # join_track_left[, ':=' (TEAM_TTF_MEAN = mean(TURNS_TO_FINISH), cycs = .N), by = .(case_id, TEAM_ID)]
@@ -170,13 +181,14 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
         #PELKÄSTÄ LIIKKUMISESTA PITÄÄ ANTAA PISTEITÄ MYÖS, vähintääb tie breakeraita varten, jos sama ev muuten
      # join_track_left[, MOVE_DIFF_RELATIVE := MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1), by = case_id]
 
-      join_track_left[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_RELATIVE * 0.15 * pmax(min_ttf - 3, 0),
+      join_track_left[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_RELATIVE * 0.25 * pmax(min_ttf - 4, 0.1),
                               EXHAUST_SCORE = (1 + MOVE_ORDER / cycler_count) * EXHAUST * pmax(min_ttf - 3, 0) ^ 1.2 * -0.2,
-                              TTF_SCORE = RELATIVE_TTF * 8 * ((total_cyclers - MOVE_ORDER + 1) / total_cyclers),
+                            #  TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
+                             TTF_SCORE = RELATIVE_TTF * 5,
                              # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
-                              MOVE_ORDER_SCORE = -MOVE_ORDER * 0.05 * (15 - min_ttf),
+                              MOVE_ORDER_SCORE = -MOVE_ORDER * 0.015 * (22 - min_ttf),
                               OVER_FINISH_SCORE = OVER_FINISH * 100,
-                             SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.005 * (16 - min_ttf))]
+                             SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf))]
 
       join_track_left[, TOT_SCORE := (MOVE_DIFF_SCORE +
                                         EXHAUST_SCORE +
@@ -225,8 +237,8 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
       check_res2[, PROB_PRODUCT := 0.1]
       check_res2[, M1 := as.numeric(str_sub(MOVES, 1, 1))]
       check_res2[, M2 := as.numeric(str_sub(MOVES, 3, 3))]
-      check_res2[, C1 := as.numeric(str_sub(CYCLERS, 1, 1))]
-      check_res2[, C2 := as.numeric(str_sub(CYCLERS, 3, 3))]
+      check_res2[, C1 := as.numeric(word(CYCLERS, 1, 1, sep = fixed("_")))]
+      check_res2[, C2 := as.numeric(word(CYCLERS, 2, 2, sep = fixed("_")))]
       cap_data_all <- copy(deck_status)
       cap_data_all[, count_me := ifelse(Zone != "Removed", 1, 0)]
       cap_data <- cap_data_all[, .(count = sum(count_me)), by = .(CYCLER_ID, MOVEMENT)]
@@ -252,7 +264,7 @@ calculate_mixed_strategy <- function(game_status, deck_status, ijk, ADM_AI_CONF,
 
 
 
-      iteration_limit <- 12
+      iteration_limit <- 10
       #gamma goes down first and then starts increasing. At which iteration, we are on bottom?
       bottom_iteration <- 4
       var_threshold <- 0.01
