@@ -49,6 +49,8 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
 
 
         tryIns <- tryCatch({
+
+          new_result_row <- new_result_row[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH )]
           dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
           FALSE
         }, error = function(e) {

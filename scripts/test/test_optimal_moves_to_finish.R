@@ -26,10 +26,11 @@ test_that("draw odds", {
   game_status <- set_cycler_position(1, 62, 1,  game_status)
   zoom(game_status, 25)
   options <- create_custom_deck(1, c(5, 2, 7, 3), c(1, 1, 1, 1))
+  otions_string <- options[, paste0(MOVEMENT, collapse = "")]
   pre_track <- precalc_track(game_status)
   dodds <- data.table(Turn_to_Draw = c(1, 1, 2), MOVEMENT = c(2, 5, 7), prob = 0)
-  expect_equal(optimal_moves_to_finish(options,  62, pre_track, use_draw_odds = dodds)[, TURNS_TO_FINISH], 5)
-  expect_equal(optimal_moves_to_finish(options,  62, pre_track, use_draw_odds = "")[, TURNS_TO_FINISH], 4)
+  expect_equal(optimal_moves_to_finish(otions_string,  62, pre_track, use_draw_odds = dodds)[, TURNS_TO_FINISH], 5)
+  expect_equal(optimal_moves_to_finish(otions_string,  61, pre_track, use_draw_odds = "")[, TURNS_TO_FINISH], 4)
 })
 
 test_that("full track", {

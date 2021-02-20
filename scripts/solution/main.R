@@ -28,7 +28,7 @@ game_status_data <- list()
     turn_game_status <- NULL
     deck_status_loop <- NULL
     deck_status_loop_before <- NULL
-    track <- 13#as.integer(runif(1, 12, 17))
+    track <- 16#as.integer(runif(1, 12, 17))
     #ijk map explanation: i = starting point, k = movement, j = ending slot
     ijk <- ijk_map(track, STG_TRACK_PIECE, STG_TRACK)
 
@@ -249,7 +249,7 @@ game_status_data <- list()
           TTF_stats <- rbind(TTF_stats, aggr_pic)
           print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED, group=CYCLER_ID)) +
                   #geom_line(linetype="dashed", color="blue", size=1.2)+
-                  geom_line(aes(linetype=as.factor(CYCLER_ID) , color=as.factor(CYCLER_ID)))+
+                  geom_line(aes(linetype=as.factor(CYCLER_ID) ,size=3, color=as.factor(CYCLER_ID)))+
                   geom_point(aes(linetype=as.factor(CYCLER_ID), color=as.factor(CYCLER_ID))) +
                   xlim(6, 78) + ylim(-1, 1.5))
 
@@ -477,7 +477,7 @@ game_status_data <- list()
 
     #print(full_action[, .(m)])
     print(total_winner[, mean(POSITION), by = CYCLER_ID][order(V1)])
-    print(total_winner[TURN_ID == 13])
+    print(total_winner[CYCLER_ID        == 5])
     #full_action[, .(SLIP = mean(SLIP), BLOCK = mean(BLOCK), EXHAUST = mean(EXHAUST), ASCEND = mean(ASCEND)), by = CYCLER_ID][order(CYCLER_ID)]
   #  print(full_action[, .(
    #                       SLIP = mean(SLIP_BONUS, na.rm = TRUE), BLOCK = mean(BLOCK_DIFF, na.rm = TRUE), EXHAUST = mean(EXHAUST, na.rm = TRUE),

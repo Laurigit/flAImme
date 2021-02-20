@@ -35,6 +35,9 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
   } else {
     joini <- rividata
   }
+  finish_slot <- joini[, max(j)]
+  joini[j == finish_slot & pmax(ascend_v, k) >= distance & distance <= max_move_vect, tulos_save := FALSE]
+
   #  rividata[, tulos_save := !(((j - i) <= k)  & ((j - i) >= 2))] #either of these cases is true, then it is filterd out
   return(joini[, tulos_save])
 }
