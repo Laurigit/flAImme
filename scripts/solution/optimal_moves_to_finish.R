@@ -26,6 +26,21 @@ finsish_straight <- max(finish_slot - 9, rivi_lkm)
 
 kortit_Dt <- data.table(MOVEMENT = as.numeric(str_split(cycler_deck_status[[1]][1], "")[[1]]))
 
+# if(nrow(kortit_Dt[MOVEMENT == 5]) > 0) {
+#   penalty_card <- 5
+# } else if (nrow(kortit_Dt[MOVEMENT == 4]) > 0) {
+#   penalty_card <- 4
+# } else if (nrow(kortit_Dt[MOVEMENT == 6]) > 0) {
+#   penalty_card <- 6
+# } else if (nrow(kortit_Dt[MOVEMENT == 3]) > 0) {
+#   penalty_card <- 3
+# } else if (nrow(kortit_Dt[MOVEMENT == 7]) > 0) {
+#   penalty_card <- 7
+# } else  {
+#   penalty_card <- 2
+# }
+
+
 if (length(finish_slot) == 0 ) {
   finish_slot <- 0
 }
@@ -83,6 +98,7 @@ if (use_draw_odds[[1]][1] != "") {
 res <- MILPModel() %>%
   #  add_variable(y[k], k = 1:20, type = "binary") %>%
   add_variable(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), type = "binary") %>%
+  #add_variable(z[y], y = penalty_card, type = "integer") %>%
   #set_objective(sum_expr(y[k], k = 1), "max") %>%
 
   set_bounds(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), ub = 0, boundi_filtteri(i, j, kortit[k], max_move_vect, ascend_v, append_pad )) %>%
@@ -207,3 +223,8 @@ return(joinaa[, kortit])
 
 }
 
+# last_j_payoff <- function(i, j, k) {
+#
+#   return(dt[, j ^ 2])
+#
+# }

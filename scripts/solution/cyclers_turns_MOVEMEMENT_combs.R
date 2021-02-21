@@ -1,13 +1,8 @@
 
 #prepare most likely needed optimal moves
 cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, deck_status, pre_aggr_game_status, calc_ttf = TRUE, calc_draw_odds = FALSE,
-                                           subset_cyclers = NULL) {
+                                           subset_team = NULL) {
 
-  #what = precalculates turns
-
-  #extra vector format c(CYCLER_ID, MOVEMENT, NEW_LANDING_SLOT) #so the the idea is that you can play card 5 but move actually 6 due tie slipstream
-  #t <- c("CYCLER_ID", "MOVEMENT")
-  #extra_vector <-  c(1,5)
 
   used_game_status <- copy(game_status)
   deck_copied <- copy(deck_status)
@@ -16,6 +11,7 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
 
   #we dont have data for this turn, lets calc it
   not_played <- deck_copied[Zone != "Removed"]
+
   #this can be improved to use the known information when exhaust has been added
   options <- not_played[, .N, by = .(MOVEMENT, CYCLER_ID)][order(CYCLER_ID)]
   #options[, turns_to_finish := 100]
@@ -23,12 +19,8 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
   #join current position
   #join_curr <- curr_posits[, on = "CYCLER_ID"]
   join_curr_all <- options[curr_posits, on = "CYCLER_ID"]
- # join_curr_all[CYCLER_ID == 1, MAXIMUM_MOVEMENT := 5]
-  # join_curr_all[MOVEMENT >= MAXIMUM_MOVEMENT, MIN_CARD_GTE_MAX_MOVE := min(MOVEMENT), by = CYCLER_ID]
-  # join_curr_all[MOVEMENT <= MINIMUM_MOVEMENT, MIN_CARD_LTE_MIN_MOVE := min(MOVEMENT), by = CYCLER_ID]
-  # join_curr_all[, REMOVE_ME_MIN := MOVEMENT <= MINIMUM_MOVEMENT & MOVEMENT > MIN_CARD_LTE_MIN_MOVE]
-  # join_curr_all[, REMOVE_ME_MAX := MOVEMENT >= MAXIMUM_MOVEMENT & MOVEMENT > MIN_CARD_GTE_MAX_MOVE]
-  join_curr <- join_curr_all#[!REMOVE_ME_MIN & !REMOVE_ME_MAX]
+
+  join_curr <- join_curr_all
 
 
   join_curr[, new_slot_after_moving := move_cycler(used_game_status, CYCLER_ID, MOVEMENT,
@@ -40,15 +32,15 @@ cyclers_turns_MOVEMEMENT_combs <- function(con, ADM_OPTIMAL_MOVES, game_status, 
   join_curr[, DRAW_ODDS := ""]
   } else {
 
-    join_curr[, DRAW_ODDS := calculate_draw_distribution_by_turn(CYCLER_ID, deck_status, how_many_cards = 4, db_res = TRUE), by = .(CYCLER_ID, MOVEMENT)]
+    join_curr[, DRAW_ODDS := calculate_draw_distribution_by_turn(CYCLER_ID, deck_status, how_many_cards = 4, db_res = TRUE), by = .(CYCLER_ID)]
   }
   join_curr[, row_id_calc := seq_len(.N)]
   ss_cols_track_left <- pre_aggr_game_status$aggr_to_slots[, .(GAME_SLOT_ID, TRACK_LEFT)]
   finish_slot <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
 
   join_track_left <- ss_cols_track_left[join_curr, on = .(GAME_SLOT_ID = new_slot_after_moving)]
-  if (!is.null(subset_cyclers)) {
-    join_track_left <- join_track_left[CYCLER_ID %in% subset_cyclers]
+  if (!is.null(subset_team)) {
+    join_track_left <- join_track_left[TEAM_ID %in% subset_team]
   }
 
   setnames(join_track_left, "GAME_SLOT_ID", "new_slot_after_moving")

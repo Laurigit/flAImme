@@ -57,6 +57,14 @@ move_cycler <- function(current_game_status_input, cycler_id, movement, slipstre
 
  new_slot <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position) & CYCLER_ID == 0, max(GAME_SLOT_ID)]
  } else {
+   if (return_numeric_position == TRUE) {
+    copy_came <- copy(current_game_status)
+    copy_came[CYCLER_ID != cycler_id, CYCLER_ID := 0]
+    new_square <- copy_came[GAME_SLOT_ID <= (adjusted_movement + current_position) & CYCLER_ID == 0, max(SQUARE_ID)]
+
+    new_slot <- copy_came[GAME_SLOT_ID <= (adjusted_movement + current_position) & CYCLER_ID == 0, max(GAME_SLOT_ID)]
+
+   } else {
    new_square <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position), max(SQUARE_ID)]
    new_slot <- current_game_status[GAME_SLOT_ID <= (adjusted_movement + current_position), max(GAME_SLOT_ID)]
    #check if it is occupied and who occupies it
@@ -66,7 +74,7 @@ move_cycler <- function(current_game_status_input, cycler_id, movement, slipstre
    if (slot_occupied_cycler > 0) {
      current_game_status <- push_cycler_down(current_game_status, slot_occupied_cycler)
    }
-
+   }
  }
 
 
