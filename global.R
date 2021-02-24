@@ -25,11 +25,13 @@ library(ompr)
 library(ompr.roi)
 library(testthat)
 library(Rcpp)
+library(ggplot2)
 
 
 options(shiny.trace=FALSE)
-
-
+options(traceback.max.lines = 10)
+options(deparse.max.lines = 10)
+options(digits=3)
 sourcelist <- data.table(polku = c(dir("./scripts/", recursive = TRUE)))
 sourcelist[, rivi := seq_len(.N)]
 sourcelist[, kansio := strsplit(polku, split = "/")[[1]][1], by = rivi]
@@ -40,9 +42,14 @@ input_kansio_list <- c("utility",
                        "c_functions",
                        "solution_functions",
                        "solution",
+                       "bots",
                        "UID")
 for(input_kansio in input_kansio_list) {
+
   dir_list <- sourcelist[kansio == input_kansio, polku]
+
+  dir_list<- setdiff(dir_list, "solution/main.R")
+
   for(filename in dir_list) {
     result = tryCatch({
       print(paste0("sourcing ", filename))

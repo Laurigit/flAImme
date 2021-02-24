@@ -28,6 +28,9 @@ shinyServer(function(input, output, session) {
 command_data <-  my_reactivePoll(session, "CLIENT_COMMANDS", "SELECT * from CLIENT_COMMANDS", 1000, con)
 
 
+game_data <-  my_reactivePoll(session, "GAME", paste0('SELECT sum(CYCLER_ID) FROM GAME'), timeout = 1000, con)
+
+
 move_fact_data <- reactive({
   req(move_fact_data_all())
       req(input$join_tournament)
@@ -59,6 +62,48 @@ observeEvent(input$join_tournament,{
     srv$game_id <- new_game_id
 })
 
+deck_status_data <-  my_reactivePoll(session, "DECK_STATUS", paste0('SELECT sum(CYCLER_ID) FROM DECK_STATUS'), timeout = 1000, con)
+
+deck_status_curr_game <- reactive({
+
+  req(input$join_tournament)
+  deck_tour <- deck_status_data()[TOURNAMENT_NM == input$join_tournament]
+  find_latest_update <- deck_tour[, .N]
+  game_id <- deck_tour[find_latest_update, GAME_ID]
+  turn_id <- deck_tour[find_latest_update, TURN_ID]
+  # hand_options <-  deck_tour[find_latest_update, HAND_OPTIONS]
+  result <- deck_tour[GAME_ID == game_id]
+  result
+})
+
+
+observe({
+  tournament_result$data <- tournament_data_reactive()
+})
+
+game_status_simple <-  my_reactivePoll(session, "GAME_STATUS", paste0('SELECT sum(CYCLER_ID) FROM GAME_STATUS'), timeout = 1000, con)
+
+tournament_result <- reactiveValues(data = NULL)
+
+game_status <- reactive({
+
+  if (nrow(game_status_simple()) > 0) {
+
+    tn_data <- tournament_result$data[TOURNAMENT_NM == input$join_tournament]
+    #cycler_info <- ADM_CYCLER_INFO[CYCLER_ID %in% tn_data[, CYCLER_ID]]
+    max_game <- tn_data[, max(GAME_ID)]
+
+    #create game status
+
+    track <- tn_data[LANE == -1, max(TRACK_ID)]
+    game_id <- tn_data[LANE == -1, max(GAME_ID)]
+    turni <- game_status_simple()[TOURNAMENT_NM == input$join_tournament & GAME_ID == game_id, max(TURN_ID)]
+    gs_curr_turn <- game_status_simple()[TOURNAMENT_NM == input$join_tournament & GAME_ID == game_id & TURN_ID == turni]
+    game_status_local <- create_game_status_from_simple(gs_curr_turn, track,  STG_TRACK, STG_TRACK_PIECE)
+  } else {
+    NULL
+  }
+})
 #resolve game state after all moves are done
 
 
