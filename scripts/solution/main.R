@@ -1,7 +1,7 @@
   # required_data(c("STG_CYCLER", "STG_TRACK"))
 #AWS docker IMAGE PITÄÄ REBUILDAA, ETTÄ TOIMII PILVESSÄ.
 
-#source("global.R")
+source("global.R")
 #kaadu
 con <- connDB(con, "flaimme")
    required_data(c("STG_TEAM","ADM_CYCLER_INFO", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
@@ -65,7 +65,7 @@ game_status_data <- list()
     TTF_stats <- NULL
     finish <- game_status[FINISH == 1, max(GAME_SLOT_ID)]
     turn_id <- 0
-    pre_aggr_game_status <- precalc_track(game_status )
+    pre_aggr_game_status <- precalc_track(game_status)
 
     con <- connDB(con, "flaimme")
     required_data("ADM_OPTIMAL_MOVES", force_update = TRUE)
@@ -153,7 +153,7 @@ game_status_data <- list()
               bot_name <- bot_data[TEAM_ID == bot_loop, bot_name]
               bot_config <- NA
               funcargs <- list(hidden_information_output, deck_status,
-                               bot_config, bot_loop)
+                               bot_config, bot_loop, pre_aggr_game_status)
             #  res_debug <- ttf_bot(hidden_information_output, deck_status,
                         #           bot_config, bot_loop)
               myfunc <- bot_name

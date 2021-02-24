@@ -8,6 +8,8 @@ observeEvent(srv$turn_id, {
  #TASKS
   required_data(c("STG_TRACK_PIECE", "STG_TRACK", "STG_CYCLER", "ADM_CYCLER_INFO"))
   # do we have bots
+req(deck_status_curr_game())
+req(game_status())
 
   deck_status_now <- deck_status_curr_game()[TURN_ID == srv$turn_id]
   any_bots <- tournament()[PLAYER_TYPE == "AI"]
@@ -48,7 +50,7 @@ observeEvent(srv$turn_id, {
 
   bot_config <- NA
   funcargs <- list(hidden_information_output, deck_status_now,
-                   bot_config)
+                   bot_config, bot_loop, pre_aggr_game_status)
   myfunc <- "finish_rank_bot"
   res <- do.call(myfunc, funcargs)
 

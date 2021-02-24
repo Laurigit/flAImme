@@ -1,5 +1,5 @@
 nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
-                           bot_config, bot_team_id) {
+                           bot_config, bot_team_id, pre_aggr_game_status) {
 
   #team_combinations_data_with_other_player_probs <- hidden_information_output
 
