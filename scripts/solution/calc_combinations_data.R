@@ -12,7 +12,7 @@ deck_copied <- copy(deck_status)
 
 
  # sscols <- range[, .(TEAM_ID, CYCLER_ID, MOVEMENT)]
-  sscols <- deck_status[, .N, by = .(CYCLER_ID, MOVEMENT)][, N := NULL]
+  sscols <- deck_status[, .N, by = .(CYCLER_ID, MOVEMENT)][CYCLER_ID %in% cyclers][, N := NULL]
  # sscols[, TEAM_ID := 0]
 
   #sscols <- res_move[sscols_all, on = .(CYCLER_ID, MOVEMENT)][OPTION == TRUE | CYCLER_ID != moving_cycler]
@@ -57,14 +57,14 @@ deck_copied <- copy(deck_status)
 
 
   #curr pos
-  currpos <- game_status[CYCLER_ID > 0, .(CYCLER_ID, curr_pos = SQUARE_ID)]
+  currpos <- game_status[CYCLER_ID > 0, .(CYCLER_ID, curr_pos = GAME_SLOT_ID, curr_square = SQUARE_ID)]
   #add_drow_odds here
 
   join_curr_pos <- currpos[filter_zero, on = "CYCLER_ID"]
 
 
   #thinking_time <- 2
-  setorder(join_curr_pos, case_id, -curr_pos)
+  setorder(join_curr_pos, case_id, -curr_square, -curr_pos)
 
 
 
@@ -102,10 +102,11 @@ required_data("ADM_OPTIMAL_MOVES")
 
 join_known <- ADM_OPTIMAL_MOVES[join_track_left, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 join_known[, row_id_calc := NULL]
-join_known[is.na(TURNS_TO_FINISH), TURNS_TO_FINISH := as.double(finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_aggr_game_status, NEW_GAME_SLOT_ID,
+
+join_known[is.na(TURNS_TO_FINISH), c("TURNS_TO_FINISH", "SLOTS_OVER_FINISH", "NEXT_MOVE") := (finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_aggr_game_status, NEW_GAME_SLOT_ID,
                                                                                    draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)),
                   by = .(NEW_GAME_SLOT_ID, TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
-
+#if (join_known[, min(TURNS_TO_FINISH)] == 1) {browser()}
 
 
   join_to_combinations <- join_known[join_curr_pos, on = .(NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT)]
@@ -122,7 +123,8 @@ join_known[is.na(TURNS_TO_FINISH), TURNS_TO_FINISH := as.double(finish_turns_db(
 
   #FINISH SCORE
   finish_slot <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
-  join_to_combinations[, OVER_FINISH := pmax(NEW_GAME_SLOT_ID - finish_slot, 0)]
+
+
   #setkeyv sorts cyclers by case_id and new_square
   setorder(join_to_combinations, case_id, CYCLER_ID)
   join_to_combinations[, ':='  (MOVES = paste0(MOVEMENT, collapse = "_"),
@@ -132,6 +134,8 @@ join_known[is.na(TURNS_TO_FINISH), TURNS_TO_FINISH := as.double(finish_turns_db(
   #join_track_left[, ':=' (MY_TEAM_MIN_TTF = min(TURNS_TO_FINISH * MY_TEAM_ROW, na.rm = TRUE)), by = case_id]
   # join_track_left[, ':=' (RELEVANT_OPPONENT = MY_TEAM_MIN_TTF >= (TURNS_TO_FINISH - 1)), by = case_id]
   join_to_combinations[, ':=' (CYCLER_MEAN_TTF = mean(TURNS_TO_FINISH)), by = .(CYCLER_ID)]
+  join_to_combinations[, ':=' (CYCLER_MEAN_SOF = mean(SLOTS_OVER_FINISH)), by = .(CYCLER_ID)]
+
   # nemesis <- join_track_left[!CYCLER_ID %in% smart_cycler_ids, CYCLER_ID[which.min(CYCLER_MEAN_TTF)]]
   # join_track_left[, ':=' (NEMESIS_ROW = ifelse(CYCLER_ID %in% nemesis, 1, NA))]
   #join_track_left[, ':=' (NEMESIS_TTF = min(TURNS_TO_FINISH * NEMESIS_ROW, na.rm = TRUE)), by = case_id]
@@ -152,6 +156,9 @@ join_known[is.na(TURNS_TO_FINISH), TURNS_TO_FINISH := as.double(finish_turns_db(
     MOVE_ORDER = seq_len(.N),
     MOVE_DIFF_RELATIVE = MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1)
   ), by = case_id]
+  join_to_combinations[, ':=' (FINISH_ESTIMATE = MOVE_ORDER / 100 + TURNS_TO_FINISH - pmin(SLOTS_OVER_FINISH, 4) / 5)]
+  join_to_combinations[, ':=' (FINISH_ESTIMATE_MEAN = mean(FINISH_ESTIMATE)), by = .(CYCLER_ID)]
+  join_to_combinations[, OVER_FINISH := pmax(NEW_GAME_SLOT_ID - finish_slot, 0) + ((TURNS_TO_FINISH == 0 * (4 - pmin(MOVE_ORDER , 4))) * 5) ^ 2]
   result <- join_to_combinations
   return(result)
 

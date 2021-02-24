@@ -1,12 +1,10 @@
-nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
+finish_rank_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
                            bot_config, bot_team_id) {
 
   #team_combinations_data_with_other_player_probs <- hidden_information_output
 
   join_my_ttf <- team_combinations_data_with_other_player_probs
   min_ttf <- join_my_ttf[, min(TURNS_TO_FINISH)]
-
-  smart_cycler_ids <- join_my_ttf[TEAM_ID == bot_team_id, .N, by = CYCLER_ID][, CYCLER_ID]
 
   #calc my ev given opponent strategies
   finish_slot <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
@@ -17,17 +15,14 @@ nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_sta
   # join_my_ttf[, ':=' (MY_TEAM_MIN_TTF = min(TURNS_TO_FINISH * MY_TEAM_ROW, na.rm = TRUE)), by = case_id]
   #-1 so that we include cases where we push opponent back
   # join_my_ttf[, ':=' (RELEVANT_OPPONENT = MY_TEAM_MIN_TTF >= (TURNS_TO_FINISH - 1)), by = case_id]
-  #join_my_ttf[, ':=' (CYCLER_MEAN_TTF = mean(TURNS_TO_FINISH)), by = .(CYCLER_ID)]
-  #  join_my_ttf[, ':=' (TTF_DIFF_OF_MEAN = CYCLER_MEAN_TTF - TURNS_TO_FINISH)]
-  #  join_track_left[, ':=' (TEAM_TTF_MEAN = mean(TURNS_TO_FINISH), cycs = .N), by = .(case_id, TEAM_ID)]
-  #   join_my_ttf[, ':=' (CASE_DIFF = sum(TTF_DIFF_OF_MEAN * RELEVANT_OPPONENT), tot_cycs = sum(RELEVANT_OPPONENT)), by = .(case_id)]
-  #  join_my_ttf[, ':=' (COMPETITOR_AVG_TTF = (CASE_DIFF - TTF_DIFF_OF_MEAN) / (tot_cycs - 1))]
-  nemesis <- join_my_ttf[!CYCLER_ID %in% smart_cycler_ids, CYCLER_ID[which.min(CYCLER_MEAN_TTF)]]
-  if (length(nemesis) == 0) {nemesis <- min(smart_cycler_ids)}
-  join_my_ttf[, ':=' (NEMESIS_ROW = ifelse(CYCLER_ID %in% nemesis, 1, NA))]
-  join_my_ttf[, ':=' (NEMESIS_TTF = min(TURNS_TO_FINISH * NEMESIS_ROW, na.rm = TRUE)), by = case_id]
-  join_my_ttf[, ':='(RELATIVE_TTF = (NEMESIS_TTF - TURNS_TO_FINISH))]#positive is good
 
+  #  join_my_ttf[, ':=' (TTF_DIFF_OF_MEAN = CYCLER_MEAN_TTF - TURNS_TO_FINISH)]
+  #
+     #join_my_ttf[, ':=' (CASE_DIFF = sum(TTF_DIFF_OF_MEAN * RELEVANT_OPPONENT), tot_cycs = sum(RELEVANT_OPPONENT)), by = .(case_id)]
+  #  join_my_ttf[, ':=' (COMPETITOR_AVG_TTF = (CASE_DIFF - TTF_DIFF_OF_MEAN) / (tot_cycs - 1))]
+     setorder(join_my_ttf, case_id, FINISH_ESTIMATE)
+     join_my_ttf[, FINISH_RANK := 4 - pmin(seq_len(.N), 4), by = case_id]
+  join_my_ttf[, ':='(RELATIVE_TTF = (CYCLER_MEAN_TTF - TURNS_TO_FINISH))]#positive is good
   join_my_ttf[, ':='(RELATIVE_SOF = (SLOTS_OVER_FINISH  - CYCLER_MEAN_SOF))]
   join_my_ttf[, ':=' (SLOTS_PROGRESSED = NEW_GAME_SLOT_ID - curr_pos)]
   join_my_ttf[, ':=' (MOVE_ORDER = seq_len(.N),
@@ -41,12 +36,16 @@ nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_sta
   # join_track_left[, MOVE_DIFF_RELATIVE := MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1), by = case_id]
 
   #filter_only_my_team_for_scoring
+
+  mincase <- join_my_ttf[, min(case_id)]
+  print(join_my_ttf[mincase == case_id])
   scoring_data <- join_my_ttf[TEAM_ID == bot_team_id]
   scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_RELATIVE * 0.25 * pmax(min_ttf - 4, 0.1),
                        EXHAUST_SCORE = ((1 + MOVE_ORDER) / total_cyclers) * EXHAUST * pmax(min_ttf - 3, 0) ^ 1.2 * -0.2,
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
                        TTF_SCORE = RELATIVE_TTF * 5,
                        SOF_SCORE = RELATIVE_SOF,
+                       FINISH_RANK_SCORE = FINISH_RANK / pmax(3, MOVE_ORDER) / (TURNS_TO_FINISH + 1) * 4,
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                        MOVE_ORDER_SCORE = - MOVE_ORDER * 0.02 * (22 - min_ttf),
                        OVER_FINISH_SCORE = OVER_FINISH * 100,
@@ -57,9 +56,11 @@ nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_sta
                                  SOF_SCORE +
                                  TTF_SCORE +
                                  #   CYC_DIST_SCORE +
+                                 FINISH_RANK_SCORE +
                                  SLOTS_PROGRESSED_SCORE +
                                  MOVE_ORDER_SCORE +
                                  OVER_FINISH_SCORE)]
+  print(scoring_data[mincase == case_id])
 
   #join_opponent strat
   # ss_strat <- MIXED_STRATEGY[, .(MOVES, TEAM_ID, PROB_PRODUCT)]
@@ -98,6 +99,8 @@ nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_sta
                                 TTF_SCORE = sum(TTF_SCORE * CYCLER_WEIGHT),
                                 TURNS_TO_FINISH = mean(TURNS_TO_FINISH * CYCLER_WEIGHT),
                                 SOF_SCORE = mean(SOF_SCORE * CYCLER_WEIGHT),
+                                FINISH_RANK_SCORE = mean(FINISH_RANK_SCORE * CYCLER_WEIGHT),
+
                                 #     CYC_DIST_SCORE = sum(CYC_DIST_SCORE),
                                 MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE * CYCLER_WEIGHT),
                                 OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * CYCLER_WEIGHT)), by = .(MOVES, TEAM_ID, case_id, PROB_PRODUCT, CYCLERS, OPPONENT_PROB)]
@@ -112,13 +115,20 @@ nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_sta
                               SLOTS_PROGRESSED_SCORE = sum(SLOTS_PROGRESSED_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
                               TTF_SCORE = sum(TTF_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
                               TURNS_TO_FINISH = sum(TURNS_TO_FINISH * OPPONENT_PROB) / sum(OPPONENT_PROB),
+                              FINISH_RANK_SCORE = sum(FINISH_RANK_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
                               SOF_SCORE = sum(SOF_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
                               #   CYC_DIST_SCORE = mean(CYC_DIST_SCORE),
                               MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
                               OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB)
   ), by = .(CYCLERS, MOVES, TEAM_ID)][order(-EV)]
 
-  #  scalued <- check_res2[ ,.(MOVES, EV = round(EV - max(EV), 2),
+  #   best_move_diff <- check_res2[which.max(MOVE_ORDER_SCORE), MOVES]
+  #   best_sof_diff <- check_res2[which.max(SOF_SCORE), MOVES]
+  # #  print(check_res2)
+  #   if (best_move_diff != best_sof_diff) {
+  #     browser()
+  #   }
+  #   #  scalued <- check_res2[ ,.(MOVES, EV = round(EV - max(EV), 2),
   # MOVE_DIFF_SCORE = round(MOVE_DIFF_SCORE, 2),
   # EXHAUST_SCORE = round(EXHAUST_SCORE - max(EXHAUST_SCORE), 2),
   # SLOTS_PROGRESSED_SCORE = round(SLOTS_PROGRESSED_SCORE - max(SLOTS_PROGRESSED_SCORE), 2),

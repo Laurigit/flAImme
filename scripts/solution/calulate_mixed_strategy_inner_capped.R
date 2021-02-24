@@ -4,6 +4,7 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   #combinations_data <- join_track_left
   worse_move <- EV_TABLE#[TEAM_ID == 1]
 
+  one_cycler_teams <- worse_move[is.na(C2), .N, by = TEAM_ID]
 
   move1_aggr <- worse_move[, .(WEIGH_EV = sum(EV * PROB_PRODUCT, na.rm = TRUE) / sum(PROB_PRODUCT, na.rm = TRUE)), by = .(TEAM_ID, MOVEMENT = (M1), CYCLER_ID = (C1))]
   weighted_variance <- move1_aggr[, .(CYCLER_ID = mean(CYCLER_ID), WVAR = var(WEIGH_EV)), by = .(TEAM_ID)]
@@ -46,7 +47,7 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
 
   #make worse move to long format
   worse_move1 <- worse_move[, .(MOVEMENT = as.numeric(M1), CYCLER_ID = as.numeric(C1), OTHER_MOVE = as.numeric(M2), OTHER_CYCLER = as.numeric(C2), TEAM_ID, EV)]
-  worse_move2 <- worse_move[, .(MOVEMENT = as.numeric(M2), CYCLER_ID = as.numeric(C2), OTHER_MOVE = as.numeric(M1),  OTHER_CYCLER = as.numeric(C1),TEAM_ID, EV)]
+  worse_move2 <- worse_move[!is.na(C2), .(MOVEMENT = as.numeric(M2), CYCLER_ID = as.numeric(C2), OTHER_MOVE = as.numeric(M1),  OTHER_CYCLER = as.numeric(C1),TEAM_ID, EV)]
   append_worse <- rbind(worse_move1, worse_move2)
   join_card_count_to_second <- append_worse[CYCLER_ID %in% second_cycler_per_team[, CYCLER_ID]]#[!is.na()]
   #join_card_count_to_second <- aggr_card_count[second_cycler_data, on = .(MOVEMENT, CYCLER_ID)]#[order(TEAM_ID, - new_prob_uncapped)]
@@ -54,8 +55,19 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   join_card_count_to_second[, bottom := sum(top), by = .(CYCLER_ID, OTHER_MOVE)]
   join_card_count_to_second[, target_strat := round(top / bottom, 5)]
 
+
+  #this is for rbind later
+  combined_data <- NULL
+  one_cycler_team_result <- NULL
   #join_card_count_to_second[, capped_strategy := constrained_mixed_strategy_long(.SD), by = .(TEAM_ID, OTHER_MOVE), .SDcols = c("MOVEMENT", "target_strat", "mixed_cap")]
-  if (nrow(join_card_count_to_second) == 0) {browser()}
+  if (nrow(join_card_count_to_second) == 0 | nrow(one_cycler_teams) > 0) {
+    one_cycler_team_result <- ss_first_result[TEAM_ID %in% one_cycler_teams[, TEAM_ID], .(CYCLERS = as.character(FIRST_CYCLER),
+                                   MOVES = as.character(FIRST_MOVEMENT) ,
+                                   TEAM_ID,
+                                   new_prob = FIRST_P ,
+                                   C1 = FIRST_CYCLER, C2 = NA, M1 = FIRST_MOVEMENT, M2 = NA)]
+  }
+  if (nrow(join_card_count_to_second) > 0) {
   other_move_vec2 <- setdiff(2:9, join_card_count_to_second[, .N, by = OTHER_MOVE][, OTHER_MOVE])
   capped_strat <- constrained_mixed_strategy_long_target(join_card_count_to_second, static_model, first_cycler_per_team[, CYCLER_ID], other_move_vec2)
   #PURRKKAAA
@@ -70,6 +82,7 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   ss_res_second <- join_back[, .(SECOND_CYCLER = CYCLER_ID, TEAM_ID, SECOND_MOVEMENT = MOVEMENT, SECOND_P = strategy, FIRST_MOVEMENT = OTHER_MOVE)]
 
   join_first_cyc <- ss_first_result[ss_res_second, on = .(TEAM_ID, FIRST_MOVEMENT)]
+
   join_first_cyc[, TOTAL_P := FIRST_P * SECOND_P]
   join_first_cyc[, comb_id := seq_len(.N)]
   rouler_ids <- ADM_CYCLER_INFO[CYCLER_TYPE_NAME == "Rouler", CYCLER_ID]
@@ -102,8 +115,12 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
                              TEAM_ID,
                              new_prob = TOTAL_P,
                              C1, C2, M1, M2)]
+  }
+  append_with_one_cycler_team <- rbind(combined_data, one_cycler_team_result)
 
-  join_new_strat <- combined_data[combinations_data, on = .(CYCLERS, MOVES, TEAM_ID)]
+  append_with_one_cycler_team[, new_prob := ifelse(new_prob < 0.0001, 0.0001, new_prob)]
+
+  join_new_strat <- append_with_one_cycler_team[combinations_data, on = .(CYCLERS, MOVES, TEAM_ID)]
  # join_new_strat[case_id == 1]
   # join_new_strat[, NEW_CASE_PROB := prod(new_prob)]
   temp <- join_new_strat[, .(TEAM_SCORE = sum(TOT_SCORE),

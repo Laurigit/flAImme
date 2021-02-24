@@ -46,10 +46,10 @@ if (length(finish_slot) == 0 ) {
 }
 
 if (finish_slot <= 3) {
-  turns_to_finish_res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = 0)
+  turns_to_finish_res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
 } else if (nrow(kortit_Dt) == 0) {
   slots_left_to_finish <- ceiling(finish_slot - rivi_lkm) / 2 + 1
-  turns_to_finish_res <- data.table(TURNS_TO_FINISH = slots_left_to_finish, SLOTS_OVER_FINISH = 0)
+  turns_to_finish_res <- data.table(TURNS_TO_FINISH = slots_left_to_finish, SLOTS_OVER_FINISH = 0, NEXT_MOVE = 2)
 
 } else {
 
@@ -95,7 +95,7 @@ if (use_draw_odds[[1]][1] != "") {
 
 
 
-res <- MILPModel() %>%
+res_mod <- MILPModel() %>%
   #  add_variable(y[k], k = 1:20, type = "binary") %>%
   add_variable(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), type = "binary") %>%
   #add_variable(z[y], y = penalty_card, type = "integer") %>%
@@ -131,17 +131,35 @@ res <- MILPModel() %>%
   #add_constraint(sum_expr(x[i, j], i = length(kortit)) == 1, j = 1:n) #%>%
   #solve_model(with_ROI(solver = "symphony", verbosity = -2))
   solve_model(with_ROI(solver = "symphony", verbosity = -2))
-  #res %<% solve_model(with_ROI(solver = "glpk", verbose = FALSE))
+
+if (res_mod$status == "optimal") {
+
+#res %<% solve_model(with_ROI(solver = "glpk", verbose = FALSE))
   # objective_value(res)
 #print(difftime(Sys.time(), start_time))
 
    # dt_result <- data.table(get_solution(res, x[i, j, k]))[value > 0][order(i)]
 
 
-raw <- as.data.table(res$solution, keep.rownames = TRUE)[V2 > 0]
+raw <- as.data.table(res_mod$solution, keep.rownames = TRUE)[V2 > 0]
 res <- nrow(raw)
-second_res <- raw[nrow(raw), str_extract(str_sub(V1, 3, -2), "(?<=,)[^,]*(?=,)")]
+raw[, row := seq_len(.N)]
+#tstrsplit("aa_nn", "sep =" fixed = TRUE)
+raw[, c("i", "j", "k") := tstrsplit(V1, ",", fixed = TRUE)]
+raw[, i_clean := as.numeric(gsub("\\D", "", i))]
+raw[, j_clean := as.numeric(gsub("\\D", "", j))]
+raw[, k_clean := as.numeric(gsub("\\D", "", k))]
+setorder(raw, i_clean)
 
+last_starting_slot <- as.numeric(raw[nrow(raw), i_clean])
+
+last_starting_slot_info <- aggr_to_slots[last_starting_slot == row_number]
+last_movement_played <- as.numeric(raw[nrow(raw), kortit[k_clean]])
+last_move_actual <- max(min(last_starting_slot_info[, MAXIMUM_MOVEMENT], last_movement_played), last_starting_slot_info[, MINIMUM_MOVEMENT])
+next_move <- as.numeric(raw[1, kortit[k_clean]])
+slots_over_finish <- last_move_actual  +  last_starting_slot - finish_slot
+if ( slots_over_finish < 0) {browser()}
+turns_to_finish <- nrow(raw)
 #reset_time <- Sys.time()
 #
 # print(difftime(Sys.time(), reset_time))
@@ -155,7 +173,7 @@ second_res <- raw[nrow(raw), str_extract(str_sub(V1, 3, -2), "(?<=,)[^,]*(?=,)")
 #dt_result <- data.table(df_all)[value > 0]#[order(i)]
 #dt_result <- data.table(get_solution(res, x[i, j, k]))[value > 0]#[order(i)]
 
-turns_to_finish_res <- data.table(TURNS_TO_FINISH = res, SLOTS_OVER_FINISH = second_res)
+turns_to_finish_res <- data.table(TURNS_TO_FINISH = turns_to_finish, SLOTS_OVER_FINISH = slots_over_finish, NEXT_MOVE = next_move)
  #   print(difftime(Sys.time(), start_time))
     #print(dt_result)
   # #%>%
@@ -170,9 +188,13 @@ turns_to_finish_res <- data.table(TURNS_TO_FINISH = res, SLOTS_OVER_FINISH = sec
   if (turns_to_finish_res[, TURNS_TO_FINISH] > 22 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
     #not enough moves left
 
-    turns_to_finish_res <- data.table(TURNS_TO_FINISH = max_result_of_turns_to_finish, SLOTS_OVER_FINISH = 0)
+    turns_to_finish_res <- data.table(TURNS_TO_FINISH = max_result_of_turns_to_finish, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
 
   }
+} else {
+  turns_to_finish_res <- data.table(TURNS_TO_FINISH = max_result_of_turns_to_finish, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
+
+}
 }
 return(turns_to_finish_res)
 
@@ -180,16 +202,11 @@ return(turns_to_finish_res)
 
   warning("Optmization failed on trycatch")
   if (length(finish_slot) == 0 | finish_slot ==1 ) {
-    res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = 0)
+    res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
 
   } else {
 
-    if (turns_to_finish_res[, TURNS_TO_FINISH] > 22 | turns_to_finish_res[, TURNS_TO_FINISH] <= 0) {
-
-
-      browser()
-    }
-
+    res <- data.table(TURNS_TO_FINISH = max_result_of_turns_to_finish, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
 
   }
   # if(res[, TURNS_TO_FINISH] <= 0) {

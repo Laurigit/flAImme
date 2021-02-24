@@ -142,6 +142,7 @@ observe({
                             ' AND TOURNAMENT_NM = "', input$join_tournament, '"'), con)
 
   for (hand_loop in hand_numbers) {
+    browser()
     for (cycler_loop in cycler_ids) {
       deck_status <- draw_cards(cycler_loop, deck_status, 4)
     }
@@ -217,7 +218,7 @@ req(input$join_tournament)
         for (cycler_loop in cyclers) {
           deck_status <- draw_cards(cycler_loop, deck_status, 4)
           if(deck_status[CYCLER_ID == cycler_loop & Zone == "Hand", .N ] != 4) {
-            browser()
+
           }
         }
 

@@ -4,12 +4,14 @@ EV_to_moves <- function(EV_table, deck_status) {
 
 
   check_res2 <- EV_table
-
   check_res2[, M1 := as.numeric(str_sub(MOVES, 1, 1))]
   check_res2[, M2 := as.numeric(str_sub(MOVES, 3, 3))]
 
   check_res2[, C1 := as.numeric(word(CYCLERS, 1, 1, sep = fixed("_")))]
   check_res2[, C2 := as.numeric(word(CYCLERS, 2, 2, sep = fixed("_")))]
+  two_cyclers <- check_res2[!is.na(C2), .N]
+  if (two_cyclers > 0) {
+
 
 
   check_res2[,  DECK_LEFT_C1 := convert_deck_left_to_text(deck_status, C1), by = .(MOVES )]
@@ -68,6 +70,12 @@ EV_to_moves <- function(EV_table, deck_status) {
 
   result <- data.table(FIRST = c(TRUE, FALSE), CYCLER_ID = c(first_selected_cycler, second_cycler),
                        CARD_ID = c(first_card_id, second_card_id))
+  } else{
+    card <- check_res2[which.max(EV), M1]
+    cycler <- check_res2[which.max(EV), C1]
+    result <- data.table(FIRST = TRUE, CYCLER_ID = cycler,
+                         CARD_ID = card)
+  }
 return(result)
 
 }

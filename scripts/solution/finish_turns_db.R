@@ -6,6 +6,7 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
   #cycler_deck_status <- deck_status[CYCLER_ID == 5]
 
   #draw odds are in data table format and sql db format. raw = db. We use raw in joins and data.table to be sent to optimization
+
    if (draw_odds_raw_data == "") {
     draw_odds_input <- ""
   } else {
@@ -34,7 +35,7 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
   #check if I have this observation
 
   row_result <- ADM_OPTIMAL_MOVES[TRACK_LEFT == track_left_input & DECK_LEFT == cycler_deck_status & DRAW_ODDS == draw_odds_raw_data]
-
+  if (track_left_input != "") {
 
 
       if (nrow(row_result) == 0){
@@ -48,9 +49,11 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
                                      DRAW_ODDS = draw_odds_raw_data, turns_to_finish_calc)
 
 
+
+
         tryIns <- tryCatch({
 
-          new_result_row <- new_result_row[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH )]
+         # new_result_row <- new_result_row[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH )]
           dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
           FALSE
         }, error = function(e) {
@@ -64,11 +67,22 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
         #   ADM_OPTIMAL_MOVES
         # }
 
-        final_result_list <- new_result_row[, TURNS_TO_FINISH]
+        final_result_list <- new_result_row#[, TURNS_TO_FINISH]
       } else {
         #we had that one already, return original
 
-        final_result_list <- row_result[, TURNS_TO_FINISH]
+        final_result_list <- row_result#[, TURNS_TO_FINISH]
       }
+    } else {
+        finish_line <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
+        slots_over <- cycler_at_slot -  finish_line
+        final_result_list <- data.table(TRACK_LEFT = track_left_input, DECK_LEFT = cycler_deck_status,
+                                     DRAW_ODDS = draw_odds_raw_data, TURNS_TO_FINISH = 0,
+                                     SLOTS_OVER_FINISH = slots_over,
+                                     NEXT_MOVE = 0)
+      }
+  final_result_list <- final_result_list[, .(TURNS_TO_FINISH = as.integer(TURNS_TO_FINISH),
+                                             SLOTS_OVER_FINISH = as.integer(SLOTS_OVER_FINISH),
+                                             NEXT_MOVE = as.integer(NEXT_MOVE))]
   return(final_result_list)
 }

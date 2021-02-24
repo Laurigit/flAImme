@@ -32,7 +32,7 @@ calculate_draw_distribution_by_turn <- function(cycler_id, current_decks_input, 
 
   #curr_deck_cards[1:12, Zone := "Recycle"]
 
-  #check if enough cards
+  #check if enough cards in deck to draw!
   card_count <- nrow(curr_deck_cards[cycler_id == CYCLER_ID & Zone == "Deck"])
 
 
