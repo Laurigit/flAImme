@@ -49,7 +49,7 @@ observeEvent(srv$turn_id, {
   bot_config <- NA
   funcargs <- list(hidden_information_output, deck_status_now,
                    bot_config)
-  myfunc <- "nemesis_bot"
+  myfunc <- "finish_rank_bot"
   res <- do.call(myfunc, funcargs)
 
   moves <- EV_to_moves(res, deck_status_now)
