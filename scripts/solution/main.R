@@ -154,6 +154,8 @@ game_status_data <- list()
               bot_config <- NA
               funcargs <- list(hidden_information_output, deck_status,
                                bot_config, bot_loop)
+            #  res_debug <- ttf_bot(hidden_information_output, deck_status,
+                        #           bot_config, bot_loop)
               myfunc <- bot_name
               res <- do.call(myfunc, funcargs)
               if (bot_loop == 2) {

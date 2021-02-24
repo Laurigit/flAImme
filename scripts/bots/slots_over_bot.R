@@ -81,7 +81,7 @@ slots_over_bot <- function(team_combinations_data_with_other_player_probs, deck_
   #
   #
   #weight my cyclers based on ttf
-  scoring_data[, CYCLER_WEIGHT := (1 - CYCLER_MEAN_TTF / sum(CYCLER_MEAN_TTF )), by = .(TEAM_ID, case_id)]
+  scoring_data[, CYCLER_WEIGHT := (1 - CYCLER_MEAN_TTF / (sum(CYCLER_MEAN_TTF) + 0.1)), by = .(TEAM_ID, case_id)]
   scoring_data[, CYCLER_WEIGHT := ifelse(CYCLER_WEIGHT == 0, 1, CYCLER_WEIGHT)]
 
   check_res <- scoring_data[, .(TEAM_SCORE = sum(TOT_SCORE * CYCLER_WEIGHT),
