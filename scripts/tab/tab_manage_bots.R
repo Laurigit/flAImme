@@ -6,7 +6,7 @@
 
 observeEvent(srv$turn_id, {
  #TASKS
-
+  required_data(c("STG_TRACK_PIECE", "STG_TRACK", "STG_CYCLER", "ADM_CYCLER_INFO"))
   # do we have bots
 
   deck_status_now <- deck_status_curr_game()[TURN_ID == srv$turn_id]
@@ -21,11 +21,11 @@ observeEvent(srv$turn_id, {
 
 
 
-  required_data(c("STG_TRACK_PIECE", "STG_TRACK", "STG_CYCLER"))
+
 
   pre_aggr_game_status <- precalc_track(game_status())
 
-  ijk <- ijk_map(track, STG_TRACK_PIECE, STG_TRACK)
+  ijk <- ijk_map(tracki, STG_TRACK_PIECE, STG_TRACK)
 
   matr_ijk <- as.matrix(ijk)
   slip_map <- slipstream_map(tracki, STG_TRACK_PIECE, STG_TRACK)
