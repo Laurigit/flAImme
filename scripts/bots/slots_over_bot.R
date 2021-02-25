@@ -1,5 +1,5 @@
 slots_over_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
-                        bot_config, bot_team_id, pre_aggr_game_status) {
+                        bot_config, bot_team_id, pre_aggr_game_status_input) {
 
   #team_combinations_data_with_other_player_probs <- hidden_information_output
 
@@ -7,7 +7,7 @@ slots_over_bot <- function(team_combinations_data_with_other_player_probs, deck_
   min_ttf <- join_my_ttf[, min(TURNS_TO_FINISH)]
 
   #calc my ev given opponent strategies
-  finish_slot <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
+  finish_slot <- pre_aggr_game_status_input[FINISH == 1, GAME_SLOT_ID]
 
   #setkeyv sorts cyclers by case_id and new_square
 
