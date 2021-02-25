@@ -9,8 +9,8 @@ optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_
 trRes <- tryCatch({
 
     #cut track
-  finish_slot_first <-  precalc_data$aggr_to_slots[FINISH == 1, GAME_SLOT_ID ]
-    aggr_to_slots <-  precalc_data$aggr_to_slots[GAME_SLOT_ID >= calc_from_slot & GAME_SLOT_ID <= finish_slot_first ]
+  finish_slot_first <-  precalc_data[FINISH == 1, GAME_SLOT_ID ]
+    aggr_to_slots <-  precalc_data[GAME_SLOT_ID >= calc_from_slot & GAME_SLOT_ID <= finish_slot_first ]
 
 
 
@@ -46,7 +46,11 @@ if (length(finish_slot) == 0 ) {
 }
 
 if (finish_slot <= 3) {
-  turns_to_finish_res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
+  min_move <- aggr_to_slots[GAME_SLOT_ID == calc_from_slot, max(MINIMUM_MOVEMENT)]
+  max_move <- aggr_to_slots[GAME_SLOT_ID == calc_from_slot, max(MAXIMUM_MOVEMENT)]
+  last_move <- max(min(pmax(kortit_Dt[, max(MOVEMENT)], 2), max_move), min_move)
+  slot_over_is <- last_move - finish_slot + 1
+  turns_to_finish_res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = slot_over_is, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
 } else if (nrow(kortit_Dt) == 0) {
   slots_left_to_finish <- ceiling(finish_slot - rivi_lkm) / 2 + 1
   turns_to_finish_res <- data.table(TURNS_TO_FINISH = slots_left_to_finish, SLOTS_OVER_FINISH = 0, NEXT_MOVE = 2)

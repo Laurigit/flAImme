@@ -110,9 +110,9 @@ game_status_data <- list()
           bots_left_total <- intersect(bots, in_game_cyclers)
           #any bots left?
           if (length(bots_left_total) > 0) {
-
+            pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
             combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
-                                                          pre_aggr_game_status, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf)
+                                                          pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf)
             MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, turn_start_deck)
             print(MIXED_STRATEGY$combinations[, .N, by = SLOTS_OVER_FINISH])
 
@@ -148,11 +148,11 @@ game_status_data <- list()
             if (length(cyclers_left) > 0) {
                 #even here I don't know the drawn cards
               hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations, turn_start_deck,
-                                                                                 team_id_input = bot_loop, pre_aggr_game_status)
+                                                                                 team_id_input = bot_loop, pre_agg_no_list)
 
               bot_name <- bot_data[TEAM_ID == bot_loop, bot_name]
               bot_config <- NA
-              pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
+
               funcargs <- list(hidden_information_output, deck_status,
                                bot_config, bot_loop, pre_agg_no_list)
             #  res_debug <- ttf_bot(hidden_information_output, deck_status,

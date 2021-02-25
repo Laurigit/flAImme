@@ -29,7 +29,7 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
   #cycler_at_slot <- 20
   #create track left
 
-  track_tot <- pre_aggr_game_status$aggr_to_slots
+  track_tot <- pre_aggr_game_status
   finish_slot <- track_tot[FINISH == 1, GAME_SLOT_ID]
 
   #check if I have this observation
@@ -74,8 +74,8 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
         final_result_list <- row_result#[, TURNS_TO_FINISH]
       }
     } else {
-        finish_line <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
-        slots_over <- cycler_at_slot -  finish_line
+
+        slots_over <- cycler_at_slot -  finish_slot
         final_result_list <- data.table(TRACK_LEFT = track_left_input, DECK_LEFT = cycler_deck_status,
                                      DRAW_ODDS = draw_odds_raw_data, TURNS_TO_FINISH = 0,
                                      SLOTS_OVER_FINISH = slots_over,

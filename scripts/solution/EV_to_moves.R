@@ -26,13 +26,13 @@ EV_to_moves <- function(EV_table, deck_status) {
   sorted_app <- append_worse[order(CYCLER_ID, MOVEMENT, -EV)]
   sorted_app[, PRIO := seq_len(.N), by = .(CYCLER_ID, MOVEMENT)]
   # append_worse[CYCLER_ID == 5 & MOVEMENT == 7]
-  sorted_app[, playing_prob_other := calculate_draw_distribution_by_turn_with_prio(.SD, turn_start_deck), by = .(CYCLER_ID, MOVEMENT), .SDcols = c("OTHER_CYCLER", "OTHER_MOVE", "PRIO")]
+  sorted_app[, playing_prob_other := calculate_draw_distribution_by_turn_with_prio(.SD, deck_status), by = .(CYCLER_ID, MOVEMENT), .SDcols = c("OTHER_CYCLER", "OTHER_MOVE", "PRIO")]
 
   EVs <- sorted_app[, .(WEIGHTED_EV = sum(EV * playing_prob_other), TURNS_TO_FINISH = sum(TURNS_TO_FINISH *playing_prob_other)), by = .(MOVEMENT, CYCLER_ID)]
   #copy columns to fit to function
   setorder(EVs, CYCLER_ID, -WEIGHTED_EV)
   EVs[, ':=' (PRIO = seq_len(.N), OTHER_CYCLER = CYCLER_ID, OTHER_MOVE = MOVEMENT), by = CYCLER_ID]
-  EVs[, playing_prob_me := calculate_draw_distribution_by_turn_with_prio(.SD, turn_start_deck), by = .(CYCLER_ID), .SDcols = c("OTHER_CYCLER", "OTHER_MOVE", "PRIO")]
+  EVs[, playing_prob_me := calculate_draw_distribution_by_turn_with_prio(.SD, deck_status), by = .(CYCLER_ID), .SDcols = c("OTHER_CYCLER", "OTHER_MOVE", "PRIO")]
 
   EV_OF_PLAYING_FIRST <- EVs[, sum(WEIGHTED_EV * playing_prob_me), by = CYCLER_ID]
 
@@ -71,8 +71,12 @@ EV_to_moves <- function(EV_table, deck_status) {
   result <- data.table(FIRST = c(TRUE, FALSE), CYCLER_ID = c(first_selected_cycler, second_cycler),
                        CARD_ID = c(first_card_id, second_card_id))
   } else{
-    card <- check_res2[which.max(EV), M1]
     cycler <- check_res2[which.max(EV), C1]
+    options <- deck_status[CYCLER_ID == cycler & Zone == "Hand", .N, by = .(MOVEMENT)][, MOVEMENT]
+
+
+    card <- check_res2[MOVES  %in% options][which.max(EV), M1]
+
     result <- data.table(FIRST = TRUE, CYCLER_ID = cycler,
                          CARD_ID = card)
   }

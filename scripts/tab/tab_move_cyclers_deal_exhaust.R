@@ -12,9 +12,11 @@ observe({
   game <- srv$gs_simple[, max(GAME_ID)]
 
   mf_local_all_turns <- move_fact_data()[TOURNAMENT_NM == input$join_tournament]
+
   #what turn is it?
 
-  srv$turn_id <- mf_local_all_turns[GAME_ID == game, max(TURN_ID)]
+  #srv$turn_id <- mf_local_all_turns[GAME_ID == game, max(TURN_ID)]
+  srv$turn_id <- deck_status_curr_game()[, max(TURN_ID)]
   previous_finished_turn <- srv$gs_simple[GAME_ID == game, max(TURN_ID)]
   mf_local <-  mf_local_all_turns[TURN_ID ==   srv$turn_id]
 

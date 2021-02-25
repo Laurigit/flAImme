@@ -25,9 +25,8 @@ finish_rank_bot <- function(team_combinations_data_with_other_player_probs, deck
      join_my_ttf[, FINISH_RANK := 4 - pmin(seq_len(.N), 4), by = case_id]
   join_my_ttf[, ':='(RELATIVE_TTF = (CYCLER_MEAN_TTF - TURNS_TO_FINISH))]#positive is good
   join_my_ttf[, ':='(RELATIVE_SOF = (SLOTS_OVER_FINISH  - CYCLER_MEAN_SOF))]
-  join_my_ttf[, ':=' (SLOTS_PROGRESSED = NEW_GAME_SLOT_ID - curr_pos)]
-  join_my_ttf[, ':=' (MOVE_ORDER = seq_len(.N),
-                      MOVE_DIFF_RELATIVE = MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1)), by = case_id]
+
+
 
 
 
@@ -40,12 +39,13 @@ finish_rank_bot <- function(team_combinations_data_with_other_player_probs, deck
 
   mincase <- join_my_ttf[, min(case_id)]
   print(join_my_ttf[mincase == case_id])
+  total_cyclers <- nrow(join_my_ttf[, .N, by = CYCLER_ID])
   scoring_data <- join_my_ttf[TEAM_ID == bot_team_id]
   scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_RELATIVE * 0.25 * pmax(min_ttf - 4, 0.1),
                        EXHAUST_SCORE = ((1 + MOVE_ORDER) / total_cyclers) * EXHAUST * pmax(min_ttf - 3, 0) ^ 1.2 * -0.2,
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
                        TTF_SCORE = RELATIVE_TTF * 2,
-                       SOF_SCORE = RELATIVE_SOF / 3,
+                       SOF_SCORE = RELATIVE_SOF * 0,
                        FINISH_RANK_SCORE = FINISH_RANK / pmax(3, MOVE_ORDER) / (TURNS_TO_FINISH + 1) * 4,
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                        MOVE_ORDER_SCORE = - MOVE_ORDER * 0.02 * (22 - min_ttf),

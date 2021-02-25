@@ -11,15 +11,22 @@ observeEvent(srv$turn_id, {
 req(deck_status_curr_game())
 req(game_status())
 
-  deck_status_now <- deck_status_curr_game()[TURN_ID == srv$turn_id]
-  any_bots <- tournament()[PLAYER_TYPE == "AI"]
+  deck_status_now <- deck_status_curr_game()[TURN_ID == srv$turn_id & HAND_OPTIONS == 1]
+  prev_turn_in_deck <- deck_status_curr_game()[TURN_ID < srv$turn_id, max(TURN_ID)]
+  previous_deck <- deck_status_curr_game()[TURN_ID == prev_turn_in_deck & HAND_OPTIONS == 0]
+
+
+
+  any_bots <- tournament()[PLAYER_TYPE == "AI" & TOURNAMENT_NM == input$join_tournament]
 
   for (bot_loop in any_bots[, TEAM_ID]) {
+
 #do I need to play?
     my_cyclers  <- ADM_CYCLER_INFO[TEAM_ID == bot_loop, CYCLER_ID]
     unplayed_cards <- deck_status_now[CYCLER_ID  %in% my_cyclers & Zone == "Hand"][, .N]
     if (unplayed_cards > 0) {
-  tracki <- game_data()[GAME_ID == srv$game_id, TRACK_ID]
+
+  tracki <- tournament_data_reactive()[GAME_ID == srv$game_id, .N, by = TRACK_ID][, TRACK_ID]
 
 
 
@@ -37,25 +44,32 @@ req(game_status())
   reverse_slots_squares <- slots_squares[nrow(slots_squares):1,]
   rm("ADM_OPTIMAL_MOVES", envir = globalenv())
   required_data("ADM_OPTIMAL_MOVES")
-  combinations_output <- calc_combinations_data(con, game_status(), deck_status_now,
-                                                pre_aggr_game_status, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = TRUE)
 
-  MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA,  deck_status_now)
+  combinations_output <- calc_combinations_data(con, game_status(), previous_deck,
+                                                pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = TRUE)
+
+  MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA,  previous_deck)
 
   #for each bot
+  rm("ADM_OPTIMAL_MOVES", envir = globalenv())
+  required_data("ADM_OPTIMAL_MOVES")
 
-  hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations, deck_status_now, team_id_input = bot_loop, pre_aggr_game_status)
+  hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations,
+                                                                     deck_status_now, team_id_input = bot_loop, pre_agg_no_list)
 
 
 
   bot_config <- NA
   funcargs <- list(hidden_information_output, deck_status_now,
-                   bot_config, bot_loop, pre_aggr_game_status)
+                   bot_config, bot_loop, pre_agg_no_list)
   myfunc <- "finish_rank_bot"
+  # debug <- finish_rank_bot(hidden_information_output, deck_status_now,
+  #                          bot_config, bot_loop, pre_agg_no_list)
+
   res <- do.call(myfunc, funcargs)
-
+  print(res)
   moves <- EV_to_moves(res, deck_status_now)
-
+  print(moves)
   first_cyc <-  moves[FIRST == 1, CYCLER_ID]
   first_move <- moves[FIRST == 1, CARD_ID]
   second_cycler <- moves[FIRST == 0, CYCLER_ID]

@@ -1,4 +1,4 @@
-calc_combinations_data <- function(con, game_status, deck_status, pre_aggr_game_status, matr_ijk, reverse_slots_squares, slip_map_matrix,
+calc_combinations_data <- function(con, game_status, deck_status, pre_aggr_game_status_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix,
                                     STG_CYCLER, calc_ttf
                                   ) {
 
@@ -90,7 +90,7 @@ deck_copied <- copy(deck_status)
 
 
 
-ss_track_left <- pre_aggr_game_status$aggr_to_slots[, .(NEW_GAME_SLOT_ID = GAME_SLOT_ID, TRACK_LEFT)]
+ss_track_left <- pre_aggr_game_status_no_list[, .(NEW_GAME_SLOT_ID = GAME_SLOT_ID, TRACK_LEFT)]
 join_track_left <- ss_track_left[pos_with_team, on = .(NEW_GAME_SLOT_ID)]
 join_track_left[, N := NULL]
 #no draw odds in public information
@@ -103,7 +103,7 @@ required_data("ADM_OPTIMAL_MOVES")
 join_known <- ADM_OPTIMAL_MOVES[join_track_left, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 join_known[, row_id_calc := NULL]
 
-join_known[is.na(TURNS_TO_FINISH), c("TURNS_TO_FINISH", "SLOTS_OVER_FINISH", "NEXT_MOVE") := (finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_aggr_game_status, NEW_GAME_SLOT_ID,
+join_known[is.na(TURNS_TO_FINISH), c("TURNS_TO_FINISH", "SLOTS_OVER_FINISH", "NEXT_MOVE") := (finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_aggr_game_status_no_list, NEW_GAME_SLOT_ID,
                                                                                    draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)),
                   by = .(NEW_GAME_SLOT_ID, TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 #if (join_known[, min(TURNS_TO_FINISH)] == 1) {browser()}
@@ -122,40 +122,29 @@ join_known[is.na(TURNS_TO_FINISH), c("TURNS_TO_FINISH", "SLOTS_OVER_FINISH", "NE
 
 
   #FINISH SCORE
-  finish_slot <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
+  finish_slot <- pre_aggr_game_status_no_list[FINISH == 1, GAME_SLOT_ID]
 
 
-  #setkeyv sorts cyclers by case_id and new_square
+#first sort fo get correct moves, cyclers order
   setorder(join_to_combinations, case_id, CYCLER_ID)
   join_to_combinations[, ':='  (MOVES = paste0(MOVEMENT, collapse = "_"),
                                 CYCLERS = paste0(CYCLER_ID, collapse = "_")) , by = .(case_id, TEAM_ID)]
-
+  #then sorts cyclers by case_id and new_square
+  setorder(join_to_combinations, case_id, -NEW_SQUARE)
   #  join_track_left[, ':=' (MY_TEAM_ROW = ifelse(CYCLER_ID %in% smart_cycler_ids, 1,NA))]
   #join_track_left[, ':=' (MY_TEAM_MIN_TTF = min(TURNS_TO_FINISH * MY_TEAM_ROW, na.rm = TRUE)), by = case_id]
   # join_track_left[, ':=' (RELEVANT_OPPONENT = MY_TEAM_MIN_TTF >= (TURNS_TO_FINISH - 1)), by = case_id]
   join_to_combinations[, ':=' (CYCLER_MEAN_TTF = mean(TURNS_TO_FINISH)), by = .(CYCLER_ID)]
   join_to_combinations[, ':=' (CYCLER_MEAN_SOF = mean(SLOTS_OVER_FINISH)), by = .(CYCLER_ID)]
 
-  # nemesis <- join_track_left[!CYCLER_ID %in% smart_cycler_ids, CYCLER_ID[which.min(CYCLER_MEAN_TTF)]]
-  # join_track_left[, ':=' (NEMESIS_ROW = ifelse(CYCLER_ID %in% nemesis, 1, NA))]
-  #join_track_left[, ':=' (NEMESIS_TTF = min(TURNS_TO_FINISH * NEMESIS_ROW, na.rm = TRUE)), by = case_id]
-  #join_track_left[, ':=' (TTF_DIFF_OF_MEAN = CYCLER_MEAN_TTF - TURNS_TO_FINISH)]
-  #  join_track_left[, ':=' (TEAM_TTF_MEAN = mean(TURNS_TO_FINISH), cycs = .N), by = .(case_id, TEAM_ID)]
-  #join_track_left[, ':=' (CASE_DIFF = sum(TTF_DIFF_OF_MEAN * RELEVANT_OPPONENT), tot_cycs = sum(RELEVANT_OPPONENT)), by = .(case_id)]
-  # join_track_left[, ':=' (COMPETITOR_AVG_TTF = (CASE_DIFF - TTF_DIFF_OF_MEAN) / (tot_cycs - 1))]
-  #join_track_left[, ':=' (RELATIVE_TTF = (CYCLER_MEAN_TTF - TURNS_TO_FINISH))]#positive is good
+
 
   join_to_combinations[, ':=' (SLOTS_PROGRESSED = NEW_GAME_SLOT_ID - curr_pos)]
-  # join_track_left[, ':=' (TEAM_TTF = sum(TURNS_TO_FINISH), cycs = .N), by = .(case_id, TEAM_ID)]
-  # join_track_left[, ':=' (TEAM_TTF_MEAN = mean(TURNS_TO_FINISH), cycs = .N), by = .(case_id, TEAM_ID)]
-  # join_track_left[, ':=' (CASE_TTF = sum(TURNS_TO_FINISH), tot_cycs = .N), by = .(case_id)]
-  # join_track_left[, ':=' (COMPETITOR_AVG_TTF = (CASE_TTF - TEAM_TTF) / (tot_cycs - cycs))]
-  # join_track_left[, ':=' (RELATIVE_TTF = (COMPETITOR_AVG_TTF ^ (2/3) - (TEAM_TTF / cycs) ^ (2/3)))]
   join_to_combinations[, ':=' (
-    # TTF_RELATIVE = quantile(TURNS_TO_FINISH, 0.35) - TURNS_TO_FINISH,
     MOVE_ORDER = seq_len(.N),
     MOVE_DIFF_RELATIVE = MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1)
   ), by = case_id]
+  join_to_combinations[, ':=' (MOVE_DIFF_RELATIVE = ifelse(is.na(MOVE_DIFF_RELATIVE), 1, MOVE_DIFF_RELATIVE))]
   join_to_combinations[, ':=' (FINISH_ESTIMATE = MOVE_ORDER / 100 + TURNS_TO_FINISH - pmin(SLOTS_OVER_FINISH, 4) / 5)]
   join_to_combinations[, ':=' (FINISH_ESTIMATE_MEAN = mean(FINISH_ESTIMATE)), by = .(CYCLER_ID)]
   join_to_combinations[, OVER_FINISH := pmax(NEW_GAME_SLOT_ID - finish_slot, 0) + ((TURNS_TO_FINISH == 0 * (4 - pmin(MOVE_ORDER , 4))) * 5) ^ 2]

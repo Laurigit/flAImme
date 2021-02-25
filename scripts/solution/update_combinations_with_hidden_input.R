@@ -3,7 +3,7 @@ update_combinations_with_hidden_input <- function(combinations_data, deck_status
 
   #team_id_input <- 3
   copy_deck <- copy(deck_status)
-  my_team <- combinations_data <- combinations_data#[TEAM_ID == team_id_input]
+  my_team <- combinations_data#[TEAM_ID == team_id_input]
   aggregate_to_cases <- my_team[, .N, by = .(DECK_LEFT, TRACK_LEFT, NEW_GAME_SLOT_ID, CYCLER_ID, TEAM_ID)]
   aggregate_to_cases[, DRAW_ODDS := ifelse(TEAM_ID == team_id_input, calculate_draw_distribution_by_turn(CYCLER_ID, deck_status, how_many_cards = 4, db_res = TRUE), ""),
                      by = .(DECK_LEFT, TRACK_LEFT, NEW_GAME_SLOT_ID, CYCLER_ID)]
