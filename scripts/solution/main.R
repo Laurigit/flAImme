@@ -152,8 +152,9 @@ game_status_data <- list()
 
               bot_name <- bot_data[TEAM_ID == bot_loop, bot_name]
               bot_config <- NA
+              pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
               funcargs <- list(hidden_information_output, deck_status,
-                               bot_config, bot_loop, pre_aggr_game_status)
+                               bot_config, bot_loop, pre_agg_no_list)
             #  res_debug <- ttf_bot(hidden_information_output, deck_status,
                         #           bot_config, bot_loop)
               myfunc <- bot_name

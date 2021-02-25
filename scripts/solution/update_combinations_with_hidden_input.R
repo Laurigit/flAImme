@@ -16,10 +16,11 @@ update_combinations_with_hidden_input <- function(combinations_data, deck_status
                                                                                    draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)),
                   by = .(NEW_GAME_SLOT_ID, TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 
-  result <- join_known_cases[, .(TTF_HIDDEN = TURNS_TO_FINISH, TRACK_LEFT, DECK_LEFT, NEW_GAME_SLOT_ID, TEAM_ID )]
+  result <- join_known_cases[, .N, by = .(TTF_HIDDEN = TURNS_TO_FINISH, TRACK_LEFT, DECK_LEFT, NEW_GAME_SLOT_ID, TEAM_ID )]
   joinBack <- result[my_team, on = .(TRACK_LEFT, DECK_LEFT, NEW_GAME_SLOT_ID, TEAM_ID)]
   joinBack[, ':=' (TURNS_TO_FINISH = TTF_HIDDEN,
-                   TTF_HIDDEN = NULL)]
+                   TTF_HIDDEN = NULL,
+                   N = NULL)]
   return(joinBack)
 
 }

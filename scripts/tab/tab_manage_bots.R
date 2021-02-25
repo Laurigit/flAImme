@@ -26,7 +26,7 @@ req(game_status())
 
 
   pre_aggr_game_status <- precalc_track(game_status())
-
+  pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
   ijk <- ijk_map(tracki, STG_TRACK_PIECE, STG_TRACK)
 
   matr_ijk <- as.matrix(ijk)
