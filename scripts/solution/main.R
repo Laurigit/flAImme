@@ -13,8 +13,8 @@ game_status_data <- list()
 
   game_id <- 1
 
-  bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
- # bot_data <- data.table(bot_name = c("finish_rank_bot"), TEAM_ID = c(2))
+ # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
+  bot_data <- data.table(bot_name = c("finish_rank_bot"), TEAM_ID = c(2))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
 
 
@@ -27,7 +27,7 @@ game_status_data <- list()
     turn_game_status <- NULL
     deck_status_loop <- NULL
     deck_status_loop_before <- NULL
-    track <- 5#as.integer(runif(1, 12, 17))
+    track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
     #ijk map explanation: i = starting point, k = movement, j = ending slot
 
 

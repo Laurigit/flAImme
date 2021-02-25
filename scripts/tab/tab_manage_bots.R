@@ -18,6 +18,40 @@ req(game_status())
 
 
   any_bots <- tournament()[PLAYER_TYPE == "AI" & TOURNAMENT_NM == input$join_tournament]
+bots_teams <- any_bots[, TEAM_ID]
+  #unplayed_cards_at_all?
+
+  all_bot_cyclers   <- ADM_CYCLER_INFO[TEAM_ID %in% bots_teams, CYCLER_ID]
+  unplayed_cards_total <- deck_status_now[CYCLER_ID  %in% all_bot_cyclers & Zone == "Hand"][, .N]
+  if (unplayed_cards_total > 0) {
+    #we have cards, calculate common data
+
+    tracki <- tournament_data_reactive()[GAME_ID == srv$game_id, .N, by = TRACK_ID][, TRACK_ID]
+
+    pre_aggr_game_status <- precalc_track(game_status())
+    pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
+    ijk <- ijk_map(tracki, STG_TRACK_PIECE, STG_TRACK)
+
+    matr_ijk <- as.matrix(ijk)
+    slip_map <- slipstream_map(tracki, STG_TRACK_PIECE, STG_TRACK)
+    slip_map_matrix <- as.matrix(slip_map)
+
+    slots_squares <- as.matrix(game_status()[, .(SQUARE_ID, GAME_SLOT_ID)])
+    reverse_slots_squares <- slots_squares[nrow(slots_squares):1,]
+    rm("ADM_OPTIMAL_MOVES", envir = globalenv())
+    required_data("ADM_OPTIMAL_MOVES")
+
+    combinations_output <- calc_combinations_data(con, game_status(), previous_deck,
+                                                  pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = TRUE)
+
+    MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA,  previous_deck)
+
+  }
+
+
+
+
+
 
   for (bot_loop in any_bots[, TEAM_ID]) {
 
@@ -26,34 +60,11 @@ req(game_status())
     unplayed_cards <- deck_status_now[CYCLER_ID  %in% my_cyclers & Zone == "Hand"][, .N]
     if (unplayed_cards > 0) {
 
-  tracki <- tournament_data_reactive()[GAME_ID == srv$game_id, .N, by = TRACK_ID][, TRACK_ID]
 
 
-
-
-
-  pre_aggr_game_status <- precalc_track(game_status())
-  pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
-  ijk <- ijk_map(tracki, STG_TRACK_PIECE, STG_TRACK)
-
-  matr_ijk <- as.matrix(ijk)
-  slip_map <- slipstream_map(tracki, STG_TRACK_PIECE, STG_TRACK)
-  slip_map_matrix <- as.matrix(slip_map)
-
-  slots_squares <- as.matrix(game_status()[, .(SQUARE_ID, GAME_SLOT_ID)])
-  reverse_slots_squares <- slots_squares[nrow(slots_squares):1,]
-  rm("ADM_OPTIMAL_MOVES", envir = globalenv())
-  required_data("ADM_OPTIMAL_MOVES")
-
-  combinations_output <- calc_combinations_data(con, game_status(), previous_deck,
-                                                pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = TRUE)
-
-  MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA,  previous_deck)
-
-  #for each bot
-  rm("ADM_OPTIMAL_MOVES", envir = globalenv())
-  required_data("ADM_OPTIMAL_MOVES")
-
+      #for each bot
+      rm("ADM_OPTIMAL_MOVES", envir = globalenv())
+      required_data("ADM_OPTIMAL_MOVES")
   hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations,
                                                                      deck_status_now, team_id_input = bot_loop, pre_agg_no_list)
 

@@ -28,7 +28,7 @@ shinyServer(function(input, output, session) {
 command_data <-  my_reactivePoll(session, "CLIENT_COMMANDS", "SELECT * from CLIENT_COMMANDS", 1000, con)
 
 
-game_data <-  my_reactivePoll(session, "GAME", paste0('SELECT sum(CYCLER_ID) FROM GAME'), timeout = 1000, con)
+#game_data <-  my_reactivePoll(session, "GAME", paste0('SELECT sum(CYCLER_ID) FROM GAME'), timeout = 1000, con)
 
 
 move_fact_data <- reactive({
@@ -75,6 +75,7 @@ deck_status_curr_game <- reactive({
   result <- deck_tour[GAME_ID == game_id]
   result
 })
+
 
 
 observe({
