@@ -96,8 +96,8 @@ game_status <- reactive({
 
     #create game status
 
-    track <- tn_data[LANE == -1, max(TRACK_ID)]
-    game_id <- tn_data[LANE == -1, max(GAME_ID)]
+    track <- tn_data[GAME_ID == max_game, max(TRACK_ID)]
+    game_id <- max_game #game_status_simple()#tn_data[LANE == -1, max(GAME_ID)]
     turni <- game_status_simple()[TOURNAMENT_NM == input$join_tournament & GAME_ID == game_id, max(TURN_ID)]
     gs_curr_turn <- game_status_simple()[TOURNAMENT_NM == input$join_tournament & GAME_ID == game_id & TURN_ID == turni]
     game_status_local <- create_game_status_from_simple(gs_curr_turn, track,  STG_TRACK, STG_TRACK_PIECE)

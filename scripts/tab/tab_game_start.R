@@ -3,6 +3,7 @@
 
 observe({
 
+
   req(input$join_tournament)
   #launch when gets a command to start
   command_rows <- command_data()[TOURNAMENT_NM == input$join_tournament, .(COMMAND, COMMAND_ID)]
@@ -58,7 +59,7 @@ observe({
         #update to db too
         for (ex_loop in exh_add_amount[, CYCLER_ID]) {
           dbQ(paste0('UPDATE TOURNAMENT_RESULT SET STARTING_EXHAUST = ', exh_add_amount[CYCLER_ID == ex_loop, EXHAUST_LEFT],
-                     ' WHERE CYCLER_ID = ', ex_loop), con)
+                     ' WHERE GAME_ID = ', srv$game_id, ' AND CYCLER_ID = ', ex_loop), con)
         }
       }
 

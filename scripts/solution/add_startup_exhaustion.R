@@ -8,7 +8,7 @@ add_startup_exhaustion <- function(EXH_DATA, deck_status) {
   copy_exh <- copy(EXH_DATA)
   copy_exh[, help_row_id := seq_len(.N)]
   copy_exh[, ':=' (CARD_ID = 1, Zone = "Deck", row_id = help_row_id + max_row_id, MOVEMENT = 2, startup_exh = round(EXHAUST_LEFT / 2))]
-  spread <- copy_exh[rep(1:.N, EXHAUST_LEFT)][,index := 1:.N,by = CYCLER_ID]
+  spread <- copy_exh[rep(1:.N, startup_exh)][,index := 1:.N,by = CYCLER_ID]
   spread[, ':=' (EXHAUST_LEFT = NULL,
                  index = NULL,
                  startup_exh = NULL,

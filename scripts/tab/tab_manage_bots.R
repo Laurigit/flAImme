@@ -6,6 +6,7 @@
 
 observeEvent(srv$turn_id, {
  #TASKS
+
   required_data(c("STG_TRACK_PIECE", "STG_TRACK", "STG_CYCLER", "ADM_CYCLER_INFO"))
   # do we have bots
 req(deck_status_curr_game())
@@ -144,6 +145,7 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
   }
   }
   }
+
   })
 #read cards and gamestate
 

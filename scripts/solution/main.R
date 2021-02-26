@@ -86,7 +86,7 @@ game_status_data <- list()
       ##take copy of deck before drawing for calculation which cycler to play first
       turn_start_deck <- copy(deck_status)
       for (loop_cycler in in_game_cyclers) {
-        deck_status <- draw_cards(loop_cycler, deck_status, 4, con = con,  turn_id = turn_id, game_id = game_id)
+        deck_status <- draw_cards(loop_cycler, deck_status, 4, con = NULL,  turn_id = turn_id, game_id = game_id)
         played_cards_data[CYCLER_ID == loop_cycler & TURN_ID == turn_id,
                           OPTIONS := list(list(deck_status[CYCLER_ID == loop_cycler & Zone == "Hand", CARD_ID]))]
       }
@@ -229,7 +229,7 @@ game_status_data <- list()
         move_played <- STG_CARD[CARD_ID == row_data[, CARD_ID], MOVEMENT]
           deck_status <- play_card(cycler_id = loop_move,
                                    card_id = row_data[, CARD_ID],
-                                   current_decks = deck_status, game_id, turn_id, con,
+                                   current_decks = deck_status, game_id, turn_id, con = NULL,
                                    force = TRUE,
                                    copy = FALSE)
 
