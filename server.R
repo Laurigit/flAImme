@@ -23,7 +23,7 @@ shinyServer(function(input, output, session) {
 
  breakaway_bet_cards_data <- my_reactivePoll(session, "BREAKAWAY_BET_CARDS", "SELECT * FROM BREAKAWAY_BET_CARDS", 2000, con)
 
- move_fact_data_all  <- my_reactivePoll(session, "MOVE_FACT", "SELECT * from MOVE_FACT", 1000, con)
+move_fact_data_all  <- my_reactivePoll(session, "MOVE_FACT", "SELECT * from MOVE_FACT", 1000, con)
 
 command_data <-  my_reactivePoll(session, "CLIENT_COMMANDS", "SELECT * from CLIENT_COMMANDS", 1000, con)
 

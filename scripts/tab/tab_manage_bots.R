@@ -10,6 +10,7 @@ observeEvent(srv$turn_id, {
   # do we have bots
 req(deck_status_curr_game())
 req(game_status())
+req(input$join_tournament)
 
   deck_status_now <- deck_status_curr_game()[TURN_ID == srv$turn_id & HAND_OPTIONS == 1]
   prev_turn_in_deck <- deck_status_curr_game()[TURN_ID < srv$turn_id, max(TURN_ID)]
@@ -21,9 +22,18 @@ req(game_status())
 bots_teams <- any_bots[, TEAM_ID]
   #unplayed_cards_at_all?
 
-  all_bot_cyclers   <- ADM_CYCLER_INFO[TEAM_ID %in% bots_teams, CYCLER_ID]
-  unplayed_cards_total <- deck_status_now[CYCLER_ID  %in% all_bot_cyclers & Zone == "Hand"][, .N]
-  if (unplayed_cards_total > 0) {
+#montako movia pitäisi pelata tällä vuorolla?
+all_bot_cyclers   <- ADM_CYCLER_INFO[TEAM_ID %in% bots_teams, CYCLER_ID]
+how_manyneeded_total <-  srv$gs_simple[CYCLER_ID %in% all_bot_cyclers, .N]
+#montako pelattu?
+mf_local_all_turns <- move_fact_data()[TOURNAMENT_NM == input$join_tournament]
+mf_local <-  mf_local_all_turns[TURN_ID ==   srv$turn_id & TEAM_ID %in% bots_teams]
+how_many_played <- mf_local[CARD_ID > -1   , .N]
+how_many_more_needed <- how_manyneeded_total - how_many_played
+
+
+
+  if (how_many_more_needed > 0) {
     #we have cards, calculate common data
 
     tracki <- tournament_data_reactive()[GAME_ID == srv$game_id, .N, by = TRACK_ID][, TRACK_ID]
@@ -46,19 +56,20 @@ bots_teams <- any_bots[, TEAM_ID]
 
     MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA,  previous_deck)
 
-  }
-
-
-
-
-
 
   for (bot_loop in any_bots[, TEAM_ID]) {
 
 #do I need to play?
     my_cyclers  <- ADM_CYCLER_INFO[TEAM_ID == bot_loop, CYCLER_ID]
-    unplayed_cards <- deck_status_now[CYCLER_ID  %in% my_cyclers & Zone == "Hand"][, .N]
-    if (unplayed_cards > 0) {
+    #montako pelattu?
+    mf_local_loop <-  mf_local_all_turns[TURN_ID ==   srv$turn_id & TEAM_ID %in% bot_loop]
+    how_many_played_loop <- mf_local_loop[CARD_ID > -1   , .N]
+    how_manyneeded_total_loop <-  srv$gs_simple[CYCLER_ID %in% my_cyclers, .N]
+    how_many_more_needed_loop <- how_manyneeded_total_loop - how_many_played_loop
+    if (how_many_more_needed_loop > 0) {
+
+
+
 
 
 
@@ -124,11 +135,13 @@ bots_teams <- any_bots[, TEAM_ID]
 
 
   con <- connDB(con, "flaimme")
+  browser()
   dbWriteTable(con, "MOVE_FACT", appendaa, row.names = FALSE, append = TRUE)
   #move_fact$data <- dbSelectAll("MOVE_FACT", con)[GAME_ID == srv$game_id & TOURNAMENT_NM == input$join_tournament]
   #wirte to MOVE_FACT a row per cycler
   #update MOVE_FACT with selections
 
+  }
   }
   }
   })

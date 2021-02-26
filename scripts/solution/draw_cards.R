@@ -64,6 +64,7 @@ draw_cards <- function(cycler_id, current_decks_input, how_many_cards = 4, rest_
     res_write <- curr_cards[CYCLER_ID == cycler_id, .(CYCLER_ID, CARD_ID, Zone)]
     res_write[, TURN_ID := turn_id]
     res_write[, GAME_ID := game_id]
+    browser()
     dbWriteTable(con, "DECK_STATUS", res_write, append = TRUE, row.names = FALSE)
   }
   return(curr_cards)
