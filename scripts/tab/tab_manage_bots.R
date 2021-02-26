@@ -135,7 +135,7 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
 
 
   con <- connDB(con, "flaimme")
-  browser()
+
   dbWriteTable(con, "MOVE_FACT", appendaa, row.names = FALSE, append = TRUE)
   #move_fact$data <- dbSelectAll("MOVE_FACT", con)[GAME_ID == srv$game_id & TOURNAMENT_NM == input$join_tournament]
   #wirte to MOVE_FACT a row per cycler
