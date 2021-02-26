@@ -74,7 +74,7 @@ play_card <- function(cycler_id,
     #card_id to db
     played_id <- current_decks[row_id == card_played, CARD_ID]
       row <- data.table(CYCLER_ID = cycler_id, CARD_ID = played_id, GAME_ID = game_id, TURN_ID = turn_id)
-      browser()
+
     dbWriteTable(con, "MOVE_FACT", row, append = TRUE, row.names = FALSE)
   }
 

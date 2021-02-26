@@ -70,7 +70,7 @@ observe({
                           TOURNAMENT_NM = tour_name,
                           TURN_ID = -1,
                           HAND_OPTIONS = 0)]
-      browser()
+
       dbWriteTable(con, "DECK_STATUS", info_joined, append = TRUE, row.names = FALSE)
 
       #setup initial game status
