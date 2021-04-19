@@ -26,6 +26,8 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
 
       #possible 2nd turn start positions
       start_posses <- odds_filtter[Turn_to_Draw == 1 & keep_me == TRUE, MOVEMENT] + 1
+      start_posses <- rividata[tulos_save == FALSE & i == 1 & k %in% odds_filtter[Turn_to_Draw == 1 & keep_me == TRUE, MOVEMENT], j]
+
       round_res2 <- rividata[i %in% start_posses & k %in% odds_filtter[Turn_to_Draw == 2 & keep_me == FALSE, MOVEMENT] & tulos_save == FALSE]
       total_res <- rbind(round_res2, round_res)
       total_res[, drop_me := TRUE]

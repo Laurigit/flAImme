@@ -38,7 +38,7 @@ relative_bot <- function(team_combinations_data_with_other_player_probs, deck_st
   #filter_only_my_team_for_scoring
 
   mincase <- join_my_ttf[, min(case_id)]
-  print(join_my_ttf[mincase == case_id])
+ # print(join_my_ttf[mincase == case_id])
   total_cyclers <- nrow(join_my_ttf[, .N, by = CYCLER_ID])
 
   scoring_data <- join_my_ttf#[TEAM_ID == bot_team_id]
@@ -47,7 +47,7 @@ relative_bot <- function(team_combinations_data_with_other_player_probs, deck_st
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
                        TTF_SCORE = (min_ttf - TURNS_TO_FINISH + 1)  * 2.5,
                        SOF_SCORE = SLOTS_OVER_FINISH  * 0.1,
-                       FINISH_RANK_SCORE = FINISH_RANK / pmax(3, MOVE_ORDER) / (TURNS_TO_FINISH + 1) * 6,
+                       FINISH_RANK_SCORE = FINISH_RANK / pmax(3, MOVE_ORDER) / (TURNS_TO_FINISH + 1) * 5,
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                        MOVE_ORDER_SCORE = - MOVE_ORDER * 0.02 * (18 - min_ttf),
                        OVER_FINISH_SCORE = OVER_FINISH * 100,

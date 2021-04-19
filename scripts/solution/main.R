@@ -14,7 +14,7 @@ game_status_data <- list()
   game_id <- 1
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
-  bot_data <- data.table(bot_name = c("relative_bot", "finish_rank_bot"), TEAM_ID = c(1,2))
+  bot_data <- data.table(bot_name = c("relative_bot", "finish_rank_bot"), TEAM_ID = c(1, 2))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
 
 
@@ -159,9 +159,9 @@ game_status_data <- list()
                         #           bot_config, bot_loop)
               myfunc <- bot_name
               res <- do.call(myfunc, funcargs)
-              # res <- relative_bot(hidden_information_output, deck_status,
-              #                        bot_config, bot_loop, pre_agg_no_list)
-              if (bot_loop == 2) {
+              # res <- relative_bot(hidden_information_output, deck_status,  bot_config, bot_loop, pre_agg_no_list)
+              #
+              if (bot_loop == 1) {
               print(res[1:10])
               }
           #    print(res)

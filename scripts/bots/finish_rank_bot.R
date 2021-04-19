@@ -38,7 +38,7 @@ finish_rank_bot <- function(team_combinations_data_with_other_player_probs, deck
   #filter_only_my_team_for_scoring
 
   mincase <- join_my_ttf[, min(case_id)]
-  print(join_my_ttf[mincase == case_id])
+ # print(join_my_ttf[mincase == case_id])
   total_cyclers <- nrow(join_my_ttf[, .N, by = CYCLER_ID])
   scoring_data <- join_my_ttf[TEAM_ID == bot_team_id]
   scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_RELATIVE * 0.25 * pmax(min_ttf - 4, 0.1),
@@ -61,7 +61,7 @@ finish_rank_bot <- function(team_combinations_data_with_other_player_probs, deck
                                  SLOTS_PROGRESSED_SCORE +
                                  MOVE_ORDER_SCORE +
                                  OVER_FINISH_SCORE)]
-  print(scoring_data[mincase == case_id])
+#  print(scoring_data[mincase == case_id])
 
   #join_opponent strat
   # ss_strat <- MIXED_STRATEGY[, .(MOVES, TEAM_ID, PROB_PRODUCT)]
