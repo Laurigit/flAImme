@@ -70,6 +70,7 @@ relative_bot <- function(team_combinations_data_with_other_player_probs, deck_st
   scoring_data[, OTHER_CYCLERS_LEFT := TOT_CYCLERS_LEFT - TEAM_CYCLERS_LEFT, by = .(case_id)]
   scoring_data[, SUM_OF_OTHER_CYCLER_SCORE := sum(TOT_SCORE_MINE) - TEAM_SCORE_AVG * TEAM_CYCLERS_LEFT , by = .(case_id)]
   scoring_data[, OTHER_AVG_SCORE := SUM_OF_OTHER_CYCLER_SCORE / OTHER_CYCLERS_LEFT]
+  scoring_data[, OTHER_AVG_SCORE := ifelse(is.finite(OTHER_AVG_SCORE), OTHER_AVG_SCORE, 0)]
 
 #  scoring_data[, MY_RELATIVE_SCORE := ]
   scoring_data[, TOT_SCORE := OVER_FINISH_SCORE + TOT_SCORE_MINE - OTHER_AVG_SCORE]
