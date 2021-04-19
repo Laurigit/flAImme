@@ -19,15 +19,17 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
     max_odds <- odds_filtter[, max(Turn_to_Draw)]
     prev_round_res <- data.table(j = 1)
     total_res <- NULL
-    for (turn_loop in 1:max_odds) {
-      # round_rows <- nrow(odds_filtter[Turn_to_Draw == 1])
-      keep_or_drop <- odds_filtter[Turn_to_Draw == turn_loop, .N, by = keep_me][, keep_me]
-      round_res <- rividata[i %in% prev_round_res[, j] & k %in% odds_filtter[Turn_to_Draw == turn_loop, MOVEMENT] & tulos_save == FALSE]
-      #here is invert logic where TRUE means DELETE possibility
-      round_res[, drop_me := !keep_or_drop]
-      total_res <- rbind(total_res, round_res)
-      prev_round_res <- round_res
-    }
+    #first round
+
+
+      round_res <- rividata[i == 1 & k %in% odds_filtter[Turn_to_Draw == 1 & keep_me == FALSE, MOVEMENT] & tulos_save == FALSE]
+
+      #possible 2nd turn start positions
+      start_posses <- odds_filtter[Turn_to_Draw == 1 & keep_me == TRUE, MOVEMENT] + 1
+      round_res2 <- rividata[i %in% start_posses & k %in% odds_filtter[Turn_to_Draw == 2 & keep_me == FALSE, MOVEMENT] & tulos_save == FALSE]
+      total_res <- rbind(round_res2, round_res)
+      total_res[, drop_me := TRUE]
+
     sscols_res_all <- total_res[, .(i, j, k, drop_me)][drop_me == TRUE]
     sscols_res <- sscols_res_all[, .(.N), by = .(i, j, k,drop_me)][, N := NULL]
     joini <- sscols_res[rividata, on = .(i, j, k)]

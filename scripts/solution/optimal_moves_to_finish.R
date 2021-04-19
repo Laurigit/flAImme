@@ -61,7 +61,7 @@ if (nrow(kortit_Dt) == 0) {
   # slots_over <- finish_slot %% 2
   # turns_to_finish_res <- data.table(TURNS_TO_FINISH = slots_left_to_finish, SLOTS_OVER_FINISH = slots_over, NEXT_MOVE = 2)
   kortit_Dt <- data.table(MOVEMENT = c(2,2,2,2,2,2,2,2))
-  browser()
+
 }
 
 
@@ -90,13 +90,13 @@ if (use_draw_odds[[1]][1] != "") {
   max_odds <- odds_filtter[, max(Turn_to_Draw)]
   compare_data <- CJ.dt(data.table(Turn_to_Draw = 1:max_odds), data.table(MOVEMENT = kortit))
   join_compare <- odds_filtter[compare_data, on = .(MOVEMENT, Turn_to_Draw)]
-  missing_odds <- join_compare[is.na(prob)]
-  missing_odds[, keep_me := FALSE]
-  modds_data <- missing_odds[, .(Turn_to_Draw, MOVEMENT, keep_me)]
+  missing_odds <- join_compare#[is.na(prob)]
+  missing_odds[, keep_me := ifelse(is.na(prob), FALSE, TRUE)]
+  #modds_data <- missing_odds[, .(Turn_to_Draw, MOVEMENT, keep_me)]
   #pad missing turns
-  pad_data <- compare_data[!Turn_to_Draw %in% missing_odds[, unique(Turn_to_Draw)]][, keep_me := TRUE]
-  append_pad <- rbind(pad_data, modds_data)
-
+  #pad_data <- compare_data[!Turn_to_Draw %in% missing_odds[, unique(Turn_to_Draw)]][, keep_me := TRUE]
+  #append_pad <- rbind(pad_data, modds_data)
+  append_pad <- missing_odds[order(Turn_to_Draw, MOVEMENT)][Turn_to_Draw <= 2]
   } else {
     append_pad <- NULL
 }
@@ -201,7 +201,7 @@ turns_to_finish_res <- data.table(TURNS_TO_FINISH = turns_to_finish, SLOTS_OVER_
 
   }
 } else {
-  browser()
+
   turns_to_finish_res <- data.table(TURNS_TO_FINISH = max_result_of_turns_to_finish, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
 
 }
@@ -211,7 +211,7 @@ return(turns_to_finish_res)
 }, error = function(e) {
 
   warning("Optmization failed on trycatch")
-  browser()
+
   if (length(finish_slot) == 0 | finish_slot ==1 ) {
     res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
 
