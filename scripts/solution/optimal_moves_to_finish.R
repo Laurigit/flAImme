@@ -51,13 +51,18 @@ if (finish_slot <= 3) {
   last_move <- max(min(pmax(kortit_Dt[, max(MOVEMENT)], 2), max_move), min_move)
   slot_over_is <- last_move - finish_slot + 1
   turns_to_finish_res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = slot_over_is, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
-} else if (nrow(kortit_Dt) == 0) {
-  slots_left_to_finish <- ceiling(finish_slot - rivi_lkm) / 2 + 1
-  turns_to_finish_res <- data.table(TURNS_TO_FINISH = slots_left_to_finish, SLOTS_OVER_FINISH = 0, NEXT_MOVE = 2)
+
 
 } else {
 
-
+if (nrow(kortit_Dt) == 0) {
+  # slots_left_to_finish <- ceiling(finish_slot / 2)
+  #
+  # slots_over <- finish_slot %% 2
+  # turns_to_finish_res <- data.table(TURNS_TO_FINISH = slots_left_to_finish, SLOTS_OVER_FINISH = slots_over, NEXT_MOVE = 2)
+  kortit_Dt <- data.table(MOVEMENT = c(2,2,2,2,2,2,2,2))
+  browser()
+}
 
 
 
@@ -147,7 +152,7 @@ if (res_mod$status == "optimal") {
 
 raw <- as.data.table(res_mod$solution, keep.rownames = TRUE)[V2 > 0]
 res <- nrow(raw)
-raw[, row := seq_len(.N)]
+#raw[, row := seq_len(.N)]
 #tstrsplit("aa_nn", "sep =" fixed = TRUE)
 raw[, c("i", "j", "k") := tstrsplit(V1, ",", fixed = TRUE)]
 raw[, i_clean := as.numeric(gsub("\\D", "", i))]
@@ -196,6 +201,7 @@ turns_to_finish_res <- data.table(TURNS_TO_FINISH = turns_to_finish, SLOTS_OVER_
 
   }
 } else {
+  browser()
   turns_to_finish_res <- data.table(TURNS_TO_FINISH = max_result_of_turns_to_finish, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
 
 }
@@ -205,6 +211,7 @@ return(turns_to_finish_res)
 }, error = function(e) {
 
   warning("Optmization failed on trycatch")
+  browser()
   if (length(finish_slot) == 0 | finish_slot ==1 ) {
     res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
 
