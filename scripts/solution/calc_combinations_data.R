@@ -1,5 +1,5 @@
 calc_combinations_data <- function(con, game_status, deck_status, pre_aggr_game_status_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix,
-                                    STG_CYCLER, calc_ttf
+                                    STG_CYCLER, calc_ttf, case_count = 1000
                                   ) {
 
 
@@ -44,7 +44,7 @@ deck_copied <- copy(deck_status)
     }
   }
   filter_zero_all <- appendloop[order(case_id, CYCLER_ID)]
-  cases <- filter_zero_all[, .SD[sample(.N, min(1000, .N))], by = .(CYCLER_ID, MOVEMENT)][, .N, by = case_id]
+  cases <- filter_zero_all[, .SD[sample(.N, min(case_count, .N))], by = .(CYCLER_ID, MOVEMENT)][, .N, by = case_id]
   # print(nrow(filter_zero_all))
   filter_zero <- filter_zero_all[case_id %in% cases[, case_id]]
   # print(nrow(filter_zero))

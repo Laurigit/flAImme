@@ -15,6 +15,7 @@ game_status_data <- list()
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
   bot_data <- data.table(bot_name = c("relative_bot", "finish_rank_bot"), TEAM_ID = c(1, 2))
+ # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
 
 
@@ -112,7 +113,7 @@ game_status_data <- list()
           if (length(bots_left_total) > 0) {
             pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
             combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
-                                                          pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf)
+                                                          pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf, case_count = 1000)
             MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, turn_start_deck)
             print(MIXED_STRATEGY$combinations[, .N, by = SLOTS_OVER_FINISH])
 
@@ -132,13 +133,13 @@ game_status_data <- list()
             TTF_stats <- rbind(TTF_stats, aggr_pic)
             finishssi <- game_status[FINISH == 1, min(GAME_SLOT_ID)]
             startti <-game_status[START == 1, min(GAME_SLOT_ID)] + 2
-            # print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED, group=CYCLER_ID)) +
-            #         #geom_line(linetype="dashed", color="blue", size=1.2)+
-            #         geom_line(size=1.5, aes(linetype = "solid", color=as.factor(CYCLER_ID)))+
-            #         geom_point(size = 3, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
-            #          scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
-            #         xlim(6, finishssi) + ylim(-1.5, 3.2)) + scale_x_continuous(limits = c(finishssi-70, finishssi), breaks = seq(finishssi-70, finishssi, by = 10))
-
+          #   print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED, group=CYCLER_ID)) +
+          #           #geom_line(linetype="dashed", color="blue", size=1.2)+
+          #           geom_line(size=1.5, aes(linetype = "solid", color=as.factor(CYCLER_ID)))+
+          #           geom_point(size = 3, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
+          #            scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
+          #           xlim(6, finishssi) + ylim(-1.5, 3.2)) + scale_x_continuous(limits = c(finishssi-70, finishssi), breaks = seq(finishssi-70, finishssi, by = 10))
+          #
           }
 
           for (bot_loop in bot_teams) {
@@ -159,11 +160,27 @@ game_status_data <- list()
                         #           bot_config, bot_loop)
               myfunc <- bot_name
               res <- do.call(myfunc, funcargs)
+
+
+            #    res <- do.call("relative_bot", funcargs)
+              #  res[MOVES %in% c("7_5", "2_5")][order(MOVES)]
+             #   moves1 <- EV_to_moves(res, deck_status)
+              #  print(moves1)
+               # res2 <- do.call("finish_rank_bot", funcargs)
+             #   res2[MOVES %in% c("7_5", "2_5")][order(MOVES)]
+               # moves2 <- EV_to_moves(res2, deck_status)
+              #  print(moves2)
+                # if (all.equal(moves1, moves2) != TRUE) {
+                #   browser()
+                #   print("STOP")
+                # }
+                # browser()
+                # stop()
+                # print("STOP")
+
               # res <- relative_bot(hidden_information_output, deck_status,  bot_config, bot_loop, pre_agg_no_list)
               #
-              if (bot_loop == 1) {
-              print(res[1:10])
-              }
+
           #    print(res)
               #   best_move_diff <- res[which.max(MOVE_ORDER_SCORE), MOVES]
               #   best_sof_diff <- res[which.max(SOF_SCORE), MOVES]
@@ -173,7 +190,15 @@ game_status_data <- list()
               #   }
                 #  scalued <- check_res2[ ,.(MOVES, EV = round(EV - max(EV), 2),
               moves <- EV_to_moves(res, deck_status)
-              print(moves)
+
+              if (bot_loop == 1) {
+              #  browser()
+                print(res[1:5][draw_odds_C1 > 0 & draw_odds_C2 > 0])
+                print(deck_status[CYCLER_ID %in% c(1,2) & Zone == "Hand", .N, by = .(CYCLER_ID, MOVEMENT)][order(CYCLER_ID, MOVEMENT)])
+
+                print(zoom(game_status))
+                print(moves[order(CYCLER_ID)])
+              }
               for (loopperi in 1:nrow(moves)) {
                 loop_cycler <- moves[loopperi, CYCLER_ID]
                 loop_card <- moves[loopperi, CARD_ID]
@@ -185,9 +210,9 @@ game_status_data <- list()
 
           }
 
-          print(zoom(game_status))
 
-          print(deck_status[CYCLER_ID == 5 & Zone != "Removed"][order(Zone, MOVEMENT)])
+
+         # print(deck_status[CYCLER_ID == 1 & Zone != "Removed"][order(Zone, MOVEMENT)])
 
 
           #for each bot
