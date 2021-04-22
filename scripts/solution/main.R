@@ -79,12 +79,13 @@ game_status_data <- list()
     turn_id <- 0
     pre_aggr_game_status <- precalc_track(game_status)
 
-    con <- connDB(con, "flaimme")
-    required_data("ADM_OPTIMAL_MOVES", force_update = TRUE)
+
 
     if (!exists("ctM_data")) {
       ctM_data <- NULL
     }
+    con <- connDB(con, "flaimme")
+    required_data("ADM_OPTIMAL_MOVES", force_update = TRUE)
     turn_id <- 1
     alotus <- Sys.time()
 
