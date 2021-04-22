@@ -56,6 +56,7 @@ update_combinations_with_hidden_input <- function(combinations_data, deck_status
   print(count_ss_ttf)
 
   if ((16 - calc_ttf) * count_ss_ttf < 500) {
+    alku <- Sys.time()
     join_known_cases[is.na(TURNS_TO_FINISH), c("TURNS_TO_FINISH", "SLOTS_OVER_FINISH", "NEXT_MOVE") := (finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_aggr_game_status, NEW_GAME_SLOT_ID,
                                                                                                                         draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)),
                      by = .(NEW_GAME_SLOT_ID, TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
