@@ -58,7 +58,9 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
           joinaa <- ADM_OPTIMAL_MOVES[new_result_row, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 
           if (nrow(joinaa) > 0) {
+
             ADM_OPTIMAL_MOVES <<- rbind(ADM_OPTIMAL_MOVES, new_result_row)
+          #  print(paste0("in function ", nrow(ADM_OPTIMAL_MOVES)))
           }
 
           FALSE
