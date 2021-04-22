@@ -1,7 +1,7 @@
 calc_combinations_data <- function(con, game_status, deck_status, pre_aggr_game_status_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix,
-                                    STG_CYCLER, calc_ttf, case_count = 1000
+                                    STG_CYCLER, calc_ttf = 0, case_count = 1000
                                   ) {
-
+#calc ttf takes in current turn of game
 
 deck_copied <- copy(deck_status)
 
@@ -74,8 +74,7 @@ deck_copied <- copy(deck_status)
                 "EXHAUST",
                 "NEW_SQUARE") := as.data.table(move_cycler_c(as.matrix(.SD), matr_ijk, reverse_slots_squares, slip_map_matrix)),
             by = .(case_id), .SDcols = c("CYCLER_ID", "MOVEMENT", "curr_pos")]
-  print("move_diff N")
-  print(join_curr_pos[, .N, by = MOVE_DIFF])
+
 
 
   new_positions_by_cycler <- join_curr_pos[, .N, by = .(NEW_GAME_SLOT_ID, MOVEMENT, CYCLER_ID)]
@@ -97,13 +96,18 @@ join_track_left[, N := NULL]
 join_track_left[, DRAW_ODDS := ""]
 #join known results
 
-
+if (calc_ttf == 0) {
 join_known <- ADM_OPTIMAL_MOVES[join_track_left, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 join_known[, row_id_calc := NULL]
 
 join_known[is.na(TURNS_TO_FINISH), c("TURNS_TO_FINISH", "SLOTS_OVER_FINISH", "NEXT_MOVE") := (finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_aggr_game_status_no_list, NEW_GAME_SLOT_ID,
                                                                                    draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)),
                   by = .(NEW_GAME_SLOT_ID, TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
+} else {
+
+  join_known <- join_track_left
+  join_known[, ':=' (TURNS_TO_FINISH = 15 - calc_ttf, SLOTS_OVER_FINISH = 1, NEXT_MOVE = 0)]
+  }
 #if (join_known[, min(TURNS_TO_FINISH)] == 1) {browser()}
 
 

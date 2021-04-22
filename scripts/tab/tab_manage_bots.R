@@ -50,14 +50,15 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
     slots_squares <- as.matrix(game_status()[, .(SQUARE_ID, GAME_SLOT_ID)])
     reverse_slots_squares <- slots_squares[nrow(slots_squares):1,]
 
-
+    calc_ttf_input_all <- ifelse(turn_id >= 8, 0, turn_id)
     combinations_output <- calc_combinations_data(con, game_status(), previous_deck,
-                                                  pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = TRUE)
+                                                  pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all)
 
     MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA,  previous_deck)
 
 
   for (bot_loop in any_bots[, TEAM_ID]) {
+
 
 #do I need to play?
     my_cyclers  <- ADM_CYCLER_INFO[TEAM_ID == bot_loop, CYCLER_ID]
@@ -76,14 +77,14 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
       #for each bot
 
   hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations,
-                                                                     deck_status_now, team_id_input = bot_loop, pre_agg_no_list)
+                                                                     deck_status_now, team_id_input = bot_loop, pre_agg_no_list, calc_ttf =  srv$turn_id)
 
 
 
   bot_config <- NA
   funcargs <- list(hidden_information_output, deck_status_now,
                    bot_config, bot_loop, pre_agg_no_list)
-  myfunc <- "relative_bot"
+  myfunc <- "laimennus_bot"
   # debug <- finish_rank_bot(hidden_information_output, deck_status_now,
   #                          bot_config, bot_loop, pre_agg_no_list)
 

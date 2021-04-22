@@ -13,22 +13,25 @@ game_status_data <- list()
   game_id <- 1
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
-  bot_data <- data.table(bot_name = c("relative_bot", "laimennus_bot", "finish_rank_bot"), TEAM_ID = c(1, 2, 3))
+ # bot_data <- data.table(bot_name = c("relative_bot", "finish_rank_bot", "laimennus_bot"), TEAM_ID = c(1,2,3))
+  bot_data <- data.table(bot_name = c("laimennus_bot"), TEAM_ID = c(3))
+ # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
 
-
+  exh_left <- data.table(CYCLER_ID = as.numeric(), EXHAUST_LEFT = as.numeric())
   for (game_id in 1:200000) {
    # cycler_ids <- c(7, 4, 5, 6, 8, 1, 3, 2)
    # cycler_ids <- c(5, 6, 1, 2)
     turn_id <- 0
+
     repeat {
     if (turn_id == 0) {
     turn_game_status <- NULL
     deck_status_loop <- NULL
     deck_status_loop_before <- NULL
-   # track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
-    track <- 14
+    track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
+   # track <- 14
     #ijk map explanation: i = starting point, k = movement, j = ending slot
 
 
@@ -45,6 +48,13 @@ game_status_data <- list()
 
     #initial decks
     deck_status <- create_decks(cycler_ids, ADM_CYCLER_DECK)
+    #add exhaust
+
+    if (nrow(exh_left) > 0) {
+
+    deck_status <- add_startup_exhaustion(exh_left, deck_status)
+    print(deck_status[CARD_ID == 1, .N, by = CYCLER_ID][order(CYCLER_ID)])
+    }
 
     ijk <- ijk_map(track, STG_TRACK_PIECE, STG_TRACK)
 
@@ -114,11 +124,12 @@ game_status_data <- list()
           bots_left_total <- intersect(bots, in_game_cyclers)
           #any bots left?
           if (length(bots_left_total) > 0) {
+            calc_ttf_input_all <- ifelse(turn_id >= 8, 0, turn_id)
+           # calc_ttf_input <- ifelse(turn_id >= 5, 0, turn_id)
             pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
             combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
-                                                          pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf, case_count = 1000)
+                                                          pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all, case_count = 1000)
             MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, turn_start_deck)
-            print(MIXED_STRATEGY$combinations[, .N, by = SLOTS_OVER_FINISH])
 
             ss_for_picture <- MIXED_STRATEGY$combinations[, .(FINISH_ESTIMATE_MEAN , CYCLER_ID, PROB_PRODUCT, case_id, NEW_GAME_SLOT_ID, CASE_PROB )]
            # ss_for_picture[, CASE_PROB := prod(PROB_PRODUCT^(1/2)), by = case_id]
@@ -152,7 +163,7 @@ game_status_data <- list()
             if (length(cyclers_left) > 0) {
                 #even here I don't know the drawn cards
               hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations, turn_start_deck,
-                                                                                 team_id_input = bot_loop, pre_agg_no_list)
+                                                                                 team_id_input = bot_loop, pre_agg_no_list, calc_ttf = turn_id)
 
               bot_name <- bot_data[TEAM_ID == bot_loop, bot_name]
               bot_config <- NA
@@ -175,13 +186,13 @@ game_status_data <- list()
               #  print(moves2)
                 # if (all.equal(moves1, moves2) != TRUE) {
                 #   browser()
-                #   print("STOP")
+                #   print("STOP")#
                 # }
                 # browser()
                 # stop()
                 # print("STOP")
 
-              # res <- relative_bot(hidden_information_output, deck_status,  bot_config, bot_loop, pre_agg_no_list)
+            #   res <- laimennus_bot(hidden_information_output, deck_status,  bot_config, bot_loop, pre_agg_no_list)
               #
 
           #    print(res)
@@ -194,10 +205,10 @@ game_status_data <- list()
                 #  scalued <- check_res2[ ,.(MOVES, EV = round(EV - max(EV), 2),
               moves <- EV_to_moves(res, deck_status)
 
-              if (bot_loop == 1) {
+              if (bot_loop == 3) {
               #  browser()
                 print(res[1:10])#[draw_odds_C1 > 0 & draw_odds_C2 > 0])
-                print(deck_status[CYCLER_ID %in% c(1,2) & Zone == "Hand", .N, by = .(CYCLER_ID, MOVEMENT)][order(CYCLER_ID, MOVEMENT)])
+                print(deck_status[CYCLER_ID %in% c(5,6) & Zone == "Hand", .N, by = .(CYCLER_ID, MOVEMENT)][order(CYCLER_ID, MOVEMENT)])
 
                 print(zoom(game_status))
                 print(moves[order(CYCLER_ID)])
@@ -288,6 +299,10 @@ game_status_data <- list()
       #   break()
       # }
       if (length(cycler_ids) == 0) {
+
+        exh_left <- deck_status[CARD_ID == 1, .(EXHAUST_LEFT = .N), by = CYCLER_ID]
+
+
         break()
       }
 
