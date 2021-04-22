@@ -13,7 +13,7 @@ game_status_data <- list()
   game_id <- 1
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
- # bot_data <- data.table(bot_name = c("relative_bot", "finish_rank_bot", "laimennus_bot"), TEAM_ID = c(1,2,3))
+ # bot_data <- data.table(bot_name = c("relative_bot", "laimennus_bot"), TEAM_ID = c(1,3))
   bot_data <- data.table(bot_name = c("laimennus_bot"), TEAM_ID = c(3))
  # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
@@ -30,7 +30,8 @@ game_status_data <- list()
     turn_game_status <- NULL
     deck_status_loop <- NULL
     deck_status_loop_before <- NULL
-    track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
+  #  track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
+    track <- sample(c(12,13,14,15,16,17),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
    # track <- 14
     #ijk map explanation: i = starting point, k = movement, j = ending slot
 
@@ -39,7 +40,7 @@ game_status_data <- list()
                                row_over_finish = numeric(), finish_square = numeric())
 
 
-    cycler_ids <- sample(c(1,2,3,4,5,6,7,8))
+    cycler_ids <- sample(c(1,2,3,4,5,6,7,8,9,10))
   #  cycler_ids <- sample(c(3,4))
   #  cycler_ids <- sample(c(3,4,5,6))
     total_cyclers <- length(cycler_ids)

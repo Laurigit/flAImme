@@ -47,7 +47,7 @@ laimennus_bot <- function(team_combinations_data_with_other_player_probs, deck_s
 
   scoring_data <- ss_exh[join_my_ttf, on = "CYCLER_ID"]#[TEAM_ID == bot_team_id]
   scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF * 0.15 * pmax(min_ttf - 5, 0.1),
-                       EXHAUST_SCORE = ((1 + MOVE_ORDER) / total_cyclers) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.2 * -0.125 / norm_card_share ^ (1 / 4),
+                       EXHAUST_SCORE = ((MOVE_ORDER) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.5 * -0.125 / norm_card_share ^ (1 / 4),
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
                        TTF_SCORE = (min_ttf - TURNS_TO_FINISH)  * 1 * norm_card_share ^ (1 / 2),
                        SOF_SCORE = SLOTS_OVER_FINISH  * 0.02 * norm_card_share ^ (1 / 2),
