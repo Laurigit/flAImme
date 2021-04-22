@@ -98,10 +98,10 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
 
 
       #estimate combinations
-      browser()
-      combs <- deck_status[Zone != "Removed", .N, .(CYCLER_ID, MOVEMENT)]
 
-      iteration_limit <- 10
+      combs <- deck_status[Zone != "Removed", .N, .(CYCLER_ID, MOVEMENT)][, .N]
+
+      iteration_limit <- max(min(50, ceiling(500 / combs)), 5)
       #gamma goes down first and then starts increasing. At which iteration, we are on bottom?
       bottom_iteration <- 4
       var_threshold <- 0.01
