@@ -13,7 +13,7 @@ game_status_data <- list()
   game_id <- 1
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
-  bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
+  bot_data <- data.table(bot_name = c("relative_bot", "laimennus_bot", "finish_rank_bot"), TEAM_ID = c(1, 2, 3))
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
 
