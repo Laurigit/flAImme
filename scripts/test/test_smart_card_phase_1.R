@@ -406,8 +406,7 @@ if (length(card_options_in_hand) == 1) {
 
   onlycalced <- join_track_left[!is.na(TURNS_TO_FINISH)]
 
-  rm(ADM_OPTIMAL_MOVES)
-  required_data("ADM_OPTIMAL_MOVES")
+
 
 
   #start creating KPIs

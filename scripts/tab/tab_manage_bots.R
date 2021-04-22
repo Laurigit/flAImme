@@ -49,8 +49,7 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
 
     slots_squares <- as.matrix(game_status()[, .(SQUARE_ID, GAME_SLOT_ID)])
     reverse_slots_squares <- slots_squares[nrow(slots_squares):1,]
-    rm("ADM_OPTIMAL_MOVES", envir = globalenv())
-    required_data("ADM_OPTIMAL_MOVES")
+
 
     combinations_output <- calc_combinations_data(con, game_status(), previous_deck,
                                                   pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = TRUE)
@@ -75,8 +74,7 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
 
 
       #for each bot
-      rm("ADM_OPTIMAL_MOVES", envir = globalenv())
-      required_data("ADM_OPTIMAL_MOVES")
+
   hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations,
                                                                      deck_status_now, team_id_input = bot_loop, pre_agg_no_list)
 
@@ -91,6 +89,7 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
 
   res <- do.call(myfunc, funcargs)
   print(res)
+  browser()
   moves <- EV_to_moves(res, deck_status_now)
   print(moves)
   first_cyc <-  moves[FIRST == 1, CYCLER_ID]

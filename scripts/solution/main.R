@@ -79,7 +79,7 @@ game_status_data <- list()
 
     }
       print(turn_id)
-    kesto <- difftime(Sys.time(), alotus)
+    kesto <- difftime(Sys.time(), alotus, units = c("secs"))
     print(kesto)
       in_game_cyclers <- game_status[order(-SQUARE_ID)][CYCLER_ID > 0, CYCLER_ID]
 

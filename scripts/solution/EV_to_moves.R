@@ -45,7 +45,7 @@ EV_to_moves <- function(EV_table, deck_status) {
 
   options <- deck_status[CYCLER_ID == first_selected_cycler & Zone == "Hand", .N, by = .(MOVEMENT)][, MOVEMENT]
   cards_in_hand <- EVs[CYCLER_ID == first_selected_cycler & MOVEMENT %in% options]
-
+browser()
   first_movement <- cards_in_hand[, MOVEMENT[which.max(WEIGHTED_EV)]]
   #convert exhaust if possible
   first_card_id <- deck_status[CYCLER_ID == first_selected_cycler & Zone == "Hand" & MOVEMENT == first_movement, min(CARD_ID)]

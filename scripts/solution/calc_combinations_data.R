@@ -12,7 +12,7 @@ deck_copied <- copy(deck_status)
 
 
  # sscols <- range[, .(TEAM_ID, CYCLER_ID, MOVEMENT)]
-  sscols <- deck_status[, .N, by = .(CYCLER_ID, MOVEMENT)][CYCLER_ID %in% cyclers][, N := NULL]
+  sscols <- deck_status[Zone != "Removed", .N, by = .(CYCLER_ID, MOVEMENT)][CYCLER_ID %in% cyclers][, N := NULL]
  # sscols[, TEAM_ID := 0]
 
   #sscols <- res_move[sscols_all, on = .(CYCLER_ID, MOVEMENT)][OPTION == TRUE | CYCLER_ID != moving_cycler]
@@ -97,8 +97,6 @@ join_track_left[, N := NULL]
 join_track_left[, DRAW_ODDS := ""]
 #join known results
 
-rm("ADM_OPTIMAL_MOVES", envir = globalenv())
-required_data("ADM_OPTIMAL_MOVES")
 
 join_known <- ADM_OPTIMAL_MOVES[join_track_left, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 join_known[, row_id_calc := NULL]

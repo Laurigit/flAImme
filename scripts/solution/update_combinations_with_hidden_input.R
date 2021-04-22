@@ -18,8 +18,7 @@ update_combinations_with_hidden_input <- function(combinations_data, deck_status
                      by = .(DECK_LEFT, TRACK_LEFT, NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT)]
 
 
-  rm(ADM_OPTIMAL_MOVES, envir = globalenv())
-  required_data("ADM_OPTIMAL_MOVES")
+
 
   aggregate_to_cases_after_calc_with_MOVEMENT <- aggregate_to_cases[, .N, by = .(DECK_LEFT, TRACK_LEFT, DRAW_ODDS, NEW_GAME_SLOT_ID, TEAM_ID, CYCLER_ID)]
   join_known_cases <- ADM_OPTIMAL_MOVES[aggregate_to_cases_after_calc_with_MOVEMENT, on = .(DECK_LEFT, TRACK_LEFT, DRAW_ODDS)]

@@ -3,7 +3,7 @@
 select_smart_card_phase_1 <- function(game_status, deck_status, smart_cyclers, pre_track, ctM_res, range, first_cycler, second_cycler, team_id,
                                       smart_card_options) {
 con <- connDB(con, dbname_input = "flaimme")
-rm("ADM_OPTIMAL_MOVES")
+
 required_data(c("STG_TRACK", "STG_TRACK_PIECE", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES"))
 required_data("ADM_AI_CONF")
 #track <- 2
@@ -132,8 +132,6 @@ join_track_left[!is.na(TRACK_LEFT), TURNS_TO_FINISH := as.double(finish_turns_db
 
 onlycalced <- join_track_left[!is.na(TURNS_TO_FINISH)]
 
-rm(ADM_OPTIMAL_MOVES)
-required_data("ADM_OPTIMAL_MOVES")
 
 
 #start creating KPIs
