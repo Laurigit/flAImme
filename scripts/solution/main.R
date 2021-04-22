@@ -40,7 +40,7 @@ game_status_data <- list()
                                row_over_finish = numeric(), finish_square = numeric())
 
 
-    cycler_ids <- sample(c(1,2,3,4,5,6,7,8,9,10))
+    cycler_ids <- sample(c(1,2,3,4,5,6,7,8))
   #  cycler_ids <- sample(c(3,4))
   #  cycler_ids <- sample(c(3,4,5,6))
     total_cyclers <- length(cycler_ids)
@@ -128,8 +128,9 @@ game_status_data <- list()
             calc_ttf_input_all <- ifelse(turn_id >= 8, 0, turn_id)
            # calc_ttf_input <- ifelse(turn_id >= 5, 0, turn_id)
             pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
+            input_case_count <- 8000 / length(in_game_cyclers)
             combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
-                                                          pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all, case_count = 1000)
+                                                          pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all, case_count = input_case_count)
             MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, turn_start_deck)
 
             ss_for_picture <- MIXED_STRATEGY$combinations[, .(FINISH_ESTIMATE_MEAN , CYCLER_ID, PROB_PRODUCT, case_id, NEW_GAME_SLOT_ID, CASE_PROB )]
