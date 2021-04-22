@@ -16,16 +16,16 @@ shinyServer(function(input, output, session) {
 
 
 
-  #tour_info_data <-  my_reactivePoll(session, "TOURNAMENT_RESULT", "SELECT * FROM TOURNAMENT", 1000, con)
- tournament_data_reactive <- my_reactivePoll(session, "TOURNAMENT_RESULT", "SELECT * FROM TOURNAMENT_RESULT", 2000, con)
- tournament <- my_reactivePoll(session, "TOURNAMENT", "SELECT * FROM TOURNAMENT", 2000, con)
- breakaway_bet_data <- my_reactivePoll(session, "BREAKAWAY_BET", "SELECT * FROM BREAKAWAY_BET", 3000, con)
+  #tour_info_data <-  my_reactivePoll(session, "TOURNAMENT_RESULT", "SELECT * FROM TOURNAMENT", 1000, con))
+ tournament_data_reactive <- suppressWarnings(my_reactivePoll(session, "TOURNAMENT_RESULT", "SELECT * FROM TOURNAMENT_RESULT", 1000, con))
+ tournament <- suppressWarnings(my_reactivePoll(session, "TOURNAMENT", "SELECT * FROM TOURNAMENT", 1000, con))
+ breakaway_bet_data <- suppressWarnings(my_reactivePoll(session, "BREAKAWAY_BET", "SELECT * FROM BREAKAWAY_BET", 1000, con))
 
- breakaway_bet_cards_data <- my_reactivePoll(session, "BREAKAWAY_BET_CARDS", "SELECT * FROM BREAKAWAY_BET_CARDS", 2000, con)
+ breakaway_bet_cards_data <- suppressWarnings(my_reactivePoll(session, "BREAKAWAY_BET_CARDS", "SELECT * FROM BREAKAWAY_BET_CARDS", 2000, con))
 
-move_fact_data_all  <- my_reactivePoll(session, "MOVE_FACT", "SELECT * from MOVE_FACT", 1000, con)
+move_fact_data_all  <- suppressWarnings(my_reactivePoll(session, "MOVE_FACT", "SELECT * from MOVE_FACT", 1000, con))
 
-command_data <-  my_reactivePoll(session, "CLIENT_COMMANDS", "SELECT * from CLIENT_COMMANDS", 1000, con)
+command_data <-  suppressWarnings(my_reactivePoll(session, "CLIENT_COMMANDS", "SELECT * from CLIENT_COMMANDS", 1000, con))
 
 
 #game_data <-  my_reactivePoll(session, "GAME", paste0('SELECT sum(CYCLER_ID) FROM GAME'), timeout = 1000, con)

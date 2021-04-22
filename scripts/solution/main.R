@@ -1,6 +1,5 @@
   # required_data(c("STG_CYCLER", "STG_TRACK"))
 #AWS docker IMAGE PITÄÄ REBUILDAA, ETTÄ TOIMII PILVESSÄ.
-
 source("global.R")
 #kaadu
 con <- connDB(con, "flaimme")
@@ -14,7 +13,7 @@ game_status_data <- list()
   game_id <- 1
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
-  bot_data <- data.table(bot_name = c("relative_bot", "finish_rank_bot"), TEAM_ID = c(1, 2))
+  bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
 
@@ -28,7 +27,8 @@ game_status_data <- list()
     turn_game_status <- NULL
     deck_status_loop <- NULL
     deck_status_loop_before <- NULL
-    track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
+   # track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
+    track <- 42
     #ijk map explanation: i = starting point, k = movement, j = ending slot
 
 
@@ -36,7 +36,7 @@ game_status_data <- list()
                                row_over_finish = numeric(), finish_square = numeric())
 
 
-    cycler_ids <- sample(c(1,2,3,4,5,6,7,8))
+    cycler_ids <- sample(c(1,2,3,4))
   #  cycler_ids <- sample(c(3,4))
   #  cycler_ids <- sample(c(3,4,5,6))
     total_cyclers <- length(cycler_ids)
@@ -75,9 +75,12 @@ game_status_data <- list()
       ctM_data <- NULL
     }
     turn_id <- 1
+    alotus <- Sys.time()
 
     }
-
+      print(turn_id)
+    kesto <- difftime(Sys.time(), alotus)
+    print(kesto)
       in_game_cyclers <- game_status[order(-SQUARE_ID)][CYCLER_ID > 0, CYCLER_ID]
 
 
@@ -193,7 +196,7 @@ game_status_data <- list()
 
               if (bot_loop == 1) {
               #  browser()
-                print(res[1:5][draw_odds_C1 > 0 & draw_odds_C2 > 0])
+                print(res[1:10])#[draw_odds_C1 > 0 & draw_odds_C2 > 0])
                 print(deck_status[CYCLER_ID %in% c(1,2) & Zone == "Hand", .N, by = .(CYCLER_ID, MOVEMENT)][order(CYCLER_ID, MOVEMENT)])
 
                 print(zoom(game_status))

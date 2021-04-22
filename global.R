@@ -26,12 +26,13 @@ library(ompr.roi)
 library(testthat)
 library(Rcpp)
 library(ggplot2)
+#options(shiny.trace=TRUE)
 
 
-options(shiny.trace=FALSE)
+options(shiny.fullstacktrace = TRUE)
 options(traceback.max.lines = 10)
 options(deparse.max.lines = 10)
-options(digits=3)
+options(digits=4)
 sourcelist <- data.table(polku = c(dir("./scripts/", recursive = TRUE)))
 sourcelist[, rivi := seq_len(.N)]
 sourcelist[, kansio := strsplit(polku, split = "/")[[1]][1], by = rivi]

@@ -46,6 +46,8 @@ observe({
 
 
       cycler_ids <- new_game_found[GAME_ID == srv$game_id & TOURNAMENT_NM == tour_name][order(START_POSITION), CYCLER_ID]
+
+
       #create decks
 
       deck_status <- create_decks(cycler_ids, ADM_CYCLER_DECK)
@@ -58,7 +60,7 @@ observe({
 
         #update to db too
         for (ex_loop in exh_add_amount[, CYCLER_ID]) {
-          dbQ(paste0('UPDATE TOURNAMENT_RESULT SET STARTING_EXHAUST = ', exh_add_amount[CYCLER_ID == ex_loop, EXHAUST_LEFT],
+          dbQ(paste0('UPDATE TOURNAMENT_RESULT SET STARTING_EXHAUST = ', exh_add_amount[CYCLER_ID == ex_loop, ceiling(EXHAUST_LEFT / 2)],
                      ' WHERE GAME_ID = ', srv$game_id, ' AND CYCLER_ID = ', ex_loop), con)
         }
       }
@@ -144,7 +146,7 @@ observe({
                             ' AND TOURNAMENT_NM = "', input$join_tournament, '"'), con)
 
   for (hand_loop in hand_numbers) {
-    browser()
+
     for (cycler_loop in cycler_ids) {
       deck_status <- draw_cards(cycler_loop, deck_status, 4)
     }
@@ -191,9 +193,6 @@ req(input$join_tournament)
   con <- connDB(con, "flaimme")
   dbQ(paste0('DELETE FROM BREAKAWAY_BET_CARDS WHERE TOURNAMENT_NM = "', input$join_tournament, '"'), con)
 
-
-
-    joinai <- tournament_result[TOURNAMENT_NM == input$join_tournament & LANE == -1, .N, by = .(GAME_ID, TOURNAMENT_NM)]
 
 
 

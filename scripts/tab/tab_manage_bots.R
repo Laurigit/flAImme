@@ -85,7 +85,7 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
   bot_config <- NA
   funcargs <- list(hidden_information_output, deck_status_now,
                    bot_config, bot_loop, pre_agg_no_list)
-  myfunc <- "finish_rank_bot"
+  myfunc <- "relative_bot"
   # debug <- finish_rank_bot(hidden_information_output, deck_status_now,
   #                          bot_config, bot_loop, pre_agg_no_list)
 
@@ -147,6 +147,150 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
   }
 
   })
+observe({
+
+  req( input$join_tournament)
+  req( srv$game_id)
+  ba_card_data <- breakaway_bet_cards_data()[TOURNAMENT_NM ==  input$join_tournament]
+
+
+  any_bots <- tournament()[PLAYER_TYPE == "AI" & TOURNAMENT_NM == input$join_tournament]
+  bots_teams <- any_bots[, TEAM_ID]
+
+  if (length(bots_teams) > 0) {
+  #if we have rows here, we are middle of ba bet
+  if (nrow(ba_card_data) > 0) {
+
+    ba_data <-  breakaway_bet_data()[GAME_ID == srv$game_id & TOURNAMENT_NM ==  input$join_tournament]
+    for (bot_loop in any_bots[, TEAM_ID]) {
+    # do I need to bet?
+
+      my_cyclers  <- ADM_CYCLER_INFO[TEAM_ID == bot_loop, CYCLER_ID]
+      #have I selected a cycler?
+      selected_bot <- ba_data[CYCLER_ID %in% my_cyclers]
+      #if I have one row, then I have. If 0, then I need to select
+      gs <- game_status_simple()[GAME_ID == srv$game_id & TURN_ID == -1 & CYCLER_ID %in% my_cyclers]
+      if (nrow(selected_bot) == 0) {
+        #now selected cycler. Take the one of has worst grid position
+
+        worst_cycler <- gs[which.min(SQUARE_ID), CYCLER_ID]
+        ins_row <- data.table(TOURNAMENT_NM = input$join_tournament,
+                              TEAM_ID = bot_loop,
+                              CYCLER_ID = worst_cycler,
+                              GAME_ID = srv$game_id,
+                              FIRST_BET = 0,
+                              SECOND_BET = 0)
+
+
+        con <- connDB(con, "flaimme")
+        dbIns("BREAKAWAY_BET",
+              ins_row,
+              con)
+
+
+        # I can straight away continue by selecting the card
+        #I have not selected first card. Do it now
+        #I would end up in slot 10. what is my current slot?
+        me_cycler <- worst_cycler
+        curr_slot <- ceiling(gs[CYCLER_ID == me_cycler, SQUARE_ID] / 2)
+        #aim to bet difference + 1. Read meta too
+
+        meta_data <-  breakaway_bet_data()[GAME_ID != srv$game_id & TOURNAMENT_NM ==  input$join_tournament]
+        meta_data[, TOT_BET := FIRST_BET +  SECOND_BET]
+        setorder(meta_data, TOT_BET)
+        meta_second <- meta_data[, .SD[2], GAME_ID]
+        mean_2nd_winner <- meta_second[, mean(TOT_BET)]
+
+        target <- 10 - curr_slot +  1
+        if (is.nan(mean_2nd_winner)) {
+          mean_2nd_winner <- target
+        }
+        #offer based on meta, but within +-1 of target
+        meta_target <- max(min(mean_2nd_winner, target + 1), target - 1)
+        options <- ba_card_data[CYCLER_ID == me_cycler & HAND_NUMBER == 1]
+        target_first_card <- meta_target / 2
+        options[, diff_to_target := abs(target_first_card - CARD_ID + 0.1)]
+        #read meta
+        selected_card <- options[which.min(diff_to_target), .(CARD_ID)][, .N, by = CARD_ID][, CARD_ID]
+
+
+        dbQ(paste0('UPDATE BREAKAWAY_BET
+             SET FIRST_BET = ', selected_card,
+                   ' WHERE GAME_ID = ', srv$game_id, ' AND TEAM_ID = ', bot_loop, ' AND TOURNAMENT_NM = "', input$join_tournament, '"'), con)
+
+      }
+
+      if (nrow(selected_bot) == 1) {
+        #have I selected first card?
+        if (selected_bot[, FIRST_BET] > 0) {
+          #yes I have. Have everyone else?
+          #have everyone selected their bettor?
+          count_bettors <- ba_data[, .N]
+          count_all_cyclers <- game_status_simple()[GAME_ID == srv$game_id & TURN_ID == -1, .N]
+          #one cycler per team
+          if (count_bettors == count_all_cyclers / 2) {
+            #everyone have selected. Now check if everyone have selceted first bet
+            count_missing_bet <- ba_data[FIRST_BET == 0, .N]
+            if (count_missing_bet == 0) {
+
+              #all have bet first, we can bet second
+              me_cycler <- selected_bot[, CYCLER_ID]
+              curr_slot <- ceiling(gs[CYCLER_ID == me_cycler, SQUARE_ID] / 2)
+              my_first_bet <- selected_bot[, FIRST_BET]
+              #aim to bet difference + 1. Read meta too
+
+              meta_data <-  breakaway_bet_data()[GAME_ID != srv$game_id & TOURNAMENT_NM ==  input$join_tournament]
+              meta_data[, TOT_BET := FIRST_BET +  SECOND_BET]
+              setorder(meta_data, TOT_BET)
+              meta_second <- meta_data[, .SD[2], GAME_ID]
+              mean_2nd_winner <- meta_second[, mean(TOT_BET)]
+
+              target <- 10 - curr_slot +  1
+              if (is.nan(mean_2nd_winner)) {
+                mean_2nd_winner <- target
+              }
+              #offer based on meta, but within +-1 of target
+              meta_target <- max(min(mean_2nd_winner, target + 1), target - 1)
+              options <- ba_card_data[CYCLER_ID == me_cycler & HAND_NUMBER == 1]
+              target_second_card <- meta_target - my_first_bet
+              options[, diff_to_target := abs(target_second_card - CARD_ID + 0.1)]
+              #read meta
+              selected_card <- options[which.min(diff_to_target), .(CARD_ID)][, .N, by = CARD_ID][, CARD_ID]
+              con <- connDB(con, "flaimme")
+
+              dbQ(paste0('UPDATE BREAKAWAY_BET
+             SET SECOND_BET = ', selected_card,
+                         ' WHERE GAME_ID = ', srv$game_id, ' AND TEAM_ID = ', bot_loop, ' AND TOURNAMENT_NM = "', input$join_tournament, '"'), con)
+
+            }
+          }
+        }
+
+      }
+
+    }
+  }
+  }
+
+
+
+
+
+
+
+
+  # what cards I have?
+  #what is my start position?
+  #which cycler I bet?
+  #which card bet?
+  #read what others bet
+  #choose other card
+
+
+
+
+})
+
 #read cards and gamestate
 
 #send info to correct bot

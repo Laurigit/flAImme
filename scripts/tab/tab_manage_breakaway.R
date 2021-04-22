@@ -1,5 +1,6 @@
 #tab_manage_breakaway
 
+
 observe({
 #THIS ONE MONITORS IF WE HAVE FINISHED BREAKAWAY BETTING
 req(srv$gs_simple)
@@ -101,6 +102,7 @@ if (nrow(new_game_found) > 0) {
                                con = NULL,
                                force = TRUE)
       #exh
+
       deck_status <-  add_exhaustion(winner_loop, deck_status, "Deck")
       deck_status <- add_exhaustion(winner_loop, deck_status, "Deck")
     }
@@ -109,7 +111,7 @@ if (nrow(new_game_found) > 0) {
                         TOURNAMENT_NM = tour_name,
                         TURN_ID = 0,
                         HAND_OPTIONS = 0)]
-    browser()
+
     dbWriteTable(con, "DECK_STATUS", info_joined, append = TRUE, row.names = FALSE)
     dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
 
