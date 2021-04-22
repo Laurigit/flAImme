@@ -89,7 +89,7 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
 
   res <- do.call(myfunc, funcargs)
   print(res)
-  browser()
+
   moves <- EV_to_moves(res, deck_status_now)
   print(moves)
   first_cyc <-  moves[FIRST == 1, CYCLER_ID]

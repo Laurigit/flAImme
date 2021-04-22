@@ -45,7 +45,7 @@ EV_to_moves <- function(EV_table, deck_status) {
 
   options <- deck_status[CYCLER_ID == first_selected_cycler & Zone == "Hand", .N, by = .(MOVEMENT)][, MOVEMENT]
   cards_in_hand <- EVs[CYCLER_ID == first_selected_cycler & MOVEMENT %in% options]
-browser()
+
   first_movement <- cards_in_hand[, MOVEMENT[which.max(WEIGHTED_EV)]]
   #convert exhaust if possible
   first_card_id <- deck_status[CYCLER_ID == first_selected_cycler & Zone == "Hand" & MOVEMENT == first_movement, min(CARD_ID)]
@@ -54,6 +54,7 @@ browser()
   #still playing?
   #  second_cycler <- intersect(cycler_ids, second_cycler_in_team)
   if (nrow(second_cycler_in_team) == 1) {
+
     second_cycler <- second_cycler_in_team[, CYCLER_ID]
     # card_id_2nd  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == second_cycler & Zone == "Hand"], second_cycler, "SMART_MAX",  aim_downhill = TRUE)[, CARD_ID]
     options <- deck_status[CYCLER_ID == second_cycler & Zone == "Hand", .N, by = MOVEMENT][, MOVEMENT]
@@ -75,10 +76,10 @@ browser()
     options <- deck_status[CYCLER_ID == cycler & Zone == "Hand", .N, by = .(MOVEMENT)][, MOVEMENT]
 
 
-    card <- check_res2[MOVES  %in% options][which.max(EV), M1]
-
+    card_movement <- check_res2[MOVES  %in% options][which.max(EV), M1]
+    card_id <- deck_status[CYCLER_ID == cycler & Zone == "Hand" & MOVEMENT == card_movement, min(CARD_ID)]
     result <- data.table(FIRST = TRUE, CYCLER_ID = cycler,
-                         CARD_ID = card)
+                         CARD_ID = card_id)
   }
 return(result)
 
