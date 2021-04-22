@@ -36,7 +36,7 @@ game_status_data <- list()
                                row_over_finish = numeric(), finish_square = numeric())
 
 
-    cycler_ids <- sample(c(1,2,3,4,5,6,7,8,9,10))
+    cycler_ids <- sample(c(1,2,3,4,5,6,7,8))
   #  cycler_ids <- sample(c(3,4))
   #  cycler_ids <- sample(c(3,4,5,6))
     total_cyclers <- length(cycler_ids)
