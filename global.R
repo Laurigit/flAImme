@@ -29,7 +29,7 @@ library(ggplot2)
 #options(shiny.trace=TRUE)
 
 
-options(shiny.fullstacktrace = TRUE)
+#options(shiny.fullstacktrace = TRUE)
 options(traceback.max.lines = 10)
 options(deparse.max.lines = 10)
 options(digits=4)

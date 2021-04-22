@@ -41,7 +41,7 @@ observe({
     #game state is behind one turn
 
     move_order_cyclers <- srv$gs_simple[order(-SQUARE_ID), CYCLER_ID]
-browser()
+
     for (loop_cycler in move_order_cyclers) {
       card_id_played <- action_data[CYCLER_ID == loop_cycler, CARD_ID]
       movement <- ifelse(card_id_played == 1, 2, card_id_played)

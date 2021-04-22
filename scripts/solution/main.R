@@ -28,7 +28,7 @@ game_status_data <- list()
     deck_status_loop <- NULL
     deck_status_loop_before <- NULL
    # track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
-    track <- 42
+    track <- 14
     #ijk map explanation: i = starting point, k = movement, j = ending slot
 
 
@@ -36,7 +36,7 @@ game_status_data <- list()
                                row_over_finish = numeric(), finish_square = numeric())
 
 
-    cycler_ids <- sample(c(1,2,3,4))
+    cycler_ids <- sample(c(1,2,3,4,5,6,7,8,9,10))
   #  cycler_ids <- sample(c(3,4))
   #  cycler_ids <- sample(c(3,4,5,6))
     total_cyclers <- length(cycler_ids)

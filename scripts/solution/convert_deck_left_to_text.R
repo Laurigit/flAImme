@@ -1,4 +1,4 @@
-convert_deck_left_to_text <- function(deck_status, cycler_id, played_card = FALSE) {
+convert_deck_left_to_text <- function(deck_status, cycler_id, played_card = FALSE, trunc = FALSE) {
 
 if (played_card == FALSE) {
   copy_deck <- copy(deck_status)
@@ -9,6 +9,15 @@ if (played_card == FALSE) {
   copy_deck <- copy_deck[row_id != remove_row_id]
 
 }
-  deck_left <- copy_deck[order(-MOVEMENT)][CYCLER_ID == cycler_id & Zone != "Removed", paste0(MOVEMENT, collapse = "")]
+  #remove extra 2 from the deck
+
+  if (trunc == TRUE) {
+    sorted_deck <- copy_deck[order(CYCLER_ID, MOVEMENT)]
+    sorted_deck[, nth_card := seq_len(.N), by = .(CYCLER_ID, MOVEMENT)]
+    filtered_deck <- sorted_deck[nth_card <= 3]
+  } else {
+    filtered_deck <- copy_deck
+  }
+  deck_left <- filtered_deck[order(-MOVEMENT)][CYCLER_ID == cycler_id & Zone != "Removed", paste0(MOVEMENT, collapse = "")]
   return(deck_left)
 }

@@ -35,8 +35,6 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
       #join_track_left[, all_moves := list((list(MOVEMENT))), by = case_id]
       #join_track_left[,  opponent_moves := create_other_moves(all_moves, CYCLER_ID), by = .(case_id, TEAM_ID)]
 
-      #join_track_left[, ODDS_OF_DRAWING_MOVEMENT2 := calculate_odds_of_drawing_card(ORIG_DECK_LEFT, MOVEMENT)]
-     # join_track_left[, ODDS_OF_DRAWING_MOVEMENT := calculate_odds_of_drawing_card(ORIG_DECK_LEFT, MOVEMENT), by = .(ORIG_DECK_LEFT, MOVEMENT)]
 
 
      # join_track_left[, MIX_STRATEGY_CAP := prod(ODDS_OF_DRAWING_MOVEMENT), by = .(case_id, TEAM_ID)]
@@ -99,7 +97,9 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
       #calculate combined mix_strat_cap
 
 
-
+      #estimate combinations
+      browser()
+      combs <- deck_status[Zone != "Removed", .N, .(CYCLER_ID, MOVEMENT)]
 
       iteration_limit <- 10
       #gamma goes down first and then starts increasing. At which iteration, we are on bottom?

@@ -82,7 +82,7 @@ deck_copied <- copy(deck_status)
   new_positions_by_cycler[, row_id_calc := seq_len(.N)]
 
   new_positions_by_cycler[, DECK_LEFT := convert_deck_left_to_text(deck_copied,
-                                                           CYCLER_ID, MOVEMENT),
+                                                           CYCLER_ID, MOVEMENT, trunc = TRUE),
                   by = .(row_id_calc)]
 
   #join team_id
