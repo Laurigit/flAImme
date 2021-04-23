@@ -14,7 +14,7 @@ game_status_data <- list()
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
  # bot_data <- data.table(bot_name = c("relative_bot", "laimennus_bot"), TEAM_ID = c(1,3))
-  bot_data <- data.table(bot_name = c("laimennus_bot"), TEAM_ID = c(3))
+  bot_data <- data.table(bot_name = c("ruler_bot"), TEAM_ID = c(3))
  # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
@@ -40,7 +40,7 @@ game_status_data <- list()
                                row_over_finish = numeric(), finish_square = numeric())
 
 
-    cycler_ids <- sample(c(1,2,3,4,5,6,7,8))
+    cycler_ids <- sample(c(1,2,3,4,5,6,7,8,9,10))
   #  cycler_ids <- sample(c(3,4))
   #  cycler_ids <- sample(c(3,4,5,6))
     total_cyclers <- length(cycler_ids)
@@ -129,7 +129,7 @@ game_status_data <- list()
             calc_ttf_input_all <- ifelse(turn_id >= 8, 0, turn_id)
            # calc_ttf_input <- ifelse(turn_id >= 5, 0, turn_id)
             pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
-            input_case_count <- 8000 / length(in_game_cyclers)
+            input_case_count <- 5000 / length(in_game_cyclers)
             print(nrow(ADM_OPTIMAL_MOVES))
             combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
                                                           pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all, case_count = input_case_count)
