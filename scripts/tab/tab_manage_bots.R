@@ -50,7 +50,7 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
     slots_squares <- as.matrix(game_status()[, .(SQUARE_ID, GAME_SLOT_ID)])
     reverse_slots_squares <- slots_squares[nrow(slots_squares):1,]
 
-    calc_ttf_input_all <- ifelse(turn_id >= 5, 0, turn_id)
+    calc_ttf_input_all <- ifelse(srv$turn_id >= 5, 0, srv$turn_id)
     combinations_output <- calc_combinations_data(con, game_status(), previous_deck,
                                                   pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all)
 
