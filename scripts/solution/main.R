@@ -14,7 +14,7 @@ game_status_data <- list()
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
  # bot_data <- data.table(bot_name = c("relative_bot", "laimennus_bot"), TEAM_ID = c(1,3))
-  bot_data <- data.table(bot_name = c("ruler_bot"), TEAM_ID = c(3))
+  bot_data <- data.table(bot_name = c("ruler_bot", "laimennus_bot"), TEAM_ID = c(1, 2))
  # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
@@ -40,7 +40,7 @@ game_status_data <- list()
                                row_over_finish = numeric(), finish_square = numeric())
 
 
-    cycler_ids <- sample(c(1,2,3,4,5,6,7,8,9,10))
+    cycler_ids <- sample(c(1,2,3,4,5,6,7,8))
   #  cycler_ids <- sample(c(3,4))
   #  cycler_ids <- sample(c(3,4,5,6))
     total_cyclers <- length(cycler_ids)

@@ -84,7 +84,7 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
   bot_config <- NA
   funcargs <- list(hidden_information_output, deck_status_now,
                    bot_config, bot_loop, pre_agg_no_list)
-  myfunc <- "laimennus_bot"
+  myfunc <- "ruler_bot"
   # debug <- finish_rank_bot(hidden_information_output, deck_status_now,
   #                          bot_config, bot_loop, pre_agg_no_list)
 
