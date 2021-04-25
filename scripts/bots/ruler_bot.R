@@ -60,7 +60,7 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                        MOVE_ORDER_SCORE = - MOVE_ORDER * 0.015 * (17 - min_ttf) - MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
                        OVER_FINISH_SCORE = OVER_FINISH * 100,
-                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf) + SLOTS_PROGRESSED * 0.002 * (16 - min_ttf) * IS_ROULER)]
+                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.01 * (25 - min_ttf) + SLOTS_PROGRESSED * 0.02 * (16 - min_ttf) * IS_ROULER)]
 
   scoring_data[, TOT_SCORE_MINE := (MOVE_DIFF_SCORE +
                                       EXHAUST_SCORE +
