@@ -25,7 +25,7 @@ bots_teams <- any_bots[, TEAM_ID]
 
 #montako movia pitäisi pelata tällä vuorolla?
 all_bot_cyclers   <- ADM_CYCLER_INFO[TEAM_ID %in% bots_teams, CYCLER_ID]
-how_manyneeded_total <-  srv$gs_simple[CYCLER_ID %in% all_bot_cyclers, .N]
+how_manyneeded_total <-  srv$gs_simple[TURN_ID >= 1 & CYCLER_ID %in% all_bot_cyclers, .N]
 #montako pelattu?
 mf_local_all_turns <- move_fact_data()[TOURNAMENT_NM == input$join_tournament]
 mf_local <-  mf_local_all_turns[TURN_ID ==   srv$turn_id & TEAM_ID %in% bots_teams]
