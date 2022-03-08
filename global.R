@@ -26,6 +26,9 @@ library(ompr.roi)
 library(testthat)
 library(Rcpp)
 library(ggplot2)
+library(doParallel)
+library(foreach)
+global_cores <- detectCores() - 1
 #options(shiny.trace=TRUE)
 
 

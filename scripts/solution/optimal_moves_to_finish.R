@@ -6,6 +6,9 @@
 optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_data, use_draw_odds = FALSE) {
 
 
+
+
+
 trRes <- tryCatch({
 
     #cut track
@@ -44,6 +47,9 @@ kortit_Dt <- data.table(MOVEMENT = as.numeric(str_split(cycler_deck_status[[1]][
 if (length(finish_slot) == 0 ) {
   finish_slot <- 0
 }
+
+
+
 
 if (finish_slot <= 3) {
   min_move <- aggr_to_slots[GAME_SLOT_ID == calc_from_slot, max(MINIMUM_MOVEMENT)]

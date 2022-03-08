@@ -13,8 +13,8 @@ game_status_data <- list()
   game_id <- 1
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
- # bot_data <- data.table(bot_name = c("relative_bot", "laimennus_bot"), TEAM_ID = c(1,3))
-  bot_data <- data.table(bot_name = c("ruler_bot", "laimennus_bot"), TEAM_ID = c(1, 2))
+  bot_data <- data.table(bot_name = c("next_turn_botti", "laimennus_bot", "ruler_bot"), TEAM_ID = c(1,2,3))
+  #bot_data <- data.table(bot_name = c("ruler_bot"), TEAM_ID = c(1))
  # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
@@ -24,7 +24,8 @@ game_status_data <- list()
    # cycler_ids <- c(7, 4, 5, 6, 8, 1, 3, 2)
    # cycler_ids <- c(5, 6, 1, 2)
     turn_id <- 0
-
+    tot_moni <- NULL
+    monitor <- NULL
     repeat {
     if (turn_id == 0) {
     turn_game_status <- NULL
@@ -126,10 +127,11 @@ game_status_data <- list()
           bots_left_total <- intersect(bots, in_game_cyclers)
           #any bots left?
           if (length(bots_left_total) > 0) {
-            calc_ttf_input_all <- ifelse(turn_id >= 8, 0, turn_id)
+        #    calc_ttf_input_all <- ifelse(turn_id >= 8, 0, turn_id)
+            calc_ttf_input_all <- 0
            # calc_ttf_input <- ifelse(turn_id >= 5, 0, turn_id)
             pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
-            input_case_count <- 5000 / length(in_game_cyclers)
+            input_case_count <- round(5000 / length(in_game_cyclers) / (pmax(5 - turn_id, 1)))
             print(nrow(ADM_OPTIMAL_MOVES))
             combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
                                                           pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all, case_count = input_case_count)
@@ -170,13 +172,18 @@ game_status_data <- list()
               hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations, turn_start_deck,
                                                                                  team_id_input = bot_loop, pre_agg_no_list, calc_ttf = turn_id)
 
+              if (bot_loop == 1) {
+                hidden_information_output <- add_next_move_calc(hidden_information_output, matr_ijk, reverse_slots_squares, slip_map_matrix,
+                                                     pre_agg_no_list, STG_CYCLER, my_team = bot_loop)
+              }
+
               bot_name <- bot_data[TEAM_ID == bot_loop, bot_name]
               bot_config <- NA
 
               funcargs <- list(hidden_information_output, deck_status,
                                bot_config, bot_loop, pre_agg_no_list)
-            #  res_debug <- ttf_bot(hidden_information_output, deck_status,
-                        #           bot_config, bot_loop)
+             # res_debug <- next_turn_botti(next_move_data, deck_status,
+             #          bot_config, bot_loop, pre_agg_no_list)
               myfunc <- bot_name
               res <- do.call(myfunc, funcargs)
 
@@ -210,10 +217,10 @@ game_status_data <- list()
                 #  scalued <- check_res2[ ,.(MOVES, EV = round(EV - max(EV), 2),
               moves <- EV_to_moves(res, deck_status)
 
-              if (bot_loop == 3) {
+              if (bot_loop == 1) {
               #  browser()
                 print(res[1:10])#[draw_odds_C1 > 0 & draw_odds_C2 > 0])
-                print(deck_status[CYCLER_ID %in% c(5,6) & Zone == "Hand", .N, by = .(CYCLER_ID, MOVEMENT)][order(CYCLER_ID, MOVEMENT)])
+                print(deck_status[CYCLER_ID %in% c(1,2) & Zone == "Hand", .N, by = .(CYCLER_ID, MOVEMENT)][order(CYCLER_ID, MOVEMENT)])
 
                 print(zoom(game_status))
                 print(moves[order(CYCLER_ID)])
@@ -229,7 +236,17 @@ game_status_data <- list()
 
           }
 
+          monitor[, TURN_ID := turn_id]
+tot_moni <- rbind(tot_moni, monitor)
+max_non_over_finish <- tot_moni[variable != "OVER_FINISH_SCORE", max(value)]
 
+  print(ggplot(data=tot_moni, aes(x=TURN_ID, y=value, group=variable))+
+          geom_line(linetype="dashed", color="blue", size=1.2) +
+           geom_line(size=1.5, aes(linetype = "solid", color=as.factor(variable)))+
+#           geom_point(size = 3, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
+#            scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
+           xlim(1, turn_id) + ylim(0, max_non_over_finish)) + scale_x_continuous(limits = c(0, turn_id), breaks = seq(0, turn_id, by = 1))
+#
 
          # print(deck_status[CYCLER_ID == 1 & Zone != "Removed"][order(Zone, MOVEMENT)])
 
@@ -325,7 +342,7 @@ game_status_data <- list()
       #played_cards_data[TURN_ID == revert_turn, CARD_ID := NA]
 
       turn_id <- turn_id + 1
-      #print(zoom(game_status))
+      print(zoom(game_status))
     }
 
     game_status_data[[game_id]] <- turn_game_status

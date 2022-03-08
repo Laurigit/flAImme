@@ -88,8 +88,8 @@ deck_copied <- copy(deck_status)
   pos_with_team <- STG_CYCLER[, .(CYCLER_ID, TEAM_ID)][new_positions_by_cycler, on = "CYCLER_ID"]
 
 
-
-ss_track_left <- pre_aggr_game_status_no_list[, .(NEW_GAME_SLOT_ID = GAME_SLOT_ID, TRACK_LEFT)]
+copy_pre <- copy(pre_aggr_game_status_no_list)
+ss_track_left <- copy_pre[, .(NEW_GAME_SLOT_ID = GAME_SLOT_ID, TRACK_LEFT)]
 join_track_left <- ss_track_left[pos_with_team, on = .(NEW_GAME_SLOT_ID)]
 join_track_left[, N := NULL]
 #no draw odds in public information
@@ -99,10 +99,17 @@ join_track_left[, DRAW_ODDS := ""]
 if (calc_ttf == 0) {
 join_known <- ADM_OPTIMAL_MOVES[join_track_left, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 join_known[, row_id_calc := NULL]
+browser()
+added_ttf <- add_ttf_multicore(con, join_known[is.na(TURNS_TO_FINISH)], pre_aggr_game_status_no_list)
+print(added_ttf)
+#browser()
 
-join_known[is.na(TURNS_TO_FINISH), c("TURNS_TO_FINISH", "SLOTS_OVER_FINISH", "NEXT_MOVE") := (finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_aggr_game_status_no_list, NEW_GAME_SLOT_ID,
-                                                                                   draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)),
-                  by = .(NEW_GAME_SLOT_ID, TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
+join_known <- update_dt_values(join_known, added_ttf, c("DRAW_ODDS", "TRACK_LEFT", "DECK_LEFT"),
+                 c("TURNS_TO_FINISH", "SLOTS_OVER_FINISH", "NEXT_MOVE"))
+# join_known[is.na(TURNS_TO_FINISH), c("TURNS_TO_FINISH", "SLOTS_OVER_FINISH", "NEXT_MOVE")
+#            := (finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_aggr_game_status_no_list, NEW_GAME_SLOT_ID,
+#                                                                                    draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE)),
+#                   by = .(NEW_GAME_SLOT_ID, TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 } else {
 
   join_known <- join_track_left

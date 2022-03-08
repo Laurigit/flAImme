@@ -1,5 +1,5 @@
-ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
-                         bot_config, bot_team_id, pre_aggr_game_status_input = NULL) {
+next_turn_botti <- function(team_combinations_data_with_other_player_probs, deck_status,
+                      bot_config, bot_team_id, pre_aggr_game_status_input = NULL) {
 
   required_data("ADM_CYCLER_INFO")
   ss_info <- ADM_CYCLER_INFO[, .(CYCLER_ID, IS_ROULER = ifelse(CYCLER_TYPE_ID == 1, 1, 0))]
@@ -11,7 +11,7 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
 
   join_my_ttf <- team_combinations_data_with_other_player_probs
   min_ttf <- join_my_ttf[, ceiling(mean(TURNS_TO_FINISH))]
-
+  min_ttf_new <- join_my_ttf[, ceiling(mean(TURNS_TO_FINISH_NEW))]
   #calc my ev given opponent strategies
 
   finish_slot <- pre_aggr_game_status_input[FINISH == 1, GAME_SLOT_ID]
@@ -50,9 +50,9 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
   cyc_info_to_scoring <- ss_info[join_my_ttf, on = "CYCLER_ID"]
 
   scoring_data <- ss_exh[cyc_info_to_scoring, on = "CYCLER_ID"]#[TEAM_ID == bot_team_id]
-  scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF * 0.2 * pmax(min_ttf - 5, 0.1) - IS_ROULER * MOVE_DIFF * 0.1 * pmax(min_ttf - 5, 0.1),
-                       EXHAUST_SCORE = ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.5 * -0.125 / norm_card_share ^ (1 / 4) +
-                         IS_ROULER * ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.5 * -0.125 / norm_card_share ^ (1 / 4) * 0.25,
+  scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF * 0.2 * pmax(min_ttf - 5, 0.1) - IS_ROULER * MOVE_DIFF * 0.05 * pmax(min_ttf - 5, 0.1),
+                       EXHAUST_SCORE = ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 5 - FINISH_RANK, 1) ^ 1.5 * -0.15  +
+                         IS_ROULER * ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 5 - FINISH_RANK, 1) ^ 1.5 * -0.15 * -0.25,
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
                        TTF_SCORE = (min_ttf - TURNS_TO_FINISH)  * 1 * norm_card_share ^ (1 / 2),
                        SOF_SCORE = SLOTS_OVER_FINISH  * 0.02 * norm_card_share ^ (1 / 2),
@@ -60,7 +60,33 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                        MOVE_ORDER_SCORE = - MOVE_ORDER * 0.015 * (17 - min_ttf) - MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
                        OVER_FINISH_SCORE = OVER_FINISH * 100,
-                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf) + SLOTS_PROGRESSED * 0.002 * (16 - min_ttf) * IS_ROULER)]
+                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf) + SLOTS_PROGRESSED * 0.0005 * (16 - min_ttf) * IS_ROULER,
+                       SOF_NEW_SCORE = (SLOTS_OVER_FINISH_NEW - SLOTS_OVER_FINISH  )  * 0.05 * norm_card_share ^ (1 / 2),
+                       TTF_NEW_SCORE = (TURNS_TO_FINISH - 1 - TURNS_TO_FINISH_NEW)  * 0.5 * norm_card_share ^ (1 / 2),
+                       NEXT_EXHAUST_SCORE = 0.5 * (((NEW_MOVE_ORDER - 1) / total_cyclers) ^ (1.5) * NEXT_EXHAUST * pmax(min_ttf - 5 - FINISH_RANK, 1) ^ 1.5 * -0.15  +
+                         IS_ROULER * ((NEW_MOVE_ORDER - 1) / total_cyclers) ^ (1.5) * NEXT_EXHAUST * pmax(min_ttf - 5 - FINISH_RANK, 1) ^ 1.5 * -0.15 * -0.25),
+                       NEXT_MOVE_DIFF_SCORE = NEXT_MOVE_DIFF * 0.08 * pmax(min_ttf - 5, 0.1) - IS_ROULER * NEXT_MOVE_DIFF * 0.02 * pmax(min_ttf - 5, 0.1)
+                       )]
+
+  scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_SCORE - min(MOVE_DIFF_SCORE),
+                       EXHAUST_SCORE = EXHAUST_SCORE - min(EXHAUST_SCORE),
+                       #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
+                       TTF_SCORE  = TTF_SCORE - min(TTF_SCORE),
+                       SOF_SCORE = SOF_SCORE - min(SOF_SCORE),
+                       FINISH_RANK_SCORE = FINISH_RANK_SCORE - min(FINISH_RANK_SCORE),
+                       # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
+                       MOVE_ORDER_SCORE  = MOVE_ORDER_SCORE - min(MOVE_ORDER_SCORE),
+                       OVER_FINISH_SCORE  = OVER_FINISH_SCORE - min(OVER_FINISH_SCORE),
+                       SLOTS_PROGRESSED_SCORE  = SLOTS_PROGRESSED_SCORE - min(SLOTS_PROGRESSED_SCORE),
+                       SOF_NEW_SCORE  = SOF_NEW_SCORE - min(SOF_NEW_SCORE),
+                       TTF_NEW_SCORE = TTF_NEW_SCORE - min(TTF_NEW_SCORE),
+                       NEXT_EXHAUST_SCORE = NEXT_EXHAUST_SCORE - min(NEXT_EXHAUST_SCORE),
+                       NEXT_MOVE_DIFF_SCORE = NEXT_MOVE_DIFF_SCORE - min(NEXT_MOVE_DIFF_SCORE)
+  ), by = CYCLER_ID]
+
+
+
+
   scoring_data[, TOT_SCORE_MINE := (MOVE_DIFF_SCORE +
                                       EXHAUST_SCORE +
                                       SOF_SCORE +
@@ -68,15 +94,31 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
                                       #   CYC_DIST_SCORE +
                                       FINISH_RANK_SCORE +
                                       SLOTS_PROGRESSED_SCORE +
-                                      MOVE_ORDER_SCORE
+                                      MOVE_ORDER_SCORE +
+                                      SOF_NEW_SCORE +
+                                      TTF_NEW_SCORE +
+                                      NEXT_EXHAUST_SCORE +
+                                      NEXT_MOVE_DIFF_SCORE
+
+
   )]
 
+
+  scoring_data[, TOT_NEXT_SCORE := (
+                                     (SOF_NEW_SCORE +
+                                      TTF_NEW_SCORE +
+                                      NEXT_EXHAUST_SCORE +
+                                      NEXT_MOVE_DIFF_SCORE)
+  )]
+
+  scoring_data[, TOT_NEXT_SCORE := TOT_NEXT_SCORE - min(TOT_NEXT_SCORE)]
   scoring_data[, TEAM_CYCLERS_LEFT := .N, by = .(case_id, TEAM_ID)]
   scoring_data[, TEAM_SCORE_AVG := mean(TOT_SCORE_MINE), by = .(case_id, TEAM_ID)]
 
   scoring_data[, TOT_CYCLERS_LEFT := .N, by = .(case_id)]
   scoring_data[, OTHER_CYCLERS_LEFT := TOT_CYCLERS_LEFT - TEAM_CYCLERS_LEFT, by = .(case_id)]
   scoring_data[, SUM_OF_OTHER_CYCLER_SCORE := sum(TOT_SCORE_MINE) - TEAM_SCORE_AVG * TEAM_CYCLERS_LEFT , by = .(case_id)]
+
   scoring_data[, OTHER_AVG_SCORE := SUM_OF_OTHER_CYCLER_SCORE / OTHER_CYCLERS_LEFT]
   scoring_data[, OTHER_AVG_SCORE := ifelse(is.finite(OTHER_AVG_SCORE), OTHER_AVG_SCORE, 0)]
 
@@ -127,7 +169,8 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
 
                            #     CYC_DIST_SCORE = sum(CYC_DIST_SCORE),
                            MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE * CYCLER_WEIGHT),
-                           OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * CYCLER_WEIGHT)), by = .(MOVES, TEAM_ID, case_id, PROB_PRODUCT, CYCLERS, OPPONENT_PROB)]
+                           OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * CYCLER_WEIGHT),
+                           NEXT_SCORE = sum(TOT_NEXT_SCORE * CYCLER_WEIGHT)), by = .(MOVES, TEAM_ID, case_id, PROB_PRODUCT, CYCLERS, OPPONENT_PROB)]
 
   # check_res[, OPPONENT_CASE_PROB := prod(PROB_PRODUCT) / PROB_PRODUCT, by = case_id]
   # check_res[, OPPONENT_CASE_PROB := ifelse(is.na(OPPONENT_CASE_PROB), 0.000001, OPPONENT_CASE_PROB)]
@@ -143,8 +186,62 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
                               SOF_SCORE = sum(SOF_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
                               #   CYC_DIST_SCORE = mean(CYC_DIST_SCORE),
                               MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
-                              OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB)
+                              OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
+                              NEXT_SCORE = sum(NEXT_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB)
   ), by = .(CYCLERS, MOVES, TEAM_ID)][order(-EV)]
+
+check_res2[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_SCORE - min(MOVE_DIFF_SCORE),
+                     EXHAUST_SCORE = EXHAUST_SCORE - min(EXHAUST_SCORE),
+                     #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
+                     TTF_SCORE  = TTF_SCORE - min(TTF_SCORE),
+                     SOF_SCORE = SOF_SCORE - min(SOF_SCORE),
+                     FINISH_RANK_SCORE = FINISH_RANK_SCORE - min(FINISH_RANK_SCORE),
+                     # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
+                     MOVE_ORDER_SCORE  = MOVE_ORDER_SCORE - min(MOVE_ORDER_SCORE),
+                     OVER_FINISH_SCORE  = OVER_FINISH_SCORE - min(OVER_FINISH_SCORE),
+                     SLOTS_PROGRESSED_SCORE  = SLOTS_PROGRESSED_SCORE - min(SLOTS_PROGRESSED_SCORE),
+
+                   NEXT_SCORE = NEXT_SCORE - min(NEXT_SCORE)
+)]
+check_res2[, ROW_SUM := MOVE_DIFF_SCORE + EXHAUST_SCORE + TTF_SCORE + SOF_SCORE + FINISH_RANK_SCORE +
+             MOVE_ORDER_SCORE + OVER_FINISH_SCORE + SLOTS_PROGRESSED_SCORE + NEXT_SCORE]
+check_res2[, max_score := abs(MOVE_DIFF_SCORE)+ abs(EXHAUST_SCORE)+ abs(SLOTS_PROGRESSED_SCORE)+ abs(TTF_SCORE)+ abs(FINISH_RANK_SCORE)+
+        abs(SOF_SCORE)+ abs(MOVE_ORDER_SCORE)+ abs(OVER_FINISH_SCORE)+ abs(NEXT_SCORE)]
+check_res2[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_SCORE / max_score,
+              EXHAUST_SCORE = EXHAUST_SCORE / max_score,
+              SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED_SCORE / max_score,
+              TTF_SCORE = TTF_SCORE / max_score,
+              FINISH_RANK_SCORE = FINISH_RANK_SCORE / max_score,
+              SOF_SCORE = SOF_SCORE / max_score,
+              MOVE_ORDER_SCORE = MOVE_ORDER_SCORE / max_score,
+              OVER_FINISH_SCORE = OVER_FINISH_SCORE / max_score,
+              NEXT_SCORE = NEXT_SCORE / max_score)]
+agggr <-suppressWarnings(melt.data.table(check_res2[, .(MOVE_DIFF_SCORE = mean(MOVE_DIFF_SCORE),
+                        EXHAUST_SCORE    = mean(EXHAUST_SCORE   ),
+                        SLOTS_PROGRESSED_SCORE    = mean(SLOTS_PROGRESSED_SCORE   ),
+                        TTF_SCORE = mean(TTF_SCORE),
+                        FINISH_RANK_SCORE    = mean(FINISH_RANK_SCORE   ),
+                        SOF_SCORE = mean(SOF_SCORE),
+                        MOVE_ORDER_SCORE  = mean(MOVE_ORDER_SCORE ),
+                        OVER_FINISH_SCORE    = mean(OVER_FINISH_SCORE   ),
+                        NEXT_SCORE        = mean(NEXT_SCORE       ))]))  [order(-value)]
+
+
+monitor <<- agggr
+#print(agggr)
+#check_res2[order(-ROW_SUM)]
+# check_res2[, max_score := pmax(abs(MOVE_DIFF_SCORE), abs(EXHAUST_SCORE), abs(SLOTS_PROGRESSED_SCORE), abs(TTF_SCORE), abs(FINISH_RANK_SCORE),
+  #                                abs(SOF_SCORE), abs(MOVE_ORDER_SCORE), abs(OVER_FINISH_SCORE), abs(NEXT_SCORE))]
+  #
+  # check_res2[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_SCORE / max_score,
+  #                    EXHAUST_SCORE = EXHAUST_SCORE / max_score,
+  #                    SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED_SCORE / max_score,
+  #                    TTF_SCORE = TTF_SCORE / max_score,
+  #                    FINISH_RANK_SCORE = FINISH_RANK_SCORE / max_score,
+  #                    SOF_SCORE = SOF_SCORE / max_score,
+  #                    MOVE_ORDER_SCORE = MOVE_ORDER_SCORE / max_score,
+  #                    OVER_FINISH_SCORE = OVER_FINISH_SCORE / max_score,
+  #                    NEXT_SCORE = NEXT_SCORE / max_score)]
 
   #   best_move_diff <- check_res2[which.max(MOVE_ORDER_SCORE), MOVES]
   #   best_sof_diff <- check_res2[which.max(SOF_SCORE), MOVES]
