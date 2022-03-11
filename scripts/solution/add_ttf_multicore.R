@@ -51,20 +51,22 @@ if (nrow(to_calulcation) > 0) {
                                                                                 calc_from_slot = to_calulcation[i, NEW_GAME_SLOT_ID],
                                                                                 precalc_data = pre_aggr_game_status,
                                                                                 draw_odds_raw_data = to_calulcation[i, DRAW_ODDS])
+                                turns_to_finish_calc[, orig_id := i]
                                 turns_to_finish_calc
                              }
 
 #  print(difftime(Sys.time(), timenow))
   stopCluster(klusteri)
   sapply(file.path(tempdir(), list.files(tempdir())), unlink)
-  calc_res <- cbind(to_calulcation, result)
+  #we can take max next move, as optimal solution might allow different next moves
+  calc_res <- result[, .(NEXT_MOVE = max(NEXT_MOVE)), by = .(TURNS_TO_FINISH, SLOTS_OVER_FINISH , TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 
 } else {
   calc_res <- NULL
 }
 
   no_calc <- input_data[IS_FINISHED == 1]
-  no_calc[, ':=' (NEXT_MOVE = NA, TURNS_TO_FINISH = 0, SLOTS_OVER_FINISH = NEW_GAME_SLOT_ID - finish_slot, DRAW_ODDS = "", DECK_LEFT = "")]
+  no_calc[, ':=' (IS_FINISHED = NULL, N = NULL, NEW_GAME_SLOT_ID = NULL, NEXT_MOVE = NA, TURNS_TO_FINISH = 0, SLOTS_OVER_FINISH = NEW_GAME_SLOT_ID - finish_slot, DRAW_ODDS = "", DECK_LEFT = "")]
   join_res <- rbind(calc_res, no_calc)
  # join_res[, NEW_GAME_SLOT_ID := NULL]
 #browser()
@@ -83,14 +85,19 @@ if (nrow(to_calulcation) > 0) {
   tryIns <- tryCatch({
 
     if (db_handling == "SAVE") {
-     new_result_row <- join_res[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH, SLOTS_OVER_FINISH,
-                                    NEXT_MOVE)]
-    dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
+
+      join_known <- ADM_OPTIMAL_MOVES[join_res, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][is.na(TURNS_TO_FINISH), .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH = i.TURNS_TO_FINISH,
+                                                                                                                    NEXT_MOVE = i.NEXT_MOVE, SLOTS_OVER_FINISH = i.SLOTS_OVER_FINISH)]
+     # new_result_row <- join_res[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH, SLOTS_OVER_FINISH,
+     #                                NEXT_MOVE)]
+      dbWriteTable(con, "ADM_OPTIMAL_MOVES", join_known, append = TRUE, row.names = FALSE)
+    #dbIns("ADM_OPTIMAL_MOVES", join_known, con)
     # joinaa <- ADM_OPTIMAL_MOVES[new_result_row, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 
     # if (nrow(joinaa) > 0) {
 
-    ADM_OPTIMAL_MOVES <<- rbind(ADM_OPTIMAL_MOVES, new_result_row)}
+    ADM_OPTIMAL_MOVES <<- rbind(ADM_OPTIMAL_MOVES, join_known)
+    }
     #  print(paste0("in function ", nrow(ADM_OPTIMAL_MOVES)))
     #  }
 
@@ -106,7 +113,7 @@ if (nrow(to_calulcation) > 0) {
   #   ADM_OPTIMAL_MOVES
   # }
 
-  final_result_list <- new_result_row#[, TURNS_TO_FINISH]
+  final_result_list <- join_res[input_data_all, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]#[, TURNS_TO_FINISH]
   # } else {
   #   #we had that one already, return original
   #
