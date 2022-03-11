@@ -51,7 +51,7 @@ if (nrow(to_calulcation) > 0) {
                                                                                 calc_from_slot = to_calulcation[i, NEW_GAME_SLOT_ID],
                                                                                 precalc_data = pre_aggr_game_status,
                                                                                 draw_odds_raw_data = to_calulcation[i, DRAW_ODDS])
-                                turns_to_finish_calc[, orig_id := i]
+
                                 turns_to_finish_calc
                              }
 

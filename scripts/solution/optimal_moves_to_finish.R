@@ -5,6 +5,10 @@
 # optimal_moves_to_finish(6, game_status, deck_status)
 optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_data, draw_odds_raw_data = "") {
 
+  alotus <- Sys.time()
+
+
+
 
   track_left <- precalc_data[GAME_SLOT_ID == calc_from_slot, TRACK_LEFT]
 
@@ -221,7 +225,8 @@ total_new_rows <- NULL
 if (normal_model == FALSE) {
 
   start_slot <- final_res[MOVEMENT == 100, i_clean]
-  joini_table <- aggr_to_slots[, .(ascend_v, i = as.integer(GAME_SLOT_ID),  MOVEMENT_help_table = 100,  FINISH_LINE_HELP = finish_slot)]
+  joini_table <- aggr_to_slots[, .(ascend_v, i = seq_len(.N),  MOVEMENT_help_table = 100,  FINISH_LINE_HELP = finish_slot)]
+  browser()
   while (start_slot < finish_slot) {
     end_slot <-  start_slot + joini_table[i == start_slot, ascend_v]
     new_row <- data.table(MOVEMENT = 2, i_clean = start_slot, j_clean = end_slot)
@@ -274,6 +279,8 @@ for (loop_row in 1:nrow(loop_res)) {
 
 
 }
+kesto <- difftime(Sys.time(), alotus, units = c("secs"))
+warning(kesto)
 return(total_data)
 
 
