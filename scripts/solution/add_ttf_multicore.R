@@ -88,7 +88,9 @@ if (nrow(to_calulcation) > 0) {
 
       join_known <- ADM_OPTIMAL_MOVES[join_res, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][is.na(TURNS_TO_FINISH), .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH = i.TURNS_TO_FINISH,
                                                                                                                     NEXT_MOVE = i.NEXT_MOVE, SLOTS_OVER_FINISH = i.SLOTS_OVER_FINISH)]
-     # new_result_row <- join_res[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH, SLOTS_OVER_FINISH,
+
+    #  join_known[, .N, by = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][N > 1]
+       # new_result_row <- join_res[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH, SLOTS_OVER_FINISH,
      #                                NEXT_MOVE)]
       dbWriteTable(con, "ADM_OPTIMAL_MOVES", join_known, append = TRUE, row.names = FALSE)
     #dbIns("ADM_OPTIMAL_MOVES", join_known, con)
@@ -112,8 +114,7 @@ if (nrow(to_calulcation) > 0) {
   #   dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
   #   ADM_OPTIMAL_MOVES
   # }
-
-  final_result_list <- join_res[input_data_all, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]#[, TURNS_TO_FINISH]
+#[, TURNS_TO_FINISH]
   # } else {
   #   #we had that one already, return original
   #
@@ -127,6 +128,8 @@ if (nrow(to_calulcation) > 0) {
   #                                   SLOTS_OVER_FINISH = slots_over,
   #                                   NEXT_MOVE = 0)
   # }
+
+  final_result_list <- join_res[input_data, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
   final_result_list <- final_result_list[, .(TURNS_TO_FINISH = as.integer(TURNS_TO_FINISH),
                                              SLOTS_OVER_FINISH = as.integer(SLOTS_OVER_FINISH),
                                              NEXT_MOVE = as.integer(NEXT_MOVE),

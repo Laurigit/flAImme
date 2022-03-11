@@ -104,8 +104,6 @@ join_known[, row_id_calc := NULL]
 
 added_ttf <- add_ttf_multicore(con, join_known[is.na(TURNS_TO_FINISH) & IS_FINISHED == 0], pre_aggr_game_status_no_list)
 
-#browser()
-
 join_known <- update_dt_values(join_known, added_ttf, c("DRAW_ODDS", "TRACK_LEFT", "DECK_LEFT"),
                  c("TURNS_TO_FINISH", "SLOTS_OVER_FINISH", "NEXT_MOVE"))
 finish_slot <- pre_aggr_game_status_no_list[FINISH == 1, GAME_SLOT_ID]
