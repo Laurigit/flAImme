@@ -1,5 +1,7 @@
 
-EV_to_moves <- function(EV_table, deck_status) {
+EV_to_moves <- function(EV_table, deck_status, turn_start_deck) {
+
+
 
 
 
@@ -14,8 +16,8 @@ EV_to_moves <- function(EV_table, deck_status) {
 
 
 
-  check_res2[,  DECK_LEFT_C1 := convert_deck_left_to_text(deck_status, C1), by = .(MOVES )]
-  check_res2[,  DECK_LEFT_C2 := convert_deck_left_to_text(deck_status, C2), by = .(MOVES )]
+  check_res2[,  DECK_LEFT_C1 := convert_deck_left_to_text(turn_start_deck, C1), by = .(MOVES )]
+  check_res2[,  DECK_LEFT_C2 := convert_deck_left_to_text(turn_start_deck, C2), by = .(MOVES )]
   check_res2[, draw_odds_C1 := calculate_odds_of_drawing_card(DECK_LEFT_C1, M1)]
   check_res2[, draw_odds_C2 := calculate_odds_of_drawing_card(DECK_LEFT_C2, M2)]
 
@@ -26,13 +28,13 @@ EV_to_moves <- function(EV_table, deck_status) {
   sorted_app <- append_worse[order(CYCLER_ID, MOVEMENT, -EV)]
   sorted_app[, PRIO := seq_len(.N), by = .(CYCLER_ID, MOVEMENT)]
   # append_worse[CYCLER_ID == 5 & MOVEMENT == 7]
-  sorted_app[, playing_prob_other := calculate_draw_distribution_by_turn_with_prio(.SD, deck_status), by = .(CYCLER_ID, MOVEMENT), .SDcols = c("OTHER_CYCLER", "OTHER_MOVE", "PRIO")]
+  sorted_app[, playing_prob_other := calculate_draw_distribution_by_turn_with_prio(.SD, turn_start_deck), by = .(CYCLER_ID, MOVEMENT), .SDcols = c("OTHER_CYCLER", "OTHER_MOVE", "PRIO")]
 
   EVs <- sorted_app[, .(WEIGHTED_EV = sum(EV * playing_prob_other), TURNS_TO_FINISH = sum(TURNS_TO_FINISH *playing_prob_other)), by = .(MOVEMENT, CYCLER_ID)]
   #copy columns to fit to function
   setorder(EVs, CYCLER_ID, -WEIGHTED_EV)
   EVs[, ':=' (PRIO = seq_len(.N), OTHER_CYCLER = CYCLER_ID, OTHER_MOVE = MOVEMENT), by = CYCLER_ID]
-  EVs[, playing_prob_me := calculate_draw_distribution_by_turn_with_prio(.SD, deck_status), by = .(CYCLER_ID), .SDcols = c("OTHER_CYCLER", "OTHER_MOVE", "PRIO")]
+  EVs[, playing_prob_me := calculate_draw_distribution_by_turn_with_prio(.SD, turn_start_deck), by = .(CYCLER_ID), .SDcols = c("OTHER_CYCLER", "OTHER_MOVE", "PRIO")]
 
   EV_OF_PLAYING_FIRST <- EVs[, sum(WEIGHTED_EV * playing_prob_me), by = CYCLER_ID]
 
@@ -46,7 +48,7 @@ EV_to_moves <- function(EV_table, deck_status) {
   options <- deck_status[CYCLER_ID == first_selected_cycler & Zone == "Hand", .N, by = .(MOVEMENT)][, MOVEMENT]
   cards_in_hand <- EVs[CYCLER_ID == first_selected_cycler & MOVEMENT %in% options]
 
-  first_movement <- cards_in_hand[, MOVEMENT[which.max(WEIGHTED_EV)]]
+  first_movement <- cards_in_hand[order(-WEIGHTED_EV, -MOVEMENT)][, MOVEMENT[which.max(WEIGHTED_EV)]]
   #convert exhaust if possible
   first_card_id <- deck_status[CYCLER_ID == first_selected_cycler & Zone == "Hand" & MOVEMENT == first_movement, min(CARD_ID)]
 
@@ -64,7 +66,7 @@ EV_to_moves <- function(EV_table, deck_status) {
 
 
     #  print(cards_in_hand)
-    second_movement <-  cards_in_hand[, MOVEMENT [which.max(EV)]]
+    second_movement <-  cards_in_hand[order(-EV, -MOVEMENT)][, MOVEMENT [which.max(EV)]]
     second_card_id <- deck_status[CYCLER_ID == second_cycler & Zone == "Hand" & MOVEMENT == second_movement, min(CARD_ID)]
 
   }
@@ -81,6 +83,7 @@ EV_to_moves <- function(EV_table, deck_status) {
     result <- data.table(FIRST = TRUE, CYCLER_ID = cycler,
                          CARD_ID = card_id)
   }
+#browser()
 return(result)
 
 }

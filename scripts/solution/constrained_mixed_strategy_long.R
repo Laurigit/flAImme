@@ -72,6 +72,7 @@ constrained_mixed_strategy_long <- function(input_data) {
 
 
 constrained_mixed_strategy_long_static <- function(input_data) {
+
   # input_data <- join_card_count_to_second[TEAM_ID == 1 & OTHER_MOVE == 7]
 
   #teams means now cyclers.

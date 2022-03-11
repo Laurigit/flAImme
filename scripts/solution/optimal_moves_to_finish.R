@@ -3,8 +3,20 @@
 # #aggr_to_slots <- aggr_to_slots[1:30]
 # cycler_id <- 6
 # optimal_moves_to_finish(6, game_status, deck_status)
-optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_data, use_draw_odds = FALSE) {
+optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_data, draw_odds_raw_data = "") {
 
+
+
+  if (draw_odds_raw_data == "") {
+    use_draw_odds <- ""
+  } else {
+
+    parse_draw_odds <- str_split(draw_odds_raw_data, ";")
+    use_draw_odds <- data.table(Turn_to_Draw = as.numeric(str_split(parse_draw_odds[[1]][1], "")[[1]]),
+                                  MOVEMENT =  as.numeric(str_split(parse_draw_odds[[1]][2], "")[[1]]),
+                                  prob = -1)
+
+  }
 
 
 
@@ -128,8 +140,6 @@ res_mod <- MILPModel() %>%
   #                  sum_expr(x[n, j, k], j = 1:rivi_lkm, k = length(kortit)), n = 1:finish_slot) %>%
   #dont use more cards than you have
   add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit))  %>%
-
-
 
 
     set_objective(sum_expr(x[i, j, k] * 100, i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)) -
@@ -256,6 +266,8 @@ joinaa <- kortit_dt[dt, on = "k"]
 return(joinaa[, kortit])
 
 }
+
+
 
 # last_j_payoff <- function(i, j, k) {
 #

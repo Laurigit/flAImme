@@ -1,4 +1,4 @@
-calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, static_model, ADM_CYCLER_INFO, input_gamma = 0.9 ) {
+calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, static_model = NULL, ADM_CYCLER_INFO, input_gamma = 0.9, cap_data = NULL ) {
   #test_calculate_mix_strategy_cap.R
 
   #combinations_data <- join_track_left
@@ -23,6 +23,7 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   first_cycler_ev[, bottom := sum(top), by = TEAM_ID]
   first_cycler_ev[, target_strat := round(top / bottom, 5)]
 
+  if (!is.finite(first_cycler_ev[, max(top)])) {warning("fix mee, infinite top")}
 
   first_cycler_ev[, OTHER_MOVE := 8] #this is here to fit into the general function. 8 is funny number as we don't have a card for that
 
@@ -31,7 +32,35 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
 
   if (nrow(first_cycler_ev) == 0) {browser()}
 
-  total_res <- constrained_mixed_strategy_long_target(first_cycler_ev, static_model, second_cycler_per_team[, CYCLER_ID], other_move_vec)
+
+join_cap <- cap_data[first_cycler_ev, on = .(CYCLER_ID, MOVEMENT)]
+sorted <- join_cap[order(CYCLER_ID, -target_strat)]
+
+sorted[, prio := seq_len(.N), by = .(CYCLER_ID)]
+max_prio <- sorted[, max(prio)]
+sorted[, PORB_MASS_LEFT := ifelse(prio == 1, 1, 0)]
+for (prio_loop in 1:max_prio) {
+
+  sorted[, P_TO_FILL := ifelse(prio == prio_loop, PORB_MASS_LEFT, 0)]
+  sorted[prio == prio_loop, P_MASS_FILLED := pmin(P_TO_FILL, mixed_cap, target_strat)]
+  sorted[, PORB_MASS_LEFT := ifelse(prio == prio_loop + 1, 1 - sum(P_MASS_FILLED, na.rm = TRUE), 0), by = CYCLER_ID]
+
+}
+
+sorted[, ':=' (top = NULL, bottom = NULL, PORB_MASS_LEFT = NULL, P_TO_FILL = NULL)]
+sorted[, LEFTOVER := 1 - sum(P_MASS_FILLED), by = .(CYCLER_ID, OTHER_MOVE)]
+sorted[, ROOM_TO_FILL := mixed_cap - P_MASS_FILLED]
+
+for (prio_loop in 2:max_prio) {
+  sorted[, MAX_FILL_FOR_THIS_LOOP := min(ifelse(ROOM_TO_FILL == 0, 10000, ROOM_TO_FILL)), by = .(CYCLER_ID, OTHER_MOVE)]
+  sorted[, FILLED_MOVEMENTS_LOOP_COUNT := sum(ifelse(ROOM_TO_FILL > 0, 1, 0)), by = .(CYCLER_ID, OTHER_MOVE)]
+  sorted[ROOM_TO_FILL > 0, P_MASS_FILLED := P_MASS_FILLED + pmin(MAX_FILL_FOR_THIS_LOOP, LEFTOVER / FILLED_MOVEMENTS_LOOP_COUNT)]
+  sorted[, LEFTOVER := 1 - sum(P_MASS_FILLED), by = .(CYCLER_ID, OTHER_MOVE)]
+  # sorted[, FILL_AMOUNT_LOOP := ifelse(prio >= prio_loop, )
+}
+total_res <- sorted[, .(CYCLER_ID, MOVEMENT, OTHER_MOVE, strategy = P_MASS_FILLED)]
+
+#  total_res <- constrained_mixed_strategy_long_target(first_cycler_ev, static_model, second_cycler_per_team[, CYCLER_ID], other_move_vec)
 
   #let's fix NA with 0
   total_res[, strategy := ifelse(is.na(strategy), 0.00001, strategy)]
@@ -69,12 +98,46 @@ calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, st
   }
   if (nrow(join_card_count_to_second) > 0) {
   other_move_vec2 <- setdiff(2:9, join_card_count_to_second[, .N, by = OTHER_MOVE][, OTHER_MOVE])
-  capped_strat <- constrained_mixed_strategy_long_target(join_card_count_to_second, static_model, first_cycler_per_team[, CYCLER_ID], other_move_vec2)
-  #PURRKKAAA
 
-  capped_strat[, REMOVE_ME := if(uniqueN(strategy) == 1) TRUE else FALSE, by = .(CYCLER_ID, OTHER_MOVE)]
-  if (nrow(capped_strat[REMOVE_ME == TRUE])> 0) {warning("This needs to be fixed")}
-  capped_strat <- capped_strat[REMOVE_ME == FALSE]
+  join_cap <- cap_data[join_card_count_to_second, on = .(CYCLER_ID, MOVEMENT)]
+  sorted <- join_cap[order(CYCLER_ID, OTHER_MOVE, -target_strat)]
+
+  sorted[, prio := seq_len(.N), by = .(CYCLER_ID, OTHER_MOVE)]
+  max_prio <- sorted[, max(prio)]
+  sorted[, PORB_MASS_LEFT := ifelse(prio == 1, 1, 0)]
+  for (prio_loop in 1:max_prio) {
+
+    sorted[, P_TO_FILL := ifelse(prio == prio_loop, PORB_MASS_LEFT, 0)]
+    sorted[prio == prio_loop, P_MASS_FILLED := pmin(P_TO_FILL, mixed_cap, target_strat)]
+    sorted[, PORB_MASS_LEFT := ifelse(prio == prio_loop + 1, 1 - sum(P_MASS_FILLED, na.rm = TRUE), 0), by = .(CYCLER_ID, OTHER_MOVE)]
+
+  }
+  sorted[, ':=' (top = NULL, bottom = NULL, PORB_MASS_LEFT = NULL, P_TO_FILL = NULL)]
+  sorted[, LEFTOVER := 1 - sum(P_MASS_FILLED), by = .(CYCLER_ID, OTHER_MOVE)]
+  sorted[, ROOM_TO_FILL := mixed_cap - P_MASS_FILLED]
+
+  for (prio_loop in 2:max_prio) {
+    sorted[, MAX_FILL_FOR_THIS_LOOP := min(ifelse(ROOM_TO_FILL == 0, 10000, ROOM_TO_FILL)), by = .(CYCLER_ID, OTHER_MOVE)]
+    sorted[, FILLED_MOVEMENTS_LOOP_COUNT := sum(ifelse(ROOM_TO_FILL > 0, 1, 0)), by = .(CYCLER_ID, OTHER_MOVE)]
+    sorted[ROOM_TO_FILL > 0, P_MASS_FILLED := P_MASS_FILLED + pmin(MAX_FILL_FOR_THIS_LOOP, LEFTOVER / FILLED_MOVEMENTS_LOOP_COUNT)]
+    sorted[, LEFTOVER := 1 - sum(P_MASS_FILLED), by = .(CYCLER_ID, OTHER_MOVE)]
+   # sorted[, FILL_AMOUNT_LOOP := ifelse(prio >= prio_loop, )
+  }
+
+
+  sorted
+
+ # capped_strat <- constrained_mixed_strategy_long_target(join_card_count_to_second, static_model, first_cycler_per_team[, CYCLER_ID], other_move_vec2)
+  #PURRKKAAA
+  capped_strat <-  sorted[, .(CYCLER_ID, MOVEMENT, OTHER_MOVE, strategy = P_MASS_FILLED)]
+
+  # capped_strat[, REMOVE_ME := if(uniqueN(strategy) == 1) TRUE else FALSE, by = .(CYCLER_ID, OTHER_MOVE)]
+  # if (nrow(capped_strat[REMOVE_ME == TRUE])> 0) {
+  #   warning("There might be a problem here. Previously REMOVE ME = FALSE was only included")
+  #   print(capped_strat[REMOVE_ME == TRUE])
+  #
+  #   }
+  # capped_strat <- capped_strat[REMOVE_ME == FALSE]
 
   join_back <- capped_strat[join_card_count_to_second, on = .(CYCLER_ID, MOVEMENT, OTHER_MOVE)]
   #let's fix NA with 0

@@ -22,7 +22,7 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
                              TTF_SCORE = (CYCLER_MEAN_TTF - TURNS_TO_FINISH)  * 5,
                              # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                               MOVE_ORDER_SCORE = -MOVE_ORDER * 0.02 * (22 - min_ttf),
-                              OVER_FINISH_SCORE = OVER_FINISH * 100,
+                              OVER_FINISH_SCORE = OVER_FINISH * 1, #NOT MAKE TUU HIGH
                              SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf))]
 
       join_track_left[, TOT_SCORE := (MOVE_DIFF_SCORE +
@@ -81,6 +81,7 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
       cap_data[, mixed_cap := 1 - suppressWarnings(phyper(0,  count, sum( count) -  count, 4)), by = .(CYCLER_ID)]
       cap_data[, mixed_cap := ifelse(is.na(mixed_cap) & count == 0, 0, mixed_cap)]
       cap_data[, mixed_cap := ifelse(is.na(mixed_cap) & count >0, 1, mixed_cap)]
+
       #cap_data[, OTHER_MOVE := 8]
       # aggr_card_count <- deck_status[Zone != "Removed", .(count = .N), by = .(CYCLER_ID, MOVEMENT)]
       # join_count1 <- aggr_card_count[check_res2, on = .(MOVEMENT == M1, CYCLER_ID == C1)]#[order(TEAM_ID, - new_prob_uncapped)]
@@ -90,7 +91,7 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
       # join_count2[, mixed_cap_C1 := 1 - suppressWarnings(phyper(0, card_count_C1, sum(card_count_C1) - card_count_C1, 4)), by = .(C1, M1)]
       # join_count2[, mixed_cap_C2 := 1 - suppressWarnings(phyper(0, card_count_C2, sum(card_count_C2) - card_count_C2, 4)), by =.(C2, M2)]
 
-      static_model <- constrained_mixed_strategy_long_static(cap_data)
+      #static_model <- constrained_mixed_strategy_long_static(cap_data)
       #calculate which cycler to move first
       #calculate pick-order 1
       #calculate prick order 2
@@ -114,7 +115,7 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
 
       first_round_gamma <- -sin(pi / 2 - gamma_step * bottom_iteration) * gamma_addition + input_gamma
 
-      prev_result <- calulate_mixed_strategy_inner_capped(check_res2, join_track_left, static_model, ADM_CYCLER_INFO, first_round_gamma)
+      prev_result <- calulate_mixed_strategy_inner_capped(check_res2, join_track_left, static_model = NULL, ADM_CYCLER_INFO, first_round_gamma, cap_data)
       #this is initializing data that tracks which combinations are still inthe simulation. Initially all
       remove_moves <- prev_result[, .(CYCLERS, MOVES, remove_me_if_na = FALSE)][1 == 0]
       drop_cases <- join_track_left[, .(case_id, remove_if_na = TRUE)]
@@ -158,7 +159,7 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
 
 
 
-      new_result <- calulate_mixed_strategy_inner_capped(prev_result, join_track_left, static_model, ADM_CYCLER_INFO, total_gamma)
+      new_result <- calulate_mixed_strategy_inner_capped(prev_result, join_track_left, static_model = NULL, ADM_CYCLER_INFO, total_gamma, cap_data)
 
 
       setnames(prev_result, "PROB_PRODUCT", "PREV_PROB_PRODUCT")

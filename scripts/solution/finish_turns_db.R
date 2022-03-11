@@ -1,22 +1,12 @@
 
 finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_game_status, cycler_at_slot,
-                            draw_odds_raw_data = NULL, save_to_DB = TRUE) {
+                            draw_odds_raw_data = "", save_to_DB = TRUE, force_recalc = FAlSE) {
   #cycler_id only needed for parsing the deck_left
   #cycler_at_slot <- 20
   #cycler_deck_status <- deck_status[CYCLER_ID == 5]
 
   #draw odds are in data table format and sql db format. raw = db. We use raw in joins and data.table to be sent to optimization
 
-   if (draw_odds_raw_data == "") {
-    draw_odds_input <- ""
-  } else {
-
-    parse_draw_odds <- str_split(draw_odds_raw_data, ";")
-    draw_odds_input <- data.table(Turn_to_Draw = as.numeric(str_split(parse_draw_odds[[1]][1], "")[[1]]),
-                                  MOVEMENT =  as.numeric(str_split(parse_draw_odds[[1]][2], "")[[1]]),
-                                  prob = -1)
-
-  }
 
   #deck_copied_all <- copy(cycler_deck_status)
 
@@ -38,13 +28,13 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
   if (track_left_input != "") {
 
 
-      if (nrow(row_result) == 0){
+      if (nrow(row_result) == 0 | force_recalc == TRUE){
         #no we dont have it, lets create it
 
         turns_to_finish_calc <- optimal_moves_to_finish(cycler_deck_status,
                                                         cycler_at_slot,
                                                         pre_aggr_game_status,
-                                                        use_draw_odds = draw_odds_input)
+                                                        draw_odds_raw_data = draw_odds_raw_data)
         new_result_row <- data.table(TRACK_LEFT = track_left_input, DECK_LEFT = cycler_deck_status,
                                      DRAW_ODDS = draw_odds_raw_data, turns_to_finish_calc)
 
@@ -52,7 +42,7 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
 
 
         tryIns <- tryCatch({
-
+if (save_to_DB == TRUE) {
          # new_result_row <- new_result_row[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH )]
           dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
          # joinaa <- ADM_OPTIMAL_MOVES[new_result_row, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
@@ -60,6 +50,7 @@ finish_turns_db <- function(con, track_left_input, cycler_deck_status, pre_aggr_
          # if (nrow(joinaa) > 0) {
 
             ADM_OPTIMAL_MOVES <<- rbind(ADM_OPTIMAL_MOVES, new_result_row)
+}
           #  print(paste0("in function ", nrow(ADM_OPTIMAL_MOVES)))
         #  }
 
