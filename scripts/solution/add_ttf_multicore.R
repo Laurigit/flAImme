@@ -37,7 +37,10 @@ setnames(input_data_all, game_slot_col_name, "NEW_GAME_SLOT_ID")
   #no we dont have it, lets create it
   to_calulcation <- input_data[IS_FINISHED == 0]
 
+
 if (nrow(to_calulcation) > 0) {
+  len <- to_calulcation[1, nchar(TRACK_LEFT)]
+  if ((len > 50 & nrow(to_calulcation) > 25) & global_dont_multicore == FALSE) {
   klusteri <- (parallel::makeCluster(global_cores))
   registerDoParallel(klusteri)
 
@@ -61,9 +64,9 @@ if (nrow(to_calulcation) > 0) {
                                 turns_to_finish_calc
                              }
   kesto <- difftime(Sys.time(), alku)
-  kesto
+ # kesto
   print(paste0("kesto multicore ", kesto))
-#} else {
+} else {
   result_single <- NULL
   alku2 <- Sys.time()
   for (loop_calc in 1:nrow(to_calulcation)) {
@@ -77,10 +80,10 @@ if (nrow(to_calulcation) > 0) {
 
   }
   kesto2 <- difftime(Sys.time(), alku2)
-  kesto2
+  #kesto2
   print(paste0("kesto single ", kesto2))
 
-#}
+}
 
 #  print(difftime(Sys.time(), timenow))
   stopCluster(klusteri)
