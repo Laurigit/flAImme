@@ -45,7 +45,7 @@ if (nrow(to_calulcation) > 0) {
   #foreach::getDoParRegistered()
 
 #if (global_dont_multicore == FALSE) {
-  prit(to_calulcation)
+  print(to_calulcation)
   alku <- Sys.time()
   result <- foreach(i = 1:nrow(to_calulcation), .combine = 'rbind',
                     .packages = c("data.table", "stringr", "ompr", "ROI", "ROI.plugin.symphony",
