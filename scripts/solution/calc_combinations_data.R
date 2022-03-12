@@ -101,12 +101,14 @@ join_track_left[, DRAW_ODDS := ""]
 join_track_left[, IS_FINISHED := ifelse(TRACK_LEFT %in% c("", "N"), 1, 0)]
 
 # if (calc_ttf == 0) {
+
 aggr_opt_moves <- ADM_OPTIMAL_MOVES[, .(TRACK_LEFT = TRACK_LEFT[which.min(PRIORITY)],
                                         DECK_LEFT  = DECK_LEFT [which.min(PRIORITY)],
                                         TURNS_TO_FINISH  = TURNS_TO_FINISH [which.min(PRIORITY)],
                                         DRAW_ODDS  = DRAW_ODDS [which.min(PRIORITY)],
                                         SLOTS_OVER_FINISH = SLOTS_OVER_FINISH[which.min(PRIORITY)],
-                                        NEXT_MOVE = NEXT_MOVE[which.min(PRIORITY)])]
+                                        NEXT_MOVE = NEXT_MOVE[which.min(PRIORITY)]),
+                                    by = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 
 join_known <- aggr_opt_moves[join_track_left, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 join_known[, row_id_calc := NULL]
