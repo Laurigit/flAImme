@@ -44,6 +44,8 @@ if (nrow(to_calulcation) > 0) {
 
   #foreach::getDoParRegistered()
 
+#if (global_dont_multicore == FALSE) {
+  alku <- Sys.time()
   result <- foreach(i = 1:nrow(to_calulcation), .combine = 'rbind',
                     .packages = c("data.table", "stringr", "ompr", "ROI", "ROI.plugin.symphony",
                              "ompr.roi", "optiRum")) %dopar% {
@@ -57,6 +59,27 @@ if (nrow(to_calulcation) > 0) {
 
                                 turns_to_finish_calc
                              }
+  kesto <- difftime(Sys.time(), alku)
+  kesto
+  print(paste0("kesto multicore ", kesto))
+#} else {
+  result_single <- NULL
+  alku2 <- Sys.time()
+  for (loop_calc in 1:nrow(to_calulcation)) {
+    turns_to_finish_calc <- optimal_moves_to_finish(cycler_deck_status = to_calulcation[loop_calc, DECK_LEFT],
+                                                    calc_from_slot = to_calulcation[loop_calc, NEW_GAME_SLOT_ID],
+                                                    precalc_data = pre_aggr_game_status,
+                                                    draw_odds_raw_data = to_calulcation[loop_calc, DRAW_ODDS])
+
+    result_single <- rbind(turns_to_finish_calc, result_single)
+
+
+  }
+  kesto2 <- difftime(Sys.time(), alku2)
+  kesto2
+  print(paste0("kesto single ", kesto2))
+
+#}
 
 #  print(difftime(Sys.time(), timenow))
   stopCluster(klusteri)

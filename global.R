@@ -28,7 +28,8 @@ library(Rcpp)
 library(ggplot2)
 library(doParallel)
 library(foreach)
-global_cores <- detectCores() - 1
+global_cores <<- detectCores() - 1
+global_dont_multicore <<- FALSE
 #options(shiny.trace=TRUE)
 
 

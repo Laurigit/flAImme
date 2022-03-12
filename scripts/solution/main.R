@@ -13,7 +13,7 @@ game_status_data <- list()
   game_id <- 1
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
-  bot_data <- data.table(bot_name = c("next_turn_botti", "ruler_bot", "yksikkobotti", "next_turn_botti"), TEAM_ID = c(1, 2 , 3, 4))
+  bot_data <- data.table(bot_name = c("next_turn_botti", "ruler_bot", "ttf_botti", "next_turn_botti"), TEAM_ID = c(1, 2 , 3, 4))
   #bot_data <- data.table(bot_name = c("ruler_bot"), TEAM_ID = c(1))
  # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
@@ -165,12 +165,12 @@ game_status_data <- list()
             TTF_stats <- rbind(TTF_stats, aggr_pic)
             finishssi <- game_status[FINISH == 1, min(GAME_SLOT_ID)]+10
             startti <-game_status[START == 1, min(GAME_SLOT_ID)] + 2
-            # print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED, group=CYCLER_ID)) +
-            #         #geom_line(linetype="dashed", color="blue", size=1.2)+
-            #         geom_line(size=1.5, aes(linetype = "solid", color=as.factor(CYCLER_ID)))+
-            #         geom_point(size = 3, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
-            #          scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
-            #         xlim(6, finishssi) + ylim(-1.5, 3.2)) + scale_x_continuous(limits = c(finishssi-70, finishssi), breaks = seq(finishssi-70, finishssi, by = 10))
+            print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED, group=CYCLER_ID)) +
+                    #geom_line(linetype="dashed", color="blue", size=1.2)+
+                    geom_line(size=1.5, aes(linetype = "solid", color=as.factor(CYCLER_ID)))+
+                    geom_point(size = 3, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
+                     scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
+                    xlim(6, finishssi) + ylim(-1.5, 3.2)) + scale_x_continuous(limits = c(finishssi-70, finishssi), breaks = seq(finishssi-70, finishssi, by = 10))
 
           }
 
