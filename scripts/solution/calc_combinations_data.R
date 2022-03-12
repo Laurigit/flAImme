@@ -129,7 +129,7 @@ join_known[is.na(TURNS_TO_FINISH) & IS_FINISHED == 1, ':=' (TURNS_TO_FINISH = 0,
 #if (join_known[, min(TURNS_TO_FINISH)] == 1) {browser()}
 
 
-browser()
+
   join_to_combinations <- join_known[join_curr_pos, on = .(NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT)]
  # join_to_combinations <- join_known[jcp, on = .(NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT)]
   #join_to_combinations <- join_known[join_curr_pos, on = .(NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT), allow.cartesian =TRUE]
