@@ -35,7 +35,7 @@ game_status_data <- list()
   #  track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
     track <- sample(c(12,13,14,15,16,17),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
     track <- sample(c(36,37,39,40,41,42),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
-   # track <- 14
+    track <- 40
     #ijk map explanation: i = starting point, k = movement, j = ending slot
 
 
@@ -44,6 +44,7 @@ game_status_data <- list()
 
 
     cycler_ids <- sample(c(1,2,3,4,5,6,7,8))
+    cycler_ids <- (c(1,2,3,4,5,6,7,8))
   #  cycler_ids <- sample(c(3,4))
   #  cycler_ids <- sample(c(3,4,5,6))
     total_cyclers <- length(cycler_ids)
@@ -127,17 +128,7 @@ game_status_data <- list()
       # turn_start_deck <- copy_for_tur_start
       #
 
-      # played_cards_data[CYCLER_ID == 7]
-      # zoom(game_status)
 
-      # #CTM handling.
-      # load from DB
-      # if playing with humans, dont update DB
-      # update only new opt results in memory that have been generated during the game
-
-      #are smart cyclers still playing?
-
-        # smart max if someone has finished
 
 
 
@@ -153,8 +144,8 @@ game_status_data <- list()
             pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
             input_case_count <- round(15000 / (length(in_game_cyclers) - 1) / (pmax(5 - turn_id, 1)))
           #  input_case_count <- NULL
-            combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
-                                                          pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all, case_count = input_case_count)
+              combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
+                                                            pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all, case_count = input_case_count)
 
              MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, turn_start_deck)
 

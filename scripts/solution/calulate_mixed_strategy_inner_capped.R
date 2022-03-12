@@ -1,6 +1,11 @@
 calulate_mixed_strategy_inner_capped <- function(EV_TABLE, combinations_data, static_model = NULL, ADM_CYCLER_INFO, input_gamma = 0.9, cap_data = NULL ) {
   #test_calculate_mix_strategy_cap.R
 
+ #  EV_TABLE <- check_res2
+ #  combinations_data <- join_track_left
+ # input_gamma = first_round_gamma
+ # cap_data = cap_data
+ #
   #combinations_data <- join_track_left
   worse_move <- EV_TABLE#[TEAM_ID == 1]
 

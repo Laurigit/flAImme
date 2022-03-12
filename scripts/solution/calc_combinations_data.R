@@ -3,7 +3,7 @@ calc_combinations_data <- function(con, game_status, deck_status, pre_aggr_game_
                                   ) {
 #calc ttf takes in current turn of game
 
-
+#  case_count  <- input_case_count
 #pre_aggr_game_status_no_list <- pre_agg_no_list
 deck_copied <- copy(deck_status)
 
@@ -122,7 +122,7 @@ join_known[is.na(TURNS_TO_FINISH) & IS_FINISHED == 1, ':=' (TURNS_TO_FINISH = 0,
 #if (join_known[, min(TURNS_TO_FINISH)] == 1) {browser()}
 
 
-  join_to_combinations <- join_known[join_curr_pos, on = .(NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT), allow.cartesian = TRUE]
+  join_to_combinations <- join_known[join_curr_pos, on = .(NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT)]
 
 
 

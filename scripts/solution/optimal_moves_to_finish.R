@@ -70,15 +70,15 @@ if (length(finish_slot) == 0 ) {
 
 
 
-if (finish_slot <= 3) {
-  min_move <- aggr_to_slots[GAME_SLOT_ID == calc_from_slot, max(MINIMUM_MOVEMENT)]
-  max_move <- aggr_to_slots[GAME_SLOT_ID == calc_from_slot, max(MAXIMUM_MOVEMENT)]
-  last_move <- max(min(pmax(kortit_Dt[, max(MOVEMENT)], 2), max_move), min_move)
-  slot_over_is <- last_move - finish_slot + 1
-  turns_to_finish_res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = slot_over_is, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
-
-
-} else {
+# if (finish_slot <= 3) {
+#   min_move <- aggr_to_slots[GAME_SLOT_ID == calc_from_slot, max(MINIMUM_MOVEMENT)]
+#   max_move <- aggr_to_slots[GAME_SLOT_ID == calc_from_slot, max(MAXIMUM_MOVEMENT)]
+#   last_move <- max(min(pmax(kortit_Dt[, max(MOVEMENT)], 2), max_move), min_move)
+#   slot_over_is <- last_move - finish_slot + 1
+#   turns_to_finish_res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = slot_over_is, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
+#
+#
+# } else {
 
 if (nrow(kortit_Dt) == 0) {
   # slots_left_to_finish <- ceiling(finish_slot / 2)
@@ -278,7 +278,7 @@ for (loop_row in 1:nrow(loop_res)) {
 #turns_to_finish_res <- data.table(TURNS_TO_FINISH = turns_to_finish, SLOTS_OVER_FINISH = slots_over_finish, NEXT_MOVE = next_move)
 
 
-}
+
 kesto <- difftime(Sys.time(), alotus, units = c("secs"))
 warning(kesto)
 return(total_data)

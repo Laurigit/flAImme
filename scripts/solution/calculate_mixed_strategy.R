@@ -6,6 +6,7 @@
 #calculate_mixed_strategy
 calculate_mixed_strategy <- function(combinations_data_input, consensus_config_id = ADM_CONSENSUS_CONFIG, deck_status) {
 
+  #combinations_data_input <- combinations_output
   join_track_left <- combinations_data_input
       #join_track_left[, TTF_RELATIVE := min(TURNS_TO_FINISH) - TURNS_TO_FINISH, by = case_id]
 

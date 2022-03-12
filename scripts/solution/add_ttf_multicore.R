@@ -2,7 +2,10 @@
 # := (finish_turns_db(con, TRACK_LEFT, DECK_LEFT, pre_aggr_game_status_no_list, NEW_GAME_SLOT_ID,
 #                     draw_odds_raw_data = DRAW_ODDS, save_to_DB = TRUE))
 add_ttf_multicore <- function(con, input_data_all, pre_aggr_game_status, game_slot_col_name = "NEW_GAME_SLOT_ID", db_handling = "SAVE") {
-
+  # input_data_all <- join_known[]
+  # pre_aggr_game_status <- pre_aggr_game_status_no_list
+  # game_slot_col_name <- "NEW_GAME_SLOT_ID"
+  # db_handling<- "SAVE"
 
   track_tot <- pre_aggr_game_status
   finish_slot <- track_tot[FINISH == 1, GAME_SLOT_ID]
