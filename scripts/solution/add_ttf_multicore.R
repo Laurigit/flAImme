@@ -48,7 +48,7 @@ if (nrow(to_calulcation) > 0) {
   #foreach::getDoParRegistered()
 
 #if (global_dont_multicore == FALSE) {
-  print(to_calulcation)
+#   print(to_calulcation)
   alku <- Sys.time()
   result <- foreach(i = 1:nrow(to_calulcation), .combine = 'rbind',
                     .packages = c("data.table", "stringr", "ompr", "ROI", "ROI.plugin.symphony",
@@ -69,7 +69,7 @@ if (nrow(to_calulcation) > 0) {
  # kesto
   print(paste0("kesto multicore ", kesto))
 } else {
-  result_single <- NULL
+  result <- NULL
   alku2 <- Sys.time()
   for (loop_calc in 1:nrow(to_calulcation)) {
     turns_to_finish_calc <- optimal_moves_to_finish(cycler_deck_status = to_calulcation[loop_calc, DECK_LEFT],
@@ -77,7 +77,7 @@ if (nrow(to_calulcation) > 0) {
                                                     precalc_data = pre_aggr_game_status,
                                                     draw_odds_raw_data = to_calulcation[loop_calc, DRAW_ODDS])
 
-    result_single <- rbind(turns_to_finish_calc, result_single)
+    result <- rbind(turns_to_finish_calc, result)
 
 
   }
