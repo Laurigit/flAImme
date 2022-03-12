@@ -2,6 +2,7 @@
 #AWS docker IMAGE PITÄÄ REBUILDAA, ETTÄ TOIMII PILVESSÄ.
 source("global.R")
 #kaadu
+global_dont_multicore <<- TRUE
 con <- connDB(con, "flaimme")
    required_data(c("STG_TEAM","ADM_CYCLER_INFO", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
   total_winner <- NULL
@@ -35,7 +36,8 @@ game_status_data <- list()
   #  track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
     track <- sample(c(12,13,14,15,16,17),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
     track <- sample(c(36,37,39,40,41,42),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
-    #track <- 40
+   # track <- 37
+    #track 37 on mukula
     #ijk map explanation: i = starting point, k = movement, j = ending slot
 
 
@@ -82,7 +84,6 @@ game_status_data <- list()
     finish <- game_status[FINISH == 1, max(GAME_SLOT_ID)]
     turn_id <- 0
     pre_aggr_game_status <- precalc_track(game_status)
-
 
 
     if (!exists("ctM_data")) {
@@ -142,7 +143,8 @@ game_status_data <- list()
             calc_ttf_input_all <- 0
            # calc_ttf_input <- ifelse(turn_id >= 5, 0, turn_id)
             pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
-            input_case_count <- round(15000 / (length(in_game_cyclers) - 1) / (pmax(5 - turn_id, 1)))
+            input_case_count <- round(10000 / (length(in_game_cyclers) - 1) / (pmax(5 - turn_id, 1)))
+
           #  input_case_count <- NULL
               combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
                                                             pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all, case_count = input_case_count)
@@ -165,12 +167,12 @@ game_status_data <- list()
             TTF_stats <- rbind(TTF_stats, aggr_pic)
             finishssi <- game_status[FINISH == 1, min(GAME_SLOT_ID)]+10
             startti <-game_status[START == 1, min(GAME_SLOT_ID)] + 2
-            # print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED, group=CYCLER_ID)) +
-            #         #geom_line(linetype="dashed", color="blue", size=1.2)+
-            #         geom_line(size=1.5, aes(linetype = "solid", color=as.factor(CYCLER_ID)))+
-            #         geom_point(size = 3, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
-            #          scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
-            #         xlim(6, finishssi) + ylim(-1.5, 3.2)) + scale_x_continuous(limits = c(finishssi-70, finishssi), breaks = seq(finishssi-70, finishssi, by = 10))
+            print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED, group=CYCLER_ID)) +
+                    #geom_line(linetype="dashed", color="blue", size=1.2)+
+                    geom_line(size=1.5, aes(linetype = "solid", color=as.factor(CYCLER_ID)))+
+                    geom_point(size = 3, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
+                     scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
+                    xlim(6, finishssi) + ylim(-1.5, 3.2)) + scale_x_continuous(limits = c(finishssi-70, finishssi), breaks = seq(finishssi-70, finishssi, by = 10))
 
           }
 

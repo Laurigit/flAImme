@@ -5,7 +5,7 @@
 # optimal_moves_to_finish(6, game_status, deck_status)
 optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_data, draw_odds_raw_data = "") {
 
-  alotus <- Sys.time()
+
 
 
 
@@ -163,7 +163,7 @@ res_mod <- MILPModel() %>%
 
                 , "min") %>%
 
-  solve_model(with_ROI(solver = "symphony", verbosity = -2))
+  solve_model(with_ROI(solver = "symphony", verbosity = -2, time_limit = 5))
 
 
 if (res_mod$status != "success") {
@@ -226,14 +226,18 @@ if (normal_model == FALSE) {
 
   start_slot <- final_res[MOVEMENT == 100, i_clean]
   joini_table <- aggr_to_slots[, .(ascend_v, i = seq_len(.N),  MOVEMENT_help_table = 100,  FINISH_LINE_HELP = finish_slot)]
+ safety <- 1
 
-  while (start_slot < finish_slot) {
+  while ((start_slot < finish_slot) & safety < 10) {
     end_slot <-  start_slot + joini_table[i == start_slot, ascend_v]
     new_row <- data.table(MOVEMENT = 2, i_clean = start_slot, j_clean = end_slot)
     new_row[, SLOTS_PROGRESSED := j_clean - i_clean]
     total_new_rows <-  rbind(total_new_rows, new_row)
     start_slot <-  end_slot
+    safety <- safety + 1
+
   }
+ if (safety >= 10) { browser()}
   final_res <- rbind(final_res[MOVEMENT != 100], total_new_rows)
 }
 
@@ -280,7 +284,7 @@ for (loop_row in 1:nrow(loop_res)) {
 
 
 kesto <- difftime(Sys.time(), alotus, units = c("secs"))
-warning(kesto)
+
 return(total_data)
 
 

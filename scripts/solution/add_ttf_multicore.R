@@ -39,16 +39,17 @@ setnames(input_data_all, game_slot_col_name, "NEW_GAME_SLOT_ID")
 
 
 if (nrow(to_calulcation) > 0) {
+  print(nrow(to_calulcation))
   len <- to_calulcation[1, nchar(TRACK_LEFT)]
+  print(len)
   if ((len > 50 & nrow(to_calulcation) > 25) & global_dont_multicore == FALSE) {
   klusteri <- (parallel::makeCluster(global_cores))
   registerDoParallel(klusteri)
 
-
   #foreach::getDoParRegistered()
 
 #if (global_dont_multicore == FALSE) {
-#   print(to_calulcation)
+#
   alku <- Sys.time()
   result <- foreach(i = 1:nrow(to_calulcation), .combine = 'rbind',
                     .packages = c("data.table", "stringr", "ompr", "ROI", "ROI.plugin.symphony",
@@ -71,6 +72,8 @@ if (nrow(to_calulcation) > 0) {
 } else {
   result <- NULL
   alku2 <- Sys.time()
+
+
   for (loop_calc in 1:nrow(to_calulcation)) {
     turns_to_finish_calc <- optimal_moves_to_finish(cycler_deck_status = to_calulcation[loop_calc, DECK_LEFT],
                                                     calc_from_slot = to_calulcation[loop_calc, NEW_GAME_SLOT_ID],
