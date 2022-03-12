@@ -63,6 +63,8 @@ if (nrow(to_calulcation) > 0) {
 
                                 turns_to_finish_calc
                              }
+  stopCluster(klusteri)
+  sapply(file.path(tempdir(), list.files(tempdir())), unlink)
   kesto <- difftime(Sys.time(), alku)
  # kesto
   print(paste0("kesto multicore ", kesto))
@@ -86,8 +88,7 @@ if (nrow(to_calulcation) > 0) {
 }
 
 #  print(difftime(Sys.time(), timenow))
-  stopCluster(klusteri)
-  sapply(file.path(tempdir(), list.files(tempdir())), unlink)
+
   #we can take max next move, as optimal solution might allow different next moves
   calc_res <- result[, .(NEXT_MOVE = max(NEXT_MOVE)), by = .(TURNS_TO_FINISH, SLOTS_OVER_FINISH , TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 
