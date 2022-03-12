@@ -5,7 +5,7 @@ if (played_card == FALSE) {
 } else {
   copy_deck <- copy(deck_status)
   remove_movement <- copy_deck[CYCLER_ID == cycler_id & MOVEMENT == played_card & Zone != "Removed"]
-  remove_row_id <- remove_movement[CARD_ID ==  min(CARD_ID), min(row_id)]
+  remove_row_id <-suppressWarnings(remove_movement[CARD_ID ==  min(CARD_ID), min(row_id)])
   copy_deck <- copy_deck[row_id != remove_row_id]
 
 }
