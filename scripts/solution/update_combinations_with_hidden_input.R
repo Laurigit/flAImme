@@ -27,7 +27,16 @@ update_combinations_with_hidden_input <- function(combinations_data, deck_status
 ##############
 
   aggregate_to_cases_after_calc_with_MOVEMENT <- aggregate_to_cases[, .N, by = .(DECK_LEFT, TRACK_LEFT, DRAW_ODDS, NEW_GAME_SLOT_ID, TEAM_ID, CYCLER_ID)]
-  join_known_cases <- ADM_OPTIMAL_MOVES[aggregate_to_cases_after_calc_with_MOVEMENT, on = .(DECK_LEFT, TRACK_LEFT, DRAW_ODDS)]
+
+  aggr_opt_moves <- ADM_OPTIMAL_MOVES[, .(TRACK_LEFT = TRACK_LEFT[which.min(PRIORITY)],
+                                          DECK_LEFT  = DECK_LEFT [which.min(PRIORITY)],
+                                          TURNS_TO_FINISH  = TURNS_TO_FINISH [which.min(PRIORITY)],
+                                          DRAW_ODDS  = DRAW_ODDS [which.min(PRIORITY)],
+                                          SLOTS_OVER_FINISH = SLOTS_OVER_FINISH[which.min(PRIORITY)],
+                                          NEXT_MOVE = NEXT_MOVE[which.min(PRIORITY)])]
+
+
+  join_known_cases <- aggr_opt_moves[aggregate_to_cases_after_calc_with_MOVEMENT, on = .(DECK_LEFT, TRACK_LEFT, DRAW_ODDS)]
   #print("MISSING CASES")
   count_ss_ttf <- join_known_cases[is.na(TURNS_TO_FINISH), .N]
   count_cases <- join_known_cases[, .N]

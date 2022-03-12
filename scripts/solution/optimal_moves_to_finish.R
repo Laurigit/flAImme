@@ -128,6 +128,7 @@ if (use_draw_odds[[1]][1] != "") {
 
 
 normal_model <- TRUE
+PRIORITY <- 1
 
 res_mod <- MILPModel() %>%
   #  add_variable(y[k], k = 1:20, type = "binary") %>%
@@ -163,7 +164,7 @@ res_mod <- MILPModel() %>%
 
                 , "min") %>%
 
-  solve_model(with_ROI(solver = "symphony", verbosity = -2, time_limit = 5))
+  solve_model(with_ROI(solver = "symphony", verbosity = -2, time_limit = 10))
 
 
 if (res_mod$status != "success") {
@@ -173,6 +174,7 @@ if (res_mod$status != "success") {
   kortit <- add_row[, MOVEMENT]
   card_count <- add_row[, cards_in_hand]
   normal_model <- FALSE
+  PRIORITY <- 2
 
   res_mod <-  MILPModel() %>%
     #  add_variable(y[k], k = 1:20, type = "binary") %>%
@@ -284,7 +286,7 @@ for (loop_row in 1:nrow(loop_res)) {
 
 
 
-
+total_data[, PRIORITY := PRIORITY]
 
 return(total_data)
 

@@ -2,7 +2,7 @@
 #AWS docker IMAGE PITÄÄ REBUILDAA, ETTÄ TOIMII PILVESSÄ.
 source("global.R")
 #kaadu
-global_dont_multicore <<- FALSE
+global_dont_multicore <<- TRUE
 con <- connDB(con, "flaimme")
    required_data(c("STG_TEAM","ADM_CYCLER_INFO", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
   total_winner <- NULL
@@ -167,12 +167,12 @@ game_status_data <- list()
             TTF_stats <- rbind(TTF_stats, aggr_pic)
             finishssi <- game_status[FINISH == 1, min(GAME_SLOT_ID)]+10
             startti <-game_status[START == 1, min(GAME_SLOT_ID)] + 2
-            print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED, group=CYCLER_ID)) +
-                    #geom_line(linetype="dashed", color="blue", size=1.2)+
-                    geom_line(size=1.5, aes(linetype = "solid", color=as.factor(CYCLER_ID)))+
-                    geom_point(size = 3, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
-                     scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
-                    xlim(6, finishssi) + ylim(-1.5, 3.2)) + scale_x_continuous(limits = c(finishssi-70, finishssi), breaks = seq(finishssi-70, finishssi, by = 10))
+            # print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED, group=CYCLER_ID)) +
+            #         #geom_line(linetype="dashed", color="blue", size=1.2)+
+            #         geom_line(size=1.5, aes(linetype = "solid", color=as.factor(CYCLER_ID)))+
+            #         geom_point(size = 3, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
+            #          scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
+            #         xlim(6, finishssi) + ylim(-1.5, 3.2)) + scale_x_continuous(limits = c(finishssi-70, finishssi), breaks = seq(finishssi-70, finishssi, by = 10))
 
           }
 

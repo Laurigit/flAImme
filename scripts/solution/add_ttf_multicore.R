@@ -95,7 +95,8 @@ if (nrow(to_calulcation) > 0) {
   #we can take max next move, as optimal solution might allow different next moves
   result[, row_id := seq_len(.N)]
   calc_res <- result[, .(NEXT_MOVE = max(NEXT_MOVE),
-                         PARENT_ID = PARENT_ID[which.min(row_id)]), by = .(TURNS_TO_FINISH, SLOTS_OVER_FINISH , TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
+                         PARENT_ID = PARENT_ID[which.min(row_id)]), by = .(TURNS_TO_FINISH, SLOTS_OVER_FINISH , TRACK_LEFT, DECK_LEFT, DRAW_ODDS,
+                                                                           PRIORITY)]
 
 } else {
   calc_res <- NULL
@@ -103,7 +104,7 @@ if (nrow(to_calulcation) > 0) {
 
   no_calc <- input_data[IS_FINISHED == 1]
   no_calc[, ':=' (IS_FINISHED = NULL, N = NULL, NEW_GAME_SLOT_ID = NULL, NEXT_MOVE = NA, PARENT_ID = paste0(TRACK_LEFT, "_", DECK_LEFT, "_", DRAW_ODDS),
-                  TURNS_TO_FINISH = 0, SLOTS_OVER_FINISH = NEW_GAME_SLOT_ID - finish_slot, DRAW_ODDS = "", DECK_LEFT = "")]
+                  TURNS_TO_FINISH = 0, SLOTS_OVER_FINISH = NEW_GAME_SLOT_ID - finish_slot, DRAW_ODDS = "", DECK_LEFT = "", PRIORITY = 3)]
 
   join_res <- rbind(calc_res, no_calc)
  # join_res[, NEW_GAME_SLOT_ID := NULL]
@@ -123,9 +124,9 @@ if (nrow(to_calulcation) > 0) {
   tryIns <- tryCatch({
 
     if (db_handling == "SAVE") {
-      join_known <- ADM_OPTIMAL_MOVES[join_res, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][is.na(TURNS_TO_FINISH), .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH = i.TURNS_TO_FINISH,
+      join_known <- ADM_OPTIMAL_MOVES[join_res, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, PRIORITY)][is.na(TURNS_TO_FINISH), .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH = i.TURNS_TO_FINISH,
                                                                                                                     NEXT_MOVE = i.NEXT_MOVE, SLOTS_OVER_FINISH = i.SLOTS_OVER_FINISH,
-                                                                                                                    PARENT_ID = i.PARENT_ID)]
+                                                                                                                    PARENT_ID = i.PARENT_ID, PRIORITY)]
 
     #  join_known[, .N, by = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][N > 1]
        # new_result_row <- join_res[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH, SLOTS_OVER_FINISH,

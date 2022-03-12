@@ -101,7 +101,14 @@ join_track_left[, DRAW_ODDS := ""]
 join_track_left[, IS_FINISHED := ifelse(TRACK_LEFT %in% c("", "N"), 1, 0)]
 
 # if (calc_ttf == 0) {
-join_known <- ADM_OPTIMAL_MOVES[join_track_left, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
+aggr_opt_moves <- ADM_OPTIMAL_MOVES[, .(TRACK_LEFT = TRACK_LEFT[which.min(PRIORITY)],
+                                        DECK_LEFT  = DECK_LEFT [which.min(PRIORITY)],
+                                        TURNS_TO_FINISH  = TURNS_TO_FINISH [which.min(PRIORITY)],
+                                        DRAW_ODDS  = DRAW_ODDS [which.min(PRIORITY)],
+                                        SLOTS_OVER_FINISH = SLOTS_OVER_FINISH[which.min(PRIORITY)],
+                                        NEXT_MOVE = NEXT_MOVE[which.min(PRIORITY)])]
+
+join_known <- aggr_opt_moves[join_track_left, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 join_known[, row_id_calc := NULL]
 
 added_ttf <- add_ttf_multicore(con, join_known[is.na(TURNS_TO_FINISH) & IS_FINISHED == 0], pre_aggr_game_status_no_list)
@@ -122,6 +129,7 @@ join_known[is.na(TURNS_TO_FINISH) & IS_FINISHED == 1, ':=' (TURNS_TO_FINISH = 0,
 #if (join_known[, min(TURNS_TO_FINISH)] == 1) {browser()}
 
 
+browser()
   join_to_combinations <- join_known[join_curr_pos, on = .(NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT)]
  # join_to_combinations <- join_known[jcp, on = .(NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT)]
   #join_to_combinations <- join_known[join_curr_pos, on = .(NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT), allow.cartesian =TRUE]
