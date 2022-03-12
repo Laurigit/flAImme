@@ -93,14 +93,18 @@ if (nrow(to_calulcation) > 0) {
 #  print(difftime(Sys.time(), timenow))
 
   #we can take max next move, as optimal solution might allow different next moves
-  calc_res <- result[, .(NEXT_MOVE = max(NEXT_MOVE)), by = .(TURNS_TO_FINISH, SLOTS_OVER_FINISH , TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
-
+  result[, row_id := seq_len(.N)]
+  calc_res <- result[, .(NEXT_MOVE = max(NEXT_MOVE),
+                         PARENT_ID = PARENT_ID[which.min(row_id)]), by = .(TURNS_TO_FINISH, SLOTS_OVER_FINISH , TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
+  calc_res[, row_id := NULL]
 } else {
   calc_res <- NULL
 }
 
   no_calc <- input_data[IS_FINISHED == 1]
-  no_calc[, ':=' (IS_FINISHED = NULL, N = NULL, NEW_GAME_SLOT_ID = NULL, NEXT_MOVE = NA, TURNS_TO_FINISH = 0, SLOTS_OVER_FINISH = NEW_GAME_SLOT_ID - finish_slot, DRAW_ODDS = "", DECK_LEFT = "")]
+  no_calc[, ':=' (IS_FINISHED = NULL, N = NULL, NEW_GAME_SLOT_ID = NULL, NEXT_MOVE = NA, PARENT_ID = paste0(TRACK_LEFT, "_", DECK_LEFT, "_", DRAW_ODDS),
+                  TURNS_TO_FINISH = 0, SLOTS_OVER_FINISH = NEW_GAME_SLOT_ID - finish_slot, DRAW_ODDS = "", DECK_LEFT = "")]
+
   join_res <- rbind(calc_res, no_calc)
  # join_res[, NEW_GAME_SLOT_ID := NULL]
 #browser()
@@ -120,18 +124,20 @@ if (nrow(to_calulcation) > 0) {
 
     if (db_handling == "SAVE") {
 
-      join_known <- ADM_OPTIMAL_MOVES[join_res, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][is.na(TURNS_TO_FINISH), .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH = i.TURNS_TO_FINISH,
-                                                                                                                    NEXT_MOVE = i.NEXT_MOVE, SLOTS_OVER_FINISH = i.SLOTS_OVER_FINISH)]
+      join_known <- ADM_OPTIMAL_MOVES[join_res, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, PARENT_ID)][is.na(TURNS_TO_FINISH), .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH = i.TURNS_TO_FINISH,
+                                                                                                                    NEXT_MOVE = i.NEXT_MOVE, SLOTS_OVER_FINISH = i.SLOTS_OVER_FINISH,
+                                                                                                                    PARENT_ID)]
 
     #  join_known[, .N, by = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][N > 1]
        # new_result_row <- join_res[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH, SLOTS_OVER_FINISH,
      #                                NEXT_MOVE)]
+
       dbWriteTable(con, "ADM_OPTIMAL_MOVES", join_known, append = TRUE, row.names = FALSE)
     #dbIns("ADM_OPTIMAL_MOVES", join_known, con)
     # joinaa <- ADM_OPTIMAL_MOVES[new_result_row, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 
     # if (nrow(joinaa) > 0) {
-
+     # join_known[, PARENT_ID := NULL]
     ADM_OPTIMAL_MOVES <<- rbind(ADM_OPTIMAL_MOVES, join_known)
     }
     #  print(paste0("in function ", nrow(ADM_OPTIMAL_MOVES)))

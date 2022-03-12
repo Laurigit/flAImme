@@ -257,7 +257,8 @@ for (loop_row in 1:nrow(loop_res)) {
   slots_over_finish <- last_move_actual  +  last_starting_slot - finish_slot
   turns_to_finish <- nrow(loop_res)
   turns_to_finish_res <- data.table(TURNS_TO_FINISH = turns_to_finish, SLOTS_OVER_FINISH = slots_over_finish, NEXT_MOVE = next_move,
-                                    TRACK_LEFT = track_left_loop, DRAW_ODDS = loop_dods, DECK_LEFT = deck_left_loop)
+                                    TRACK_LEFT = track_left_loop, DRAW_ODDS = loop_dods, DECK_LEFT = deck_left_loop,
+                                    PARENT_ID = paste0(track_left, "_", cycler_deck_status, "_", draw_odds_raw_data))
   total_data <-  rbind(total_data, turns_to_finish_res)
   SLOTS_PROGRESSED <- loop_res[1, SLOTS_PROGRESSED]
   track_left_loop <-  str_sub(track_left_loop, SLOTS_PROGRESSED + 1)
@@ -283,7 +284,7 @@ for (loop_row in 1:nrow(loop_res)) {
 
 
 
-kesto <- difftime(Sys.time(), alotus, units = c("secs"))
+
 
 return(total_data)
 

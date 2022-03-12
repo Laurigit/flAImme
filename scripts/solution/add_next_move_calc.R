@@ -54,8 +54,8 @@ pos_with_team <- STG_CYCLER[, .(CYCLER_ID, TEAM_ID)][new_positions_by_cycler, on
 
 
     ss_res <- join_known[, .(DECK_LEFT, TURNS_TO_FINISH_NEW = TURNS_TO_FINISH, SLOTS_OVER_FINISH_NEW = SLOTS_OVER_FINISH,
-                             NEXT_NEW_GAME_SLOT_ID, CYCLER_ID)]
-join_res <- ss_res[cp_data, on = .(DECK_LEFT, NEXT_NEW_GAME_SLOT_ID, CYCLER_ID)]
+                             NEXT_NEW_GAME_SLOT_ID, CYCLER_ID, TRACK_LEFT)]
+join_res <- ss_res[cp_data, on = .(DECK_LEFT, NEXT_NEW_GAME_SLOT_ID, CYCLER_ID, TRACK_LEFT)]
 finish_slot <- copy_pre[FINISH == 1, GAME_SLOT_ID]
 join_res[is.na(SLOTS_OVER_FINISH_NEW), SLOTS_OVER_FINISH_NEW := SLOTS_OVER_FINISH]
 join_res[is.na(TURNS_TO_FINISH_NEW), TURNS_TO_FINISH_NEW := TURNS_TO_FINISH - 1 ]
