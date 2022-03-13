@@ -76,6 +76,7 @@ if (nrow(to_calulcation) > 0) {
 
 
   for (loop_calc in 1:nrow(to_calulcation)) {
+    alku3 <- Sys.time()
     turns_to_finish_calc <- optimal_moves_to_finish(cycler_deck_status = to_calulcation[loop_calc, DECK_LEFT],
                                                     calc_from_slot = to_calulcation[loop_calc, NEW_GAME_SLOT_ID],
                                                     precalc_data = pre_aggr_game_status,
@@ -83,7 +84,8 @@ if (nrow(to_calulcation) > 0) {
 
     result <- rbind(turns_to_finish_calc, result)
 
-
+    kesto3 <- difftime(Sys.time(), alku3)
+    print(paste0("kesto single loop ", kesto3))
   }
   kesto2 <- difftime(Sys.time(), alku2)
   #kesto2

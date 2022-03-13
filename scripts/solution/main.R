@@ -197,7 +197,7 @@ game_status_data <- list()
           #            scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
           #           xlim(6, finishssi) + ylim(-1.5, 3.2)) + scale_x_continuous(limits = c(finishssi-70, finishssi), breaks = seq(finishssi-70, finishssi, by = 10))
           #
-          # }
+          }
 
           for (bot_loop in bot_teams) {
            #how many moves I need to do
