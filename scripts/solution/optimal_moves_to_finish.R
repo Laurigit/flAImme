@@ -16,7 +16,8 @@ optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_
     use_draw_odds <- ""
   } else {
 
-    parse_draw_odds <- str_split(draw_odds_raw_data, ";")
+    parse_draw_odds <- str_split(sub("\\.", "", draw_odds_raw_data), ";")
+
     use_draw_odds <- data.table(Turn_to_Draw = as.numeric(str_split(parse_draw_odds[[1]][1], "")[[1]]),
                                   MOVEMENT =  as.numeric(str_split(parse_draw_odds[[1]][2], "")[[1]]),
                                   prob = -1)
@@ -80,17 +81,6 @@ if (length(finish_slot) == 0 ) {
 #
 # } else {
 
-if (nrow(kortit_Dt) == 0) {
-  # slots_left_to_finish <- ceiling(finish_slot / 2)
-  #
-  # slots_over <- finish_slot %% 2
-  # turns_to_finish_res <- data.table(TURNS_TO_FINISH = slots_left_to_finish, SLOTS_OVER_FINISH = slots_over, NEXT_MOVE = 2)
-  kortit_Dt <- data.table(MOVEMENT = c(2,2,2,2,2,2,2,2))
-
-}
-
-
-
 
 
 kortit_aggr <- kortit_Dt[, .(cards_in_hand = .N), by = MOVEMENT]
@@ -122,6 +112,11 @@ if (use_draw_odds[[1]][1] != "") {
   #pad_data <- compare_data[!Turn_to_Draw %in% missing_odds[, unique(Turn_to_Draw)]][, keep_me := TRUE]
   #append_pad <- rbind(pad_data, modds_data)
   append_pad <- missing_odds[order(Turn_to_Draw, MOVEMENT)][Turn_to_Draw <= 2]
+
+  #if full turn is false, then set to true
+  append_pad[, max_keep := max(keep_me), by = Turn_to_Draw]
+  append_pad[max_keep == 0, keep_me := TRUE]
+  append_pad[, max_keep := NULL]
   } else {
     append_pad <- NULL
 }
@@ -256,9 +251,12 @@ for (loop_row in 1:nrow(loop_res)) {
   last_movement_played <- as.numeric(loop_res[nrow(loop_res), MOVEMENT])
   last_move_actual <- max(min(last_starting_slot_info[, MAXIMUM_MOVEMENT], last_movement_played), last_starting_slot_info[, MINIMUM_MOVEMENT])
   next_move <- as.numeric(loop_res[1, MOVEMENT])
+  follwoing_move <- as.numeric(loop_res[2, MOVEMENT])
+  solution <-  paste0(as.numeric(loop_res[, MOVEMENT]), collapse = ",")
   slots_over_finish <- last_move_actual  +  last_starting_slot - finish_slot
   turns_to_finish <- nrow(loop_res)
   turns_to_finish_res <- data.table(TURNS_TO_FINISH = turns_to_finish, SLOTS_OVER_FINISH = slots_over_finish, NEXT_MOVE = next_move,
+                                    FOLLOWING_MOVE = follwoing_move, SOLUTION = solution,
                                     TRACK_LEFT = track_left_loop, DRAW_ODDS = loop_dods, DECK_LEFT = deck_left_loop,
                                     PARENT_ID = paste0(track_left, "_", cycler_deck_status, "_", draw_odds_raw_data))
   total_data <-  rbind(total_data, turns_to_finish_res)

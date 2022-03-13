@@ -119,10 +119,20 @@ loop_rounds <- total_options[, max(draw_round_column)]
    filtered_res <- sorted_res
  }
 
+ #clear turns that have all options left
+ # max_options <- curr_deck_cards[cycler_id == CYCLER_ID & Zone != "Removed", .N, by = MOVEMENT][, .N]
+ # turn_options <- filtered_res[, .N, by = Turn_to_Draw]
+ # turn_options[, remove_turn := N == max_options]
+ # remove_these_turns <- turn_options[remove_turn == TRUE, Turn_to_Draw]
+ second_filter_res <- filtered_res#[!Turn_to_Draw %in% remove_these_turns]
+
+
+
  if (db_res == TRUE) {
 
-    db_vec <- paste0(paste0(filtered_res[, Turn_to_Draw], collapse = ""), ";", paste0(filtered_res[, MOVEMENT], collapse = ""))
-
+   movement_string <- paste0(second_filter_res[, paste0(MOVEMENT, collapse = ""), by = Turn_to_Draw][, V1], collapse = ".")
+    db_vec <- paste0(paste0(second_filter_res[, Turn_to_Draw], collapse = ""), ";", movement_string)
+    if (db_vec == ";") {db_vec <- ""}
     return(db_vec)
  } else {
    return(sorted_res)

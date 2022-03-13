@@ -41,7 +41,8 @@ setnames(input_data_all, game_slot_col_name, "NEW_GAME_SLOT_ID")
 if (nrow(to_calulcation) > 0) {
   print(nrow(to_calulcation))
   len <- to_calulcation[1, nchar(TRACK_LEFT)]
-  print(len)
+
+
   if ((len > 50 & nrow(to_calulcation) > 25) & global_dont_multicore == FALSE) {
   klusteri <- (parallel::makeCluster(global_cores))
   registerDoParallel(klusteri)
@@ -93,9 +94,13 @@ if (nrow(to_calulcation) > 0) {
 #  print(difftime(Sys.time(), timenow))
 
   #we can take max next move, as optimal solution might allow different next moves
+
   result[, row_id := seq_len(.N)]
-  calc_res <- result[, .(NEXT_MOVE = max(NEXT_MOVE),
-                         PARENT_ID = PARENT_ID[which.min(row_id)]), by = .(TURNS_TO_FINISH, SLOTS_OVER_FINISH , TRACK_LEFT, DECK_LEFT, DRAW_ODDS,
+  calc_res <- result[, .(NEXT_MOVE = NEXT_MOVE[which.min(row_id)],
+                         FOLLOWING_MOVE = FOLLOWING_MOVE[which.min(row_id)],
+                         SOLUTION = SOLUTION[which.min(row_id)],
+                         PARENT_ID = PARENT_ID[which.min(row_id)]), by = .(TURNS_TO_FINISH, SLOTS_OVER_FINISH,
+                                                                           TRACK_LEFT, DECK_LEFT, DRAW_ODDS,
                                                                            PRIORITY)]
 
 } else {
@@ -104,11 +109,11 @@ if (nrow(to_calulcation) > 0) {
 
   no_calc <- input_data[IS_FINISHED == 1]
   no_calc[, ':=' (IS_FINISHED = NULL, N = NULL, NEW_GAME_SLOT_ID = NULL, NEXT_MOVE = NA, PARENT_ID = paste0(TRACK_LEFT, "_", DECK_LEFT, "_", DRAW_ODDS),
-                  TURNS_TO_FINISH = 0, SLOTS_OVER_FINISH = NEW_GAME_SLOT_ID - finish_slot, DRAW_ODDS = "", DECK_LEFT = "", PRIORITY = 3)]
+                  SOLUTION = "", FOLLOWING_MOVE = NA, TURNS_TO_FINISH = 0, SLOTS_OVER_FINISH = NEW_GAME_SLOT_ID - finish_slot, DRAW_ODDS = "", DECK_LEFT = "", PRIORITY = 3)]
 
   join_res <- rbind(calc_res, no_calc)
  # join_res[, NEW_GAME_SLOT_ID := NULL]
-#browser()
+
  # ADM_OPTIMAL_MOVES[join_res, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 
   # turns_to_finish_calc <- optimal_moves_to_finish(cycler_deck_status,
@@ -124,10 +129,14 @@ if (nrow(to_calulcation) > 0) {
   tryIns <- tryCatch({
 
     if (db_handling == "SAVE") {
-      join_known <- ADM_OPTIMAL_MOVES[join_res, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, PRIORITY)][is.na(TURNS_TO_FINISH), .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH = i.TURNS_TO_FINISH,
-                                                                                                                    NEXT_MOVE = i.NEXT_MOVE, SLOTS_OVER_FINISH = i.SLOTS_OVER_FINISH,
-                                                                                                                    PARENT_ID = i.PARENT_ID, PRIORITY)]
+      # join_known_all <- ADM_OPTIMAL_MOVES[join_res, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, PRIORITY)]
+      # join_known <- join_known_all[is.na(TURNS_TO_FINISH), .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH = i.TURNS_TO_FINISH,
+      #                                                         NEXT_MOVE = i.NEXT_MOVE, SLOTS_OVER_FINISH = i.SLOTS_OVER_FINISH,
+      #                                                         PARENT_ID = i.PARENT_ID, PRIORITY,
+      #                                                        FOLLOWING_MOVE = i.FOLLOWING_MOVE,
+      #                                                        SOLUTION = i.SOLUTION)]
 
+           join_known <- join_res
     #  join_known[, .N, by = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][N > 1]
        # new_result_row <- join_res[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, TURNS_TO_FINISH, SLOTS_OVER_FINISH,
      #                                NEXT_MOVE)]
@@ -138,7 +147,7 @@ if (nrow(to_calulcation) > 0) {
 
     # if (nrow(joinaa) > 0) {
      # join_known[, PARENT_ID := NULL]
-    ADM_OPTIMAL_MOVES <<- rbind(ADM_OPTIMAL_MOVES, join_known)
+   # ADM_OPTIMAL_MOVES <<- rbind(ADM_OPTIMAL_MOVES, join_known)
     }
     #  print(paste0("in function ", nrow(ADM_OPTIMAL_MOVES)))
     #  }
@@ -149,27 +158,24 @@ if (nrow(to_calulcation) > 0) {
     warning("tried to insert duplicate to ADM_OPTIMAL")
 
   })
-  # if (tryIns == TRUE) {
-  #   browser()
-  #   dbIns("ADM_OPTIMAL_MOVES", new_result_row, con)
-  #   ADM_OPTIMAL_MOVES
-  # }
-#[, TURNS_TO_FINISH]
-  # } else {
-  #   #we had that one already, return original
-  #
-  #   final_result_list <- row_result#[, TURNS_TO_FINISH]
-  # }
-  # } else {
-  #
-  #   slots_over <- cycler_at_slot -  finish_slot
-  #   final_result_list <- data.table(TRACK_LEFT = track_left_input, DECK_LEFT = cycler_deck_status,
-  #                                   DRAW_ODDS = draw_odds_raw_data, TURNS_TO_FINISH = 0,
-  #                                   SLOTS_OVER_FINISH = slots_over,
-  #                                   NEXT_MOVE = 0)
-  # }
 
-  final_result_list <- join_res[input_data, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
+
+  aggr_res_over_prio <- join_res[, .(NEXT_MOVE = NEXT_MOVE[which.min(PRIORITY)],
+                                     FOLLOWING_MOVE = FOLLOWING_MOVE[which.min(PRIORITY)],
+
+                                     TURNS_TO_FINISH = TURNS_TO_FINISH[which.min(TURNS_TO_FINISH)],
+                                     SLOTS_OVER_FINISH = SLOTS_OVER_FINISH[which.min(SLOTS_OVER_FINISH)]), by = .(
+                                                                                       TRACK_LEFT, DECK_LEFT, DRAW_ODDS
+                                                                                       )]
+
+  ss_prev <- ADM_OPTIMAL_MOVES_AGGR[, .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS, MISSING = TRUE)]
+  check_existing <- ss_prev[aggr_res_over_prio, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)][is.na(MISSING)]
+  check_existing[, MISSING := NULL]
+
+  ADM_OPTIMAL_MOVES_AGGR <<- rbind(ADM_OPTIMAL_MOVES_AGGR, check_existing)
+
+
+  final_result_list <- aggr_res_over_prio[input_data, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
   final_result_list <- final_result_list[, .(TURNS_TO_FINISH = as.integer(TURNS_TO_FINISH),
                                              SLOTS_OVER_FINISH = as.integer(SLOTS_OVER_FINISH),
                                              NEXT_MOVE = as.integer(NEXT_MOVE),
