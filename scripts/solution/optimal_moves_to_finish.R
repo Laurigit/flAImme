@@ -159,7 +159,7 @@ res_mod <- MILPModel() %>%
 
                 , "min") %>%
 
-  solve_model(with_ROI(solver = "symphony", verbosity = -2, time_limit = 4))
+  solve_model(with_ROI(solver = "symphony", verbosity = -2, time_limit = 6))
 
 
 if (res_mod$status != "success") {

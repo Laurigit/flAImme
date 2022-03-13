@@ -85,7 +85,7 @@ if (nrow(to_calulcation) > 0) {
     result <- rbind(turns_to_finish_calc, result)
 
     kesto3 <- difftime(Sys.time(), alku3)
-    print(paste0("kesto single loop ", kesto3))
+   # print(paste0("kesto single loop ", kesto3))
   }
   kesto2 <- difftime(Sys.time(), alku2)
   #kesto2

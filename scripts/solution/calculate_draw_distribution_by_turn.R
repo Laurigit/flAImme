@@ -132,7 +132,8 @@ loop_rounds <- total_options[, max(draw_round_column)]
     second_filter_res <- filtered_res[Turn_to_Draw  <= remove_up_to_turns]
   }
 
-
+ check_if_na <- second_filter_res[is.na(MOVEMENT)]
+ if (nrow(check_if_na) > 0) {browser()}
 
 
 

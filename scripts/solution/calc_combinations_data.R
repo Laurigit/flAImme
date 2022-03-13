@@ -201,7 +201,13 @@ dod_and_normal[, IS_FINISHED := ifelse(TRACK_LEFT %in% c("", "N"), 1, 0)]
 
 # join_known <- ADM_OPTIMAL_MOVES_AGGR[dod_and_normal, on = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 # join_known[, row_id_calc := NULL]
-
+cases <- dod_and_normal[IS_FINISHED == 0, .N]
+cover <- dod_and_normal[IS_FINISHED == 0 & !is.na(TURNS_TO_FINISH), .N]
+pct <- round(cover/cases, 2)
+dod_cases <-  dod_and_normal[IS_FINISHED == 0 & DRAW_ODDS != "", .N]
+dod_cover <- dod_and_normal[IS_FINISHED == 0 & !is.na(TURNS_TO_FINISH)  & DRAW_ODDS != "" , .N]
+dod_pct <- round(dod_cover / dod_cases, 2)
+print(paste0(cases, " Cases and ", cover, " covered. ", dod_cases, " Dod cases and ", dod_cover, " covered"))
 added_ttf <- add_ttf_multicore(con, dod_and_normal[is.na(TURNS_TO_FINISH) & IS_FINISHED == 0], pre_aggr_game_status_no_list)
 
 dod_and_normal <- update_dt_values(dod_and_normal, added_ttf, c("DRAW_ODDS", "TRACK_LEFT", "DECK_LEFT"),

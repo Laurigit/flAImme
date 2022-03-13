@@ -10,8 +10,8 @@ ttf_botti <- function(team_combinations_data_with_other_player_probs, deck_statu
   #team_combinations_data_with_other_player_probs <- hidden_information_output
 
   join_my_ttf <- copy(team_combinations_data_with_other_player_probs)
-  join_my_ttf[, ':=' (TURNS_TO_FINISH2 = ifelse(bot_team_id == TEAM_ID & !is.na(TURNS_TO_FINISH_DOD), TURNS_TO_FINISH_DOD, TURNS_TO_FINISH),
-                      SLOTS_OVER_FINISH2 = ifelse(bot_team_id == TEAM_ID & !is.na(SLOTS_OVER_FINISH_DOD), SLOTS_OVER_FINISH_DOD, SLOTS_OVER_FINISH))]
+  join_my_ttf[, ':=' (TURNS_TO_FINISH = ifelse(bot_team_id == TEAM_ID & !is.na(TURNS_TO_FINISH_DOD), TURNS_TO_FINISH_DOD, TURNS_TO_FINISH),
+                      SLOTS_OVER_FINISH = ifelse(bot_team_id == TEAM_ID & !is.na(SLOTS_OVER_FINISH_DOD), SLOTS_OVER_FINISH_DOD, SLOTS_OVER_FINISH))]
 
   min_ttf <- join_my_ttf[, (min(TURNS_TO_FINISH))] + 1
   #min_ttf_new <- join_my_ttf[, ceiling(mean(TURNS_TO_FINISH_NEW))]
