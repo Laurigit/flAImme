@@ -234,7 +234,10 @@ if (normal_model == FALSE) {
     safety <- safety + 1
 
   }
- if (safety >= 10) { browser()}
+ if (safety >= 10) {
+   warning("SAFETY 10")
+   stop()
+   }
   final_res <- rbind(final_res[MOVEMENT != 100], total_new_rows)
 }
 
