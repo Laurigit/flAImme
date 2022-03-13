@@ -120,11 +120,19 @@ loop_rounds <- total_options[, max(draw_round_column)]
  }
 
  #clear turns that have all options left
- # max_options <- curr_deck_cards[cycler_id == CYCLER_ID & Zone != "Removed", .N, by = MOVEMENT][, .N]
- # turn_options <- filtered_res[, .N, by = Turn_to_Draw]
- # turn_options[, remove_turn := N == max_options]
- # remove_these_turns <- turn_options[remove_turn == TRUE, Turn_to_Draw]
- second_filter_res <- filtered_res#[!Turn_to_Draw %in% remove_these_turns]
+ max_options <- curr_deck_cards[cycler_id == CYCLER_ID & Zone != "Removed", .N, by = MOVEMENT][, .N]
+ turn_options <- filtered_res[, .N, by = Turn_to_Draw]
+ turn_options[, remove_turn := N == max_options]
+
+ remove_up_to_turns <- suppressWarnings(turn_options[remove_turn == FALSE, max(Turn_to_Draw)])
+  if (is.infinite(remove_up_to_turns)) {
+    #remove all
+    second_filter_res <- filtered_res[1 == 0]
+  } else {
+    second_filter_res <- filtered_res[Turn_to_Draw  <= remove_up_to_turns]
+  }
+
+
 
 
 
