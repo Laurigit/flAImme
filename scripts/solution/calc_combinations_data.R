@@ -252,7 +252,8 @@ join_back_to_data_with_cyclers <- dcastaa[join_track_left, on = .(TRACK_LEFT, DE
 
 
   setorder(join_to_combinations, case_id, CYCLER_ID)
-  join_to_combinations[, ':='  (MOVES = paste0(MOVEMENT, collapse = "_")
+  join_to_combinations[, ':='  (MOVES = paste0(MOVEMENT, collapse = "_"),
+                                CYCLERS = paste0(CYCLER_ID, collapse = "_")
                                 ) , by = .(case_id, TEAM_ID)]
 
 
@@ -277,8 +278,9 @@ join_back_to_data_with_cyclers <- dcastaa[join_track_left, on = .(TRACK_LEFT, DE
   join_to_combinations[, ':=' (FINISH_ESTIMATE_MEAN = mean(FINISH_ESTIMATE)), by = .(CYCLER_ID)]
   join_to_combinations[, OVER_FINISH := pmax(NEW_GAME_SLOT_ID - finish_slot, 0) + ((TURNS_TO_FINISH == 0 * (4 - pmin(MOVE_ORDER , 4))) * 2)]
 
-  aggr_cyc <- STG_CYCLER[, .( CYCLERS = paste0(CYCLER_ID, collapse = "_")), by = TEAM_ID]
-   result <- aggr_cyc[join_to_combinations, on = "TEAM_ID"]
+  #aggr_cyc <- STG_CYCLER[, .( CYCLERS = paste0(CYCLER_ID, collapse = "_")), by = TEAM_ID]
+   #result <- aggr_cyc[join_to_combinations, on = "TEAM_ID"]
+   result <- join_to_combinations
   return(result)
 
 }

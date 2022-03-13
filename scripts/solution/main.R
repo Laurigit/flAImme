@@ -2,7 +2,7 @@
 #AWS docker IMAGE PITÄÄ REBUILDAA, ETTÄ TOIMII PILVESSÄ.
 source("global.R")
 #kaadu
-global_dont_multicore <<- FALSE
+global_dont_multicore <<- TRUE
 con <- connDB(con, "flaimme")
    required_data(c("STG_TEAM","ADM_CYCLER_INFO", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
   total_winner <- NULL
@@ -15,7 +15,7 @@ game_status_data <- list()
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
   bot_data <- data.table(bot_name = c("next_turn_botti", "ruler_bot", "ttf_botti", "next_turn_botti"), TEAM_ID = c(1, 2 , 3, 4))
-  bot_data <- data.table(bot_name = c("ttf_botti"), TEAM_ID = c(4))
+  bot_data <- data.table(bot_name = c("ttf_botti", "ttf_botti"), TEAM_ID = c(3, 4))
   #bot_data <- data.table(bot_name = c("ruler_bot"), TEAM_ID = c(1))
  # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
@@ -37,7 +37,7 @@ game_status_data <- list()
   #  track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
     track <- sample(c(12,13,14,15,16,17),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
     track <- sample(c(36,37,39,40,41,42),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
-    track <- 39
+   # track <- 39
     #track 37 on mukula
     #ijk map explanation: i = starting point, k = movement, j = ending slot
 
@@ -157,7 +157,7 @@ game_status_data <- list()
             calc_ttf_input_all <- 0
            # calc_ttf_input <- ifelse(turn_id >= 5, 0, turn_id)
             pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
-            input_case_count <- round(10000 / (length(in_game_cyclers) - 1) / (pmax(5 - turn_id, 1)))
+            input_case_count <- round(1000 / (length(in_game_cyclers) - 1))
 
           #  input_case_count <- NULL
               combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
