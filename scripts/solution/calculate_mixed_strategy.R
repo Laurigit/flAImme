@@ -192,7 +192,7 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
       }
       prev_result <- new_result
       prev_max_prob_diff <- varia
-browsr()
+
       if (varia < var_threshold | iter_loop_count >= iteration_limit) {
         continue <- 0
       }

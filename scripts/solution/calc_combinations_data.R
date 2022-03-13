@@ -99,6 +99,7 @@ if (!is.null(hidden_info_teams)) {
 
   #mission is to solve alternative TTF based on draw odds. first filter teams that are included in the calculation
 dod_teams <- join_track_left[TEAM_ID %in% hidden_info_teams]
+if (nrow(dod_teams) > 0) {
 #calculate draw odds
 dod_teams[, DRAW_ODDS := calculate_draw_distribution_by_turn(CYCLER_ID, play_card(CYCLER_ID,card_id = NULL,
                                                                                   deck_copied,
@@ -164,6 +165,9 @@ dod_data_with_existing_results[, ':=' (TURNS_TO_FINISH = ifelse(is.finite(TURNS_
                                        SLOTS_OVER_FINISH = ifelse(is.finite(SLOTS_OVER_FINISH), SLOTS_OVER_FINISH, NA))]
 #print(dod_data_with_existing_results)
 
+} else {
+  dod_data_with_existing_results <- NULL
+}
 } else {
   dod_data_with_existing_results <- NULL
 }
