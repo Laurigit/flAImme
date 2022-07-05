@@ -4,7 +4,6 @@ EV_to_moves <- function(EV_table, deck_status, turn_start_deck) {
 
 
 
-
   check_res2 <- EV_table
   check_res2[, M1 := as.numeric(str_sub(MOVES, 1, 1))]
   check_res2[, M2 := as.numeric(str_sub(MOVES, 3, 3))]
@@ -39,7 +38,9 @@ EV_to_moves <- function(EV_table, deck_status, turn_start_deck) {
   EV_OF_PLAYING_FIRST <- EVs[, sum(WEIGHTED_EV * playing_prob_me), by = CYCLER_ID]
 
 
-  first_selected_cycler <- EV_OF_PLAYING_FIRST[which.max(V1), CYCLER_ID]
+  #first_selected_cycler <- EV_OF_PLAYING_FIRST[which.max(V1), CYCLER_ID]
+  #WE MIGHT BE CHEATING IN DRAW ODDS. THATS WHY WE CANT USE TTF.
+  first_selected_cycler <- EV_OF_PLAYING_FIRST[, min(CYCLER_ID)]
   #    p1_data <- check_res2[, ]
 
 

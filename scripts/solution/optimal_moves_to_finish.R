@@ -10,19 +10,31 @@ optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_
 
 
 
+  kortit_Dt <- data.table(MOVEMENT = as.numeric(str_split(cycler_deck_status[[1]][1], "")[[1]]))
+
+
   track_left <- precalc_data[GAME_SLOT_ID == calc_from_slot, TRACK_LEFT]
 
   if (draw_odds_raw_data == "") {
     use_draw_odds <- ""
   } else {
 
-    parse_draw_odds <- str_split(sub("\\.", "", draw_odds_raw_data), ";")
+    parse_phase_1 <- gsub("\\.", "", draw_odds_raw_data)
+    parse_draw_odds <- str_split(parse_phase_1, ";")
 
     use_draw_odds <- data.table(Turn_to_Draw = as.numeric(str_split(parse_draw_odds[[1]][1], "")[[1]]),
                                   MOVEMENT =  as.numeric(str_split(parse_draw_odds[[1]][2], "")[[1]]),
                                   prob = -1)
 
+    #if draw odds know the true deck, use it. We only use max one 2 in the normal deck left
+
+    kortit_Dt_BU <- data.table(MOVEMENT = as.numeric(str_split(parse_draw_odds[[1]][2], "")[[1]]))
+
+    if (nrow(kortit_Dt_BU) > nrow(kortit_Dt)) {
+      kortit_Dt <- kortit_Dt_BU[order(-MOVEMENT)]
+    }
   }
+
 
 
 
@@ -37,7 +49,6 @@ optimal_moves_to_finish <- function(cycler_deck_status, calc_from_slot, precalc_
 
 
 
-
 #restricted_v <- aggr_to_slots[, restricted_v]
 
 aggr_to_slots[, row_number := seq_len(.N)]
@@ -47,21 +58,9 @@ rivi_lkm <- aggr_to_slots[, .N]
 ascend_v <- aggr_to_slots[1:finish_slot, ascend_v]
 finsish_straight <- max(finish_slot - 9, 1)
 
-kortit_Dt <- data.table(MOVEMENT = as.numeric(str_split(cycler_deck_status[[1]][1], "")[[1]]))
 
-# if(nrow(kortit_Dt[MOVEMENT == 5]) > 0) {
-#   penalty_card <- 5
-# } else if (nrow(kortit_Dt[MOVEMENT == 4]) > 0) {
-#   penalty_card <- 4
-# } else if (nrow(kortit_Dt[MOVEMENT == 6]) > 0) {
-#   penalty_card <- 6
-# } else if (nrow(kortit_Dt[MOVEMENT == 3]) > 0) {
-#   penalty_card <- 3
-# } else if (nrow(kortit_Dt[MOVEMENT == 7]) > 0) {
-#   penalty_card <- 7
-# } else  {
-#   penalty_card <- 2
-# }
+
+
 
 
 if (length(finish_slot) == 0 ) {
@@ -71,17 +70,9 @@ if (length(finish_slot) == 0 ) {
 
 
 
-# if (finish_slot <= 3) {
-#   min_move <- aggr_to_slots[GAME_SLOT_ID == calc_from_slot, max(MINIMUM_MOVEMENT)]
-#   max_move <- aggr_to_slots[GAME_SLOT_ID == calc_from_slot, max(MAXIMUM_MOVEMENT)]
-#   last_move <- max(min(pmax(kortit_Dt[, max(MOVEMENT)], 2), max_move), min_move)
-#   slot_over_is <- last_move - finish_slot + 1
-#   turns_to_finish_res <- data.table(TURNS_TO_FINISH = 1, SLOTS_OVER_FINISH = slot_over_is, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
-#
-#
-# } else {
-
-
+if (nrow(kortit_Dt) == 0) {
+  kortit_Dt <- data.table(MOVEMENT = c(2,2,2,2,2,2,2,2,2,2,2,2))
+}
 
 kortit_aggr <- kortit_Dt[, .(cards_in_hand = .N), by = MOVEMENT]
 max_result_of_turns_to_finish <- kortit_aggr[, sum(cards_in_hand)] + 1
@@ -124,6 +115,14 @@ if (use_draw_odds[[1]][1] != "") {
 
 normal_model <- TRUE
 PRIORITY <- 1
+#print("starting first")
+
+if (finish_slot > 2) {
+  continue_where_left_vector <- 2:(finish_slot - 1)
+} else{
+  continue_where_left_vector <- as.numeric()
+}
+
 
 res_mod <- MILPModel() %>%
   #  add_variable(y[k], k = 1:20, type = "binary") %>%
@@ -133,6 +132,8 @@ res_mod <- MILPModel() %>%
 
   set_bounds(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), ub = 0,
              boundi_filtteri(i, j, kortit[k], max_move_vect, ascend_v, append_pad )) %>%
+
+
   #eka sarake alotettava
   add_constraint(sum_expr(x[i, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == 1, i = 1) %>%
 
@@ -143,33 +144,45 @@ res_mod <- MILPModel() %>%
   # add_constraint(sum_expr(x[i, n, k], i = 1:rivi_lkm, k = length(kortit)) <=
   #                  sum_expr(x[n, j, k], j = 1:rivi_lkm, k = length(kortit)), n = 1:finish_slot) %>%
   #dont use more cards than you have
-  add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit))  %>%
+  add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit))
 
 
-    #use only at the end the extra exhaust
+
+if (length(continue_where_left_vector) > 0) {
 
     #makse sure to continue where I left last turn.
-    add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) ==
-                     sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(finish_slot - 1)) %>%
+  res_mod <-  res_mod  %>%    add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) ==
+                     sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = continue_where_left_vector)
+}
     #maaliin on päästävä
-    add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, k = 1:length(kortit), j = finish_slot:rivi_lkm) == 1) %>%
-  set_objective(sum_expr(x[i, j, k] * 1000, i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)) -
+res_mod <- res_mod  %>% add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, k = 1:length(kortit), j = finish_slot:rivi_lkm) == 1) %>%
+  set_objective(sum_expr(x[i, j, k] * 25, i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit)) -
 
                   sum_expr(x[i, j, k] * colwise(last_card_payoff(i, j, k, kortit)), i = finsish_straight:(finish_slot - 1), j = finish_slot, k = 1:length(kortit))
 
                 , "min") %>%
 
-  solve_model(with_ROI(solver = "symphony", verbosity = -2, time_limit = 6))
+  solve_model(with_ROI(solver = "symphony", verbosity = -2, gap_limit = 6, time_limit = 60))
 
+final_res <- clean_model_res(res_mod$solution, kortit)
 
-if (res_mod$status != "success") {
+if (final_res[nrow(final_res), j_clean == finish_slot] & nrow(final_res) < 20) {
+  model_success <- TRUE
+} else {
+  model_success <- FALSE
+}
+##print("1st done")
+#raw <- as.data.table(res_mod$solution, keep.rownames = TRUE)[V2 > 0]
+if (model_success == FALSE) {
 
   kortit_aggr <- kortit_Dt[, .(cards_in_hand = .N), by = MOVEMENT]
+
   add_row <- rbind(kortit_aggr, data.table(MOVEMENT = 100, cards_in_hand = 1))
   kortit <- add_row[, MOVEMENT]
   card_count <- add_row[, cards_in_hand]
   normal_model <- FALSE
   PRIORITY <- 2
+print("starting 2nd")
 
   res_mod <-  MILPModel() %>%
     #  add_variable(y[k], k = 1:20, type = "binary") %>%
@@ -178,7 +191,7 @@ if (res_mod$status != "success") {
     #set_objective(sum_expr(y[k], k = 1), "max") %>%
 
     set_bounds(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), ub = 0,
-               boundi_filtteri(i, j, kortit[k], max_move_vect, ascend_v, append_pad )) %>%
+               boundi_filtteri(i, j, kortit[k], max_move_vect, ascend_v, append_pad, backup = TRUE )) %>%
     #eka sarake alotettava
     add_constraint(sum_expr(x[i, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == 1, i = 1) %>%
 
@@ -191,41 +204,94 @@ if (res_mod$status != "success") {
     #dont use more cards than you have
     add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit))  %>%
 
+    add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = finish_slot,  k = length(kortit)) == 1)
 
     #makse sure to continue where I left last turn.
-    add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) ==
-                     sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = 2:(finish_slot - 1))   %>%
-    set_objective(sum_expr(x[i, j, k] * colwise(move_far_as_possible(i, j, k)), i = 1:(finish_slot - 1), j = finish_slot, k = length(kortit))
-                  , "max") %>%
+    if (length(continue_where_left_vector) > 0) {
 
-    solve_model(with_ROI(solver = "symphony", verbosity = -2))
+      #makse sure to continue where I left last turn.
+      res_mod <-  res_mod  %>%    add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) ==
+                                                   sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = continue_where_left_vector)
+    }
+
+
+
+  res_mod <-  res_mod  %>% set_objective(sum_expr(x[i, j, k] , i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit) * 1)
+
+                    + sum_expr(x[i, j, k] * colwise(move_far_as_possible(i, j, k, finish_slot)) * 1000, i = 1:finish_slot, j = finish_slot, k = length(kortit))
+                  , "min") %>%
+    #jokanen käytetty kortti on sakko
+    #jokanen käytetty normikortti on plussa
+    #sakko, jos joutuu käyttää 100 kortin
+    solve_model(with_ROI(solver = "symphony",  verbosity = -2, gap_limit = 6, time_limit = 60))
   # turns_to_finish_res <- data.table(TURNS_TO_FINISH = max_result_of_turns_to_finish, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
-
+ # print(" 2nd done")
+  final_res <- clean_model_res(res_mod$solution, kortit)
+  if (final_res[nrow(final_res), j_clean == finish_slot] & nrow(final_res) < 20) {
+    model_success <- TRUE
+  } else {
+    model_success <- FALSE
+  }
 }
 
+
+if (model_success == FALSE) {
+  PRIORITY <- 3
+  print("prio 3")
+  res_mod <-  MILPModel() %>%
+    #  add_variable(y[k], k = 1:20, type = "binary") %>%
+    add_variable(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), type = "binary") %>%
+    #add_variable(z[y], y = penalty_card, type = "integer") %>%
+    #set_objective(sum_expr(y[k], k = 1), "max") %>%
+
+    set_bounds(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit), ub = 0,
+               boundi_filtteri(i, j, kortit[k], max_move_vect, ascend_v, append_pad, backup = TRUE )) %>%
+    #eka sarake alotettava
+    add_constraint(sum_expr(x[i, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) == 1, i = 1) %>%
+
+    #jatka siitä mihin jäit
+
+
+    #make sure that, normal cards are played before extra exhaust cards
+    # add_constraint(sum_expr(x[i, n, k], i = 1:rivi_lkm, k = length(kortit)) <=
+    #                  sum_expr(x[n, j, k], j = 1:rivi_lkm, k = length(kortit)), n = 1:finish_slot) %>%
+    #dont use more cards than you have
+    add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = 1:rivi_lkm) <= card_count[k], k = 1:length(kortit))  %>%
+
+    add_constraint(sum_expr(x[i, j, k], i = 1:rivi_lkm, j = finish_slot,  k = length(kortit)) == 1)
+
+    #makse sure to continue where I left last turn.
+    if (length(continue_where_left_vector) > 0) {
+
+      #makse sure to continue where I left last turn.
+      res_mod <-  res_mod  %>%    add_constraint(sum_expr(x[n, j, k], j = 1:rivi_lkm, k = 1:length(kortit)) ==
+                                                   sum_expr(x[i, n,  k], i = 1:rivi_lkm, k = 1:length(kortit)), n = continue_where_left_vector)
+    }
+
+
+  res_mod <-  res_mod  %>%  set_objective(sum_expr(x[i, j, k] , i = 1:rivi_lkm, j = 1:rivi_lkm, k = 1:length(kortit) * 1)
+
+                  + sum_expr(x[i, j, k] * colwise(move_far_as_possible(i, j, k, finish_slot)) * 1000, i = 1:finish_slot, j = finish_slot, k = length(kortit))
+                  , "min") %>%
+    solve_model(with_ROI(solver = "symphony", verbosity = -2, first_feasible = TRUE))
+  # turns_to_finish_res <- data.table(TURNS_TO_FINISH = max_result_of_turns_to_finish, SLOTS_OVER_FINISH = 0, NEXT_MOVE = pmax(kortit_Dt[, max(MOVEMENT)], 2))
+  # print(" 2nd done")
+
+
+}
 res_mod$objective_value
-raw <- as.data.table(res_mod$solution, keep.rownames = TRUE)[V2 > 0]
-res <- nrow(raw)
+final_res <- clean_model_res(res_mod$solution, kortit)
 
-raw[, c("i", "j", "k") := tstrsplit(V1, ",", fixed = TRUE)]
-raw[, i_clean := as.numeric(gsub("\\D", "", i))]
-raw[, j_clean := as.numeric(gsub("\\D", "", j))]
-raw[, k_clean := as.numeric(gsub("\\D", "", k))]
-setorder(raw, i_clean)
-
-res_kortit <- data.table(MOVEMENT = kortit, k_clean = 1:length(kortit))
-
-join_move <- res_kortit[raw, on = "k_clean"]
-final_res <- join_move[, .(MOVEMENT, i_clean, SLOTS_PROGRESSED = j_clean - i_clean, j_clean)]
 
 total_new_rows <- NULL
+
 if (normal_model == FALSE) {
 
   start_slot <- final_res[MOVEMENT == 100, i_clean]
   joini_table <- aggr_to_slots[, .(ascend_v, i = seq_len(.N),  MOVEMENT_help_table = 100,  FINISH_LINE_HELP = finish_slot)]
  safety <- 1
 
-  while ((start_slot < finish_slot) & safety < 10) {
+  while ((start_slot < finish_slot) & safety <= 15) {
     end_slot <-  start_slot + joini_table[i == start_slot, ascend_v]
     new_row <- data.table(MOVEMENT = 2, i_clean = start_slot, j_clean = end_slot)
     new_row[, SLOTS_PROGRESSED := j_clean - i_clean]
@@ -234,9 +300,11 @@ if (normal_model == FALSE) {
     safety <- safety + 1
 
   }
- if (safety >= 10) {
+
+ if (safety >= 15) {
    warning("SAFETY 10")
-   stop()
+ #  browser()
+#   stop()
    }
   final_res <- rbind(final_res[MOVEMENT != 100], total_new_rows)
 }
@@ -248,6 +316,7 @@ track_left_loop <- copy(track_left)
 loop_dods <- copy(draw_odds_raw_data)
 deck_left_loop <- copy(cycler_deck_status)
 loop_res <- copy(final_res)
+
 for (loop_row in 1:nrow(loop_res)) {
   last_starting_slot <- as.numeric(loop_res[nrow(loop_res), i_clean])
   last_starting_slot_info <- aggr_to_slots[last_starting_slot == row_number]
@@ -270,12 +339,17 @@ for (loop_row in 1:nrow(loop_res)) {
   loop_res <- loop_res[2:nrow(loop_res)]
 
   if (loop_dods != "") {
-  parse_draw_odds <- str_split(loop_dods, ";")
+
+  parse_draw_odds <- str_split(gsub("\\.", "", loop_dods), ";")
   use_draw_odds <- data.table(Turn_to_Draw = as.numeric(str_split(parse_draw_odds[[1]][1], "")[[1]]),
                               MOVEMENT =  as.numeric(str_split(parse_draw_odds[[1]][2], "")[[1]]),
                               prob = -1)
   filter_dods <- use_draw_odds[Turn_to_Draw > 1]
   filter_dods[, Turn_to_Draw := Turn_to_Draw - 1]
+  na_check <- filter_dods[is.na(MOVEMENT)]
+  if (nrow(na_check) > 0) {
+    browser()
+  }
   loop_dods <-  paste0(paste0(filter_dods[, Turn_to_Draw], collapse = ""), ";", paste0(filter_dods[, MOVEMENT], collapse = ""))
   if (loop_dods == ";") { loop_dods <- ""}
   }
@@ -288,11 +362,11 @@ for (loop_row in 1:nrow(loop_res)) {
 
 
 total_data[, PRIORITY := PRIORITY]
-
+total_data[, SAVE := TRUE]
 return(total_data)
+    }
 
 
-}
 
 
 last_card_payoff <- function(i, j, k, kortit) {
@@ -300,13 +374,13 @@ dt <- data.table(i, j, k)
 kortit_dt <- data.table(k = 1:length(kortit), kortit)
 joinaa <- kortit_dt[dt, on = "k"]
 
-return(joinaa[, kortit] + joinaa[, i] * 10)
+return(joinaa[, kortit] + joinaa[, i])
 
 }
 
-move_far_as_possible <- function(i, j, k) {
+move_far_as_possible <- function(i, j, k, finish_slot) {
   dt <- data.table(i, j, k)
 
-  return(dt[, i])
+  return(dt[, finish_slot - i])
 }
 

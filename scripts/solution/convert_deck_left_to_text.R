@@ -1,6 +1,8 @@
-convert_deck_left_to_text <- function(deck_status, cycler_id, played_card = FALSE, trunc = FALSE, include_max_cards_count = 15) {
+convert_deck_left_to_text <- function(deck_status, cycler_id, played_card = FALSE, trunc = FALSE,
+                                      max_extra_exhaust = 1) {
 
 if (played_card == FALSE) {
+
   copy_deck <- copy(deck_status)
 } else {
   copy_deck <- copy(deck_status)
@@ -18,7 +20,10 @@ if (played_card == FALSE) {
   } else {
     filtered_deck <- copy_deck
   }
+  count_exh <- filtered_deck[CARD_ID == 1 & cycler_id == CYCLER_ID & Zone != "Removed"]
+  cut_cards <- nrow(count_exh) - max_extra_exhaust
+  total_cards_included <- filtered_deck[cycler_id == CYCLER_ID & Zone != "Removed", .N] - cut_cards
   deck_left <- str_sub(filtered_deck[order(-MOVEMENT)][CYCLER_ID == cycler_id & Zone != "Removed", paste0(MOVEMENT, collapse = "")],
-                                                       1, include_max_cards_count)
+                                                       1, total_cards_included)
   return(deck_left)
 }

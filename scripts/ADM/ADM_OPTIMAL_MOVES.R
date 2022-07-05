@@ -1,7 +1,9 @@
 
 #ADM_OPTIMAL_MOVES
 
-luettu <- dbSelectAll("ADM_OPTIMAL_MOVES", con)
+#luettu <- dbSelectAll("ADM_OPTIMAL_MOVES", con)
+luettu <- data.table(dbGetQuery(con, "SELECT TRACK_LEFT, DECK_LEFT, TURNS_TO_FINISH, DRAW_ODDS, SLOTS_OVER_FINISH, NEXT_MOVE, FOLLOWING_MOVE,
+                      PRIORITY FROM ADM_OPTIMAL_MOVES"))
 
 ADM_OPTIMAL_MOVES <- fix_colnames(luettu)
 

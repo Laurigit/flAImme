@@ -1,4 +1,4 @@
-zoom <- function(game_status, horizon = 10, max_lag = 10) {
+zoom <- function(game_status, horizon = 10, max_lag = 100) {
   min_cycler <- game_status[CYCLER_ID > 0, min(GAME_SLOT_ID)]
   max_cycler <- game_status[CYCLER_ID > 0, max(GAME_SLOT_ID)]
 

@@ -1,5 +1,5 @@
-ttf_botti <- function(team_combinations_data_with_other_player_probs, deck_status,
-                         bot_config, bot_team_id, pre_aggr_game_status_input = NULL, input_turn_id = NULL) {
+ttf_botti_ignore_hidden <- function(team_combinations_data_with_other_player_probs, deck_status,
+                         bot_config, bot_team_id, pre_aggr_game_status_input = NULL , input_turn_id = NULL) {
 
   required_data("ADM_CYCLER_INFO")
   ss_info <- ADM_CYCLER_INFO[, .(CYCLER_ID, IS_ROULER = ifelse(CYCLER_TYPE_ID == 1, 1, 0))]
@@ -10,8 +10,8 @@ ttf_botti <- function(team_combinations_data_with_other_player_probs, deck_statu
   #team_combinations_data_with_other_player_probs <- hidden_information_output
 
   join_my_ttf <- copy(team_combinations_data_with_other_player_probs)
-  join_my_ttf[, ':=' (TURNS_TO_FINISH = ifelse(bot_team_id == TEAM_ID & !is.na(TURNS_TO_FINISH_DOD), TURNS_TO_FINISH_DOD, TURNS_TO_FINISH),
-                      SLOTS_OVER_FINISH = ifelse(bot_team_id == TEAM_ID & !is.na(SLOTS_OVER_FINISH_DOD), SLOTS_OVER_FINISH_DOD, SLOTS_OVER_FINISH))]
+  # join_my_ttf[, ':=' (TURNS_TO_FINISH = ifelse(bot_team_id == TEAM_ID & !is.na(TURNS_TO_FINISH_DOD), TURNS_TO_FINISH_DOD, TURNS_TO_FINISH),
+  #                     SLOTS_OVER_FINISH = ifelse(bot_team_id == TEAM_ID & !is.na(SLOTS_OVER_FINISH_DOD), SLOTS_OVER_FINISH_DOD, SLOTS_OVER_FINISH))]
 
   min_ttf <- max(15 - (input_turn_id + 1), 1)
   #min_ttf_new <- join_my_ttf[, ceiling(mean(TURNS_TO_FINISH_NEW))]
@@ -30,8 +30,8 @@ ttf_botti <- function(team_combinations_data_with_other_player_probs, deck_statu
   #
   #join_my_ttf[, ':=' (CASE_DIFF = sum(TTF_DIFF_OF_MEAN * RELEVANT_OPPONENT), tot_cycs = sum(RELEVANT_OPPONENT)), by = .(case_id)]
   #  join_my_ttf[, ':=' (COMPETITOR_AVG_TTF = (CASE_DIFF - TTF_DIFF_OF_MEAN) / (tot_cycs - 1))]
-  setorder(join_my_ttf, case_id, FINISH_ESTIMATE)
- # join_my_ttf[, FINISH_RANK := 4 - pmin(seq_len(.N), 4), by = case_id]
+
+
   join_my_ttf[, ':='(RELATIVE_TTF = (CYCLER_MEAN_TTF - TURNS_TO_FINISH))]#positive is good
   join_my_ttf[, ':='(RELATIVE_SOF = (SLOTS_OVER_FINISH  - CYCLER_MEAN_SOF))]
 
@@ -53,7 +53,7 @@ ttf_botti <- function(team_combinations_data_with_other_player_probs, deck_statu
   cyc_info_to_scoring <- ss_info[join_my_ttf, on = "CYCLER_ID"]
 
   scoring_data <- ss_exh[cyc_info_to_scoring, on = "CYCLER_ID"]#[TEAM_ID == bot_team_id]
- # scoring_data[, MY_TTF := mean(TURNS_TO_FINISH - SLOTS_OVER_FINISH / 10), by = CYCLER_ID]
+  scoring_data[, MY_TTF := mean(TURNS_TO_FINISH - SLOTS_OVER_FINISH / 10), by = CYCLER_ID]
 
   scoring_data[, ':=' (MOVE_DIFF_SCORE = (MOVE_DIFF - IS_ROULER * MOVE_DIFF * 0.2)*0.1,
                        EXHAUST_SCORE =  (1 - EXHAUST) * max((1 - input_turn_id / 15), 0.01) * (3 - FINISH_RANK + 0.1) / 3,
@@ -62,7 +62,7 @@ ttf_botti <- function(team_combinations_data_with_other_player_probs, deck_statu
                        SOF_SCORE = 0,
                        FINISH_RANK_SCORE = FINISH_RANK,
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
-                       MOVE_ORDER_SCORE = -0.2 * MOVE_ORDER,# 1 - (MOVE_ORDER / total_cyclers) , #- MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
+                       MOVE_ORDER_SCORE = -0.2 * MOVE_ORDER, # 1 - (MOVE_ORDER / total_cyclers) , #- MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
                        OVER_FINISH_SCORE = OVER_FINISH * 10,
                        SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.1
                        #SOF_NEW_SCORE = (SLOTS_OVER_FINISH_NEW - SLOTS_OVER_FINISH  )  * 0.1 * norm_card_share ^ (1 / 2),
@@ -177,9 +177,9 @@ ttf_botti <- function(team_combinations_data_with_other_player_probs, deck_statu
   #                    MOVE_ORDER_SCORE  = MOVE_ORDER_SCORE - min(MOVE_ORDER_SCORE),
   #                    OVER_FINISH_SCORE  = OVER_FINISH_SCORE - min(OVER_FINISH_SCORE),
   #                    SLOTS_PROGRESSED_SCORE  = SLOTS_PROGRESSED_SCORE - min(SLOTS_PROGRESSED_SCORE)
-  #
-  #                    # NEXT_SCORE = NEXT_SCORE - min(NEXT_SCORE)
-  # )]
+
+                     # NEXT_SCORE = NEXT_SCORE - min(NEXT_SCORE)
+  #)]
   # check_res2[, ROW_SUM := MOVE_DIFF_SCORE + EXHAUST_SCORE + TTF_SCORE + SOF_SCORE + FINISH_RANK_SCORE +
   #              MOVE_ORDER_SCORE + OVER_FINISH_SCORE + SLOTS_PROGRESSED_SCORE ]
   # check_res2[, max_score := abs(MOVE_DIFF_SCORE)+ abs(EXHAUST_SCORE)+ abs(SLOTS_PROGRESSED_SCORE)+ abs(TTF_SCORE)+ abs(FINISH_RANK_SCORE)+
@@ -192,7 +192,7 @@ ttf_botti <- function(team_combinations_data_with_other_player_probs, deck_statu
   #                    SOF_SCORE = SOF_SCORE / max_score,
   #                    MOVE_ORDER_SCORE = MOVE_ORDER_SCORE / max_score,
   #                    OVER_FINISH_SCORE = OVER_FINISH_SCORE / max_score
- # )]
+  # )]
   # agggr <-suppressWarnings(melt.data.table(check_res2[, .(MOVE_DIFF_SCORE = mean(MOVE_DIFF_SCORE),
   #                                                         EXHAUST_SCORE    = mean(EXHAUST_SCORE   ),
   #                                                         SLOTS_PROGRESSED_SCORE    = mean(SLOTS_PROGRESSED_SCORE   ),

@@ -1,6 +1,6 @@
 
 
-boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
+boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter, backup = FALSE) {
 
   rividata <- data.table(i, j, k, max_move_vect, ascend_v)
   rividata[, distance := j - i]
@@ -14,6 +14,11 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
 
   #card value is higher than max_movement. Card value is greater or equal to distance. Then distance on max movement.
   rividata[k > max_move_vect & k >= distance & max_move_vect == distance, tulos_save := FALSE]
+
+  finish_slot <- rividata[, max(j)]
+  #tällä pääsee täsmälleen maaliin
+  rividata[j == finish_slot & pmax(ascend_v, k) >= distance & distance <= max_move_vect, tulos_save := FALSE]
+
 
   if (!is.null(odds_filtter)) {
     max_odds <- odds_filtter[, max(Turn_to_Draw)]
@@ -29,6 +34,7 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
       start_posses <- rividata[tulos_save == FALSE & i == 1 & k %in% odds_filtter[Turn_to_Draw == 1 & keep_me == TRUE, MOVEMENT], j]
 
       round_res2 <- rividata[i %in% start_posses & k %in% odds_filtter[Turn_to_Draw == 2 & keep_me == FALSE, MOVEMENT] & tulos_save == FALSE]
+
       total_res <- rbind(round_res2, round_res)
       total_res[, drop_me := TRUE]
 
@@ -38,11 +44,21 @@ boundi_filtteri <- function(i, j, k, max_move_vect, ascend_v, odds_filtter) {
     joini[!is.na(drop_me), tulos_save := TRUE]
   } else {
     joini <- rividata
+
   }
-  finish_slot <- joini[, max(j)]
-  #tällä pääsee täsmälleen maaliin
-  joini[j == finish_slot & pmax(ascend_v, k) >= distance & distance <= max_move_vect, tulos_save := FALSE]
-  joini[k == 100, tulos_save := FALSE]
+
+
+
+  #joini[k == 9 & tulos_save == FALSE]
+
+  if (backup == FALSE) {
+
+
+  } else {
+   # joini[j == finish_slot, tulos_save := TRUE]
+    joini[k == 100, tulos_save := FALSE]
+  }
+ # joini[, tulose_save := tulos_save == FALSE]
   #  rividata[, tulos_save := !(((j - i) <= k)  & ((j - i) >= 2))] #either of these cases is true, then it is filterd out
   return(joini[, tulos_save])
 }

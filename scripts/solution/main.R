@@ -7,16 +7,25 @@ con <- connDB(con, "flaimme")
    required_data(c("STG_TEAM","ADM_CYCLER_INFO", "ADM_CYCLER_DECK", "ADM_OPTIMAL_MOVES", "STG_TRACK", "SRC_TRACK", "SRC_TRACK_PIECE", "STG_TRACK_PIECE", "SRC_AI_CONF", "STG_AI_CONF", "ADM_AI_CONF"), force_update =TRUE)
   total_winner <- NULL
 game_status_data <- list()
+deck_status_data <- list()
+turn_start_deck_status_data <- list()
   full_action <- NULL
   game_action <- NULL
-
+move_diff_counter <- 0
 
   game_id <- 1
+  #0 means use actual previous exh
+  use_startup_exhaust <- 2
+  start_format <-  "RANDOM"
+plotting <- TRUE
+
+
+  TIME_DATA <- data.table(GAME_ID = as.numeric(), TURN_ID = as.numeric(), PHASE = as.character(), DURATION = as.numeric())
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
   bot_data <- data.table(bot_name = c("next_turn_botti", "ruler_bot", "ttf_botti", "next_turn_botti"), TEAM_ID = c(1, 2 , 3, 4))
   bot_data <- data.table(bot_name = c("ruler_bot", "ttf_botti", "ttf_botti"), TEAM_ID = c(2 ,3, 4))
-  #bot_data <- data.table(bot_name = c("ruler_bot"), TEAM_ID = c(1))
+  bot_data <- data.table(bot_name = c("finish_rank_bot2", "ttf_botti_ignore_hidden", "ttf_botti"), TEAM_ID = c(2, 3, 4))
  # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
@@ -31,14 +40,17 @@ game_status_data <- list()
     repeat {
    #  browser()
     if (turn_id == 0) {
+      TIME_DATA <-  time_phase("PRE", TRUE, TIME_DATA, game_id, turn_id)
     turn_game_status <- NULL
     deck_status_loop <- NULL
-    deck_status_loop_before <- NULL
+    turn_deck_start_loop <- NULL
+
   #  track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
-    track <- sample(c(12,13,14,15,16,17),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
-    track <- sample(c(36,37,39,40,41,42),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
+    #track <- sample(c(12,13,14,15,16,17),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
+    track <- sample(c(1, 2, 3, 5, 6, 19, 20, 7, 36,37,39,40,41,42),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
+    #track <- 12
     print(paste0("track_", track))
-   # track <- 39
+
     #track 37 on mukula
     #ijk map explanation: i = starting point, k = movement, j = ending slot
 
@@ -47,9 +59,13 @@ game_status_data <- list()
                                row_over_finish = numeric(), finish_square = numeric())
 
 
-    cycler_ids <- sample(c(1,2,3,4,5,6,7,8))
-   # cycler_ids <- (c(1,2,3,4,5,6,7,8))
-  #  cycler_ids <- sample(c(3,4))
+   # cycler_vector <- c(1,2,3,4,5,6,7,8,9,10,11,12)
+    cycler_vector <- c(5 ,6,7,8)
+    cycler_ids <- set_startup_formation(cycler_vector, start_format)
+
+    #cycler_ids <- (c(1,2,3,4,5,6,7,8,9,10,11,12))
+   # cycler_ids <- (c(1,2,3,4,5,6))
+   # cycler_ids <- sample(c(5,6,7,8))
   #  cycler_ids <- sample(c(3,4,5,6))
     total_cyclers <- length(cycler_ids)
     game_status <- start_game(cycler_ids ,track, STG_TRACK_PIECE, STG_TRACK)
@@ -59,10 +75,13 @@ game_status_data <- list()
     deck_status <- create_decks(cycler_ids, ADM_CYCLER_DECK)
     #add exhaust
 
-    if (nrow(exh_left) > 0) {
-
+    if (nrow(exh_left) > 0 & use_startup_exhaust == 0) {
+#0 means use actual previous exh
     deck_status <- add_startup_exhaustion(exh_left, deck_status)
     print(deck_status[CARD_ID == 1, .N, by = CYCLER_ID][order(CYCLER_ID)])
+    } else if (use_startup_exhaust > 0) {
+      custom_exh <- data.table(CYCLER_ID = cycler_ids, EXHAUST_LEFT = use_startup_exhaust * 2)
+      deck_status <- add_startup_exhaustion(custom_exh, deck_status)
     }
 
     ijk <- ijk_map(track, STG_TRACK_PIECE, STG_TRACK)
@@ -87,12 +106,21 @@ game_status_data <- list()
     turn_id <- 0
     pre_aggr_game_status <- precalc_track(game_status)
 
+    starting_cyclers <- cycler_ids
 
-    if (!exists("ctM_data")) {
-      ctM_data <- NULL
-    }
+
+
+
+
     con <- connDB(con, "flaimme")
-    required_data("ADM_OPTIMAL_MOVES", force_update = TRUE)
+    #required_data("ADM_OPTIMAL_MOVES", force_update = TRUE)
+
+
+    track_lefter_select <- paste0('"', pre_aggr_game_status$aggr_to_slots[TRACK_LEFT != "", paste0(TRACK_LEFT, collapse = '", "')], '"')
+    ADM_OPTIMAL_MOVES <- data.table(dbGetQuery(con, paste0('SELECT TRACK_LEFT, DECK_LEFT, TURNS_TO_FINISH, DRAW_ODDS, SLOTS_OVER_FINISH, NEXT_MOVE, FOLLOWING_MOVE,
+                      PRIORITY FROM ADM_OPTIMAL_MOVES WHERE TRACK_LEFT IN (', track_lefter_select, ')')))
+
+
 
     ADM_OPTIMAL_MOVES_AGGR <- ADM_OPTIMAL_MOVES[, .(
 
@@ -103,18 +131,18 @@ game_status_data <- list()
                                                     FOLLOWING_MOVE = FOLLOWING_MOVE[which.min(PRIORITY)]),
 
                                                 by = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
-
+    TIME_DATA <-  time_phase("PRE", FALSE, TIME_DATA, game_id, turn_id)
     turn_id <- 1
     alotus <- Sys.time()
 
 
 
     }
+      TIME_DATA <-  time_phase("TURN", TRUE, TIME_DATA, game_id, turn_id)
      # print(turn_id)
-    kesto <- difftime(Sys.time(), alotus, units = c("secs"))
 
-    print(kesto)
       in_game_cyclers <- game_status[order(-SQUARE_ID)][CYCLER_ID > 0, CYCLER_ID]
+      finished_cyclers <- setdiff(starting_cyclers, in_game_cyclers)
 
 
 
@@ -126,7 +154,9 @@ game_status_data <- list()
       for (loop_cycler in in_game_cyclers) {
         deck_status <- draw_cards(loop_cycler, deck_status, 4, con = NULL,  turn_id = turn_id, game_id = game_id)
 
-
+        # if (loop_cycler %in% c(3, 4)) {
+        #   deck_status[CYCLER_ID == loop_cycler & Zone != "Removed", Zone := "Hand" ]
+        # }
 
         played_cards_data[CYCLER_ID == loop_cycler & TURN_ID == turn_id,
                           OPTIONS := list(list(deck_status[CYCLER_ID == loop_cycler & Zone == "Hand", CARD_ID]))]
@@ -134,16 +164,15 @@ game_status_data <- list()
 
       turn_game_status[[turn_id]] <- copy(game_status)
       deck_status_loop[[turn_id]] <- copy(deck_status)
+      turn_deck_start_loop[[turn_id]] <- copy(turn_start_deck)
 
-      #turn_id <- 9
-      # deck_status <- deck_status_loop[[turn_id]]
-      # game_status <- turn_game_status[[turn_id]]
-      # played_cards_data[TURN_ID > turn_id, OPTIONS := ""]
-      # played_cards_data[TURN_ID >= turn_id, CARD_ID := 0]
-      # copy_for_tur_start <- copy(deck_status)
-      # copy_for_tur_start[Zone == "Hand", Zone := "Recycle"]
-      # turn_start_deck <- copy_for_tur_start
-      #
+#       turn_id <- 8
+#       deck_status <- deck_status_loop[[turn_id]]
+#       game_status <- turn_game_status[[turn_id]]
+#       turn_start_deck <- turn_deck_start_loop[[turn_id]]
+#       played_cards_data[TURN_ID > turn_id, OPTIONS := ""]
+#       played_cards_data[TURN_ID >= turn_id, CARD_ID := 0]
+# zoom(game_status)
 
 
 #if (turn_id == 6) {browser()}
@@ -159,46 +188,55 @@ game_status_data <- list()
             calc_ttf_input_all <- 0
            # calc_ttf_input <- ifelse(turn_id >= 5, 0, turn_id)
             pre_agg_no_list <- pre_aggr_game_status$aggr_to_slots
-            input_case_count <- round(1000 / (length(in_game_cyclers) - 1))
 
+          #  input_case_count <- 100
           #  input_case_count <- NULL
-              combinations_output <- calc_combinations_data(con, game_status, turn_start_deck,
+            input_case_count <- 3000
+            TIME_DATA <-  time_phase("COMB", TRUE, TIME_DATA, game_id, turn_id)
+              combinations_output <- calc_combinations_data(con, game_status, turn_start_deck, deck_status,
                                                             pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER,
                                                             calc_ttf = calc_ttf_input_all, case_count = input_case_count,
-                                                            hidden_info_teams = 4)
-
+                                                            hidden_info_teams = 4, input_turn_id = turn_id,
+                                                            finished_cyclers)
+              TIME_DATA <-  time_phase("COMB", FALSE, TIME_DATA, game_id, turn_id)
+              TIME_DATA <-  time_phase("MIX", TRUE, TIME_DATA, game_id, turn_id)
              MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, turn_start_deck)
+             TIME_DATA <-  time_phase("MIX", FALSE, TIME_DATA, game_id, turn_id)
 
-            ss_for_picture <- MIXED_STRATEGY$combinations[, .(FINISH_ESTIMATE_MEAN , CYCLER_ID, PROB_PRODUCT, case_id, NEW_GAME_SLOT_ID, CASE_PROB )]
-           # ss_for_picture[, CASE_PROB := prod(PROB_PRODUCT^(1/2)), by = case_id]
+             if (plotting == TRUE) {
+ ss_for_picture <- MIXED_STRATEGY$combinations[, .(FINISH_RANK_ALL, FINISH_ESTIMATE_MEAN , CYCLER_ID, PROB_PRODUCT, case_id, NEW_GAME_SLOT_ID, CASE_PROB )]
+# ss_for_picture[, CASE_PROB := prod(PROB_PRODUCT^(1/2)), by = case_id]
 
-            aggr_pic <- ss_for_picture[, .(FINISH_ESTIMATE_MEAN = sum(FINISH_ESTIMATE_MEAN * CASE_PROB) / sum(CASE_PROB),
-                                           NEW_GAME_SLOT_ID = sum(NEW_GAME_SLOT_ID  * CASE_PROB) / sum(CASE_PROB)), by = CYCLER_ID]
+ aggr_pic <- ss_for_picture[, .(FINISH_RANK_EST = mean(FINISH_RANK_ALL), FINISH_ESTIMATE_MEAN = sum(FINISH_ESTIMATE_MEAN * CASE_PROB) / sum(CASE_PROB),
+                                NEW_GAME_SLOT_ID = sum(NEW_GAME_SLOT_ID  * CASE_PROB) / sum(CASE_PROB)), by = CYCLER_ID]
 
-            aggr_pic[, TURN_ID := turn_id]
-            if (turn_id == 1) {
-              acnhor_turn <- aggr_pic[, min(FINISH_ESTIMATE_MEAN)]
-            }
-            aggr_pic[, TTF_SCALED := FINISH_ESTIMATE_MEAN - acnhor_turn + TURN_ID - 1, by = .(TURN_ID)]
-            aggr_pic[, CYC_TYPE := CYCLER_ID  %% 2]
+ aggr_pic[, TURN_ID := turn_id]
+ if (turn_id == 1) {
+   acnhor_turn <- aggr_pic[, min(FINISH_ESTIMATE_MEAN)]
+ }
+ aggr_pic[, TTF_SCALED := FINISH_ESTIMATE_MEAN - acnhor_turn + TURN_ID - 1, by = .(TURN_ID)]
+ aggr_pic[, CYC_TYPE := CYCLER_ID  %% 2]
 
-            TTF_stats <- rbind(TTF_stats, aggr_pic)
-            finishssi <- game_status[FINISH == 1, min(GAME_SLOT_ID)]+10
-            startti <-game_status[START == 1, min(GAME_SLOT_ID)] + 2
-            print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED, group=CYCLER_ID)) +
-                    #geom_line(linetype="dashed", color="blue", size=1.2)+
-                    geom_line(size=1.5, aes(linetype = "solid", color=as.factor(CYCLER_ID)))+
-                    geom_point(size = 3, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
-                    geom_vline(
-                      xintercept = finishssi,
-                      na.rm = FALSE,
-                      show.legend = NA
-                    ) +
-                     scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green")) +
-                    xlim(6, finishssi) + ylim(-1.5, 3.2)) + scale_x_continuous(limits = c(finishssi-70, finishssi), breaks = seq(finishssi-70, finishssi, by = 10))
+ TTF_stats <- rbind(TTF_stats, aggr_pic)
+ finishssi <- game_status[FINISH == 1, min(GAME_SLOT_ID)]+10
+ startti <-game_status[START == 1, min(GAME_SLOT_ID)] + 2
+ suppressWarnings(print(ggplot(data=TTF_stats, aes(x=NEW_GAME_SLOT_ID, y=TTF_SCALED , group=CYCLER_ID)) +
+         #geom_line(linetype="dashed", color="blue", size=1.2)+
+         geom_line(size=1.5, aes(color=as.factor(CYCLER_ID)))+
+         geom_point(size = 4, aes(color=as.factor(CYCLER_ID), shape=as.factor(CYC_TYPE))) +
+         geom_vline(
+           xintercept = finishssi,
+           na.rm = FALSE,
+           show.legend = NA
+         ) +
+          scale_color_manual(values=c("red", "red", "blue", "blue", "black", "black", "green", "green", "white", "white", "purple", "purple")) +
+        scale_y_continuous(limits = c(-3, 4), breaks = c(-3:4)) + scale_x_continuous(limits = c(1, finishssi), breaks = seq(1, finishssi, by = 10))))
+#xlim(0, finishssi) + ylim(1, 13) +
 
-          }
-
+             }
+           }
+          #linetype = "solid",
+          TIME_DATA <-  time_phase("BOTS", TRUE, TIME_DATA, game_id, turn_id)
           for (bot_loop in bot_teams) {
            #how many moves I need to do
           #  print(paste0("bot_", bot_loop))
@@ -206,16 +244,9 @@ game_status_data <- list()
             cyclers_left <- intersect(my_cyclers, in_game_cyclers)
             if (length(cyclers_left) > 0) {
                 #even here I don't know the drawn cards
-            if (bot_loop == 9) {
-              calc_odds_bool <- TRUE
-            } else {
-              calc_odds_bool <- FALSE
-            }
 
-              # hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations, turn_start_deck,
-              #                                                                    team_id_input = bot_loop,
-              #                                                                    pre_agg_no_list, calc_ttf = turn_id,
-              #                                                                    calc_draw_odds = calc_odds_bool)
+
+
 
 
               hidden_information_output <- MIXED_STRATEGY$combinations
@@ -223,21 +254,28 @@ game_status_data <- list()
               bot_config <- NA
 
               funcargs <- list(hidden_information_output, deck_status,
-                               bot_config, bot_loop, pre_agg_no_list)
-              if (bot_loop %in% c(9)) {
+                               bot_config, bot_loop, pre_agg_no_list, turn_id)
+              if (bot_loop %in% c(99)) {
 
                 added_next_move <- add_next_move_calc(hidden_information_output, matr_ijk, reverse_slots_squares, slip_map_matrix,
                                                      pre_agg_no_list, STG_CYCLER, my_team = bot_loop)
 
                 funcargs <- list(added_next_move, deck_status,
-                                 bot_config, bot_loop, pre_agg_no_list)
+                                 bot_config, bot_loop, pre_agg_no_list, turn_id)
               }
+              if (bot_loop %in% c(4)) {
+
+                res_debug_hidden <- ttf_botti_ignore_hidden(hidden_information_output, deck_status,
+                                                              bot_config, bot_loop, pre_agg_no_list, turn_id)
+                moves_hidden <- EV_to_moves(res_debug_hidden, deck_status, turn_start_deck)
+
+                }
 
 
 #
 # #
-#              res_debug <- ttf_botti(hidden_information_output, deck_status,
-#                       bot_config, bot_loop, pre_agg_no_list)
+             # res_debug <- ttf_botti_ignore_hidden(hidden_information_output, deck_status,
+             #          bot_config, bot_loop, pre_agg_no_list, turn_id)
 
               myfunc <- bot_name
                 res <- do.call(myfunc, funcargs)
@@ -258,22 +296,55 @@ game_status_data <- list()
 
               if (bot_loop == 4) {
               #  browser()
-                print(res[1:12, .(MOVES, EV, MOVE_DIFF_SCORE, EXHAUST_SCORE, SLOTS_PROGRESSED_SCORE, TTF_SCORE, TURNS_TO_FINISH, FINISH_RANK_SCORE, MOVE_ORDER_SCORE, OVER_FINISH_SCORE)])#[draw_odds_C1 > 0 & draw_odds_C2 > 0])
-                print(deck_status[CYCLER_ID %in% c(7, 8) & Zone == "Hand", .N, by = .(CYCLER_ID, MOVEMENT)][order(CYCLER_ID, MOVEMENT)])
+                print(res[1:min(10, nrow(res)), .(MOVES, EV, MOVE_DIFF_SCORE, EXHAUST_SCORE, TTF_SCORE, TURNS_TO_FINISH, FINISH_RANK_SCORE, MOVE_ORDER_SCORE, OVER_FINISH_SCORE)], row.names = FALSE)#[draw_odds_C1 > 0 & draw_odds_C2 > 0])
+              print(res_debug_hidden[1:min(6, nrow(res_debug_hidden)), .(MOVES, EV, MOVE_DIFF_SCORE, EXHAUST_SCORE, TTF_SCORE, TURNS_TO_FINISH, FINISH_RANK_SCORE, MOVE_ORDER_SCORE, OVER_FINISH_SCORE)], row.names = FALSE)#[draw_odds_C1 > 0 & draw_odds_C2 > 0])
+
+              options_dt <- deck_status[CYCLER_ID %in% c(7, 8) & Zone == "Deck", .N, by = .(CYCLER_ID, MOVEMENT)][order(CYCLER_ID, MOVEMENT)]
+              options_dt[, N := ifelse(is.na(N), 0, N)]
+              if (nrow(options_dt)> 0) {
+              options_dcast_deck <- dcast.data.table(options_dt, CYCLER_ID ~ MOVEMENT, value.var = "N")
+              print(options_dcast_deck)
+              options_dt[, N := ifelse(is.na(N), 0, N)]
+              }
+                options_dt <- deck_status[CYCLER_ID %in% c(7, 8) & Zone == "Hand", .N, by = .(CYCLER_ID, MOVEMENT)][order(CYCLER_ID, MOVEMENT)]
+                options_dcast <- dcast.data.table(options_dt, CYCLER_ID ~ MOVEMENT, value.var = "N")
+                print(options_dcast)
 
                 print(zoom(game_status))
+
                 print(moves[order(CYCLER_ID)])
+                moves4 <- moves
+
+               sort1 <- moves4[order(CYCLER_ID), .(CYCLER_ID, CARD_ID)]
+               sort2 <- moves_hidden[order(CYCLER_ID), .(CYCLER_ID, CARD_ID)]
+
+               if (all.equal(sort1, sort2) != TRUE) {
+                 print("######################################################################")
+                 print("actually played")
+                 print(sort1)
+                 print("played without hidden info")
+                 print(sort2)
+                 move_diff_counter <- c(move_diff_counter, track)
+                 dt_t <- data.table(TRACK = move_diff_counter)
+                 #dt_t[, .N, by = TRACK]
+               }
+
               }
+
               for (loopperi in 1:nrow(moves)) {
                 loop_cycler <- moves[loopperi, CYCLER_ID]
-                loop_card <- moves[loopperi, CARD_ID]
+                loop_movement <- max(moves[loopperi, CARD_ID], 2)
+                loop_card <- select_min_card_value_with_same_movement(loop_cycler, loop_movement, deck_status[CYCLER_ID == loop_cycler & Zone == "Hand"], game_status)
+
                 played_cards_data[TURN_ID == turn_id & CYCLER_ID == loop_cycler,  CARD_ID := loop_card]
               }
 
 
-            }
 
+
+            }
           }
+          TIME_DATA <-  time_phase("BOTS", FALSE, TIME_DATA, game_id, turn_id)
 
 #           monitor[, TURN_ID := turn_id]
 # tot_moni <- rbind(tot_moni, monitor)
@@ -312,12 +383,14 @@ game_status_data <- list()
 
 
 
-
   #choose ai cycler cards
         ai_cyclers <- setdiff(in_game_cyclers, bots)
           for(loop in ai_cyclers) {
+
             card_id  <-  card_selector_by_stat(game_status, deck_status[CYCLER_ID == loop & Zone == "Hand"], loop, "SMART_MAX",  aim_downhill = TRUE)[, CARD_ID]
             played_cards_data[TURN_ID == turn_id & CYCLER_ID == loop,  CARD_ID := card_id]
+
+
           }
 
 
@@ -329,11 +402,11 @@ game_status_data <- list()
 
         row_data <- played_cards_data[TURN_ID == turn_id & loop_move == CYCLER_ID]
         move_played <- STG_CARD[CARD_ID == row_data[, CARD_ID], MOVEMENT]
-          deck_status <- play_card(cycler_id = loop_move,
+          deck_status <- suppressWarnings(play_card(cycler_id = loop_move,
                                    card_id = row_data[, CARD_ID],
                                    current_decks = deck_status, game_id, turn_id, con = NULL,
                                    force = TRUE,
-                                   copy = FALSE)
+                                   copy = FALSE))
 
           game_status <- move_cycler(game_status, loop_move, move_played, slipstream = FALSE,
                                      ignore_block = FALSE,
@@ -346,9 +419,11 @@ game_status_data <- list()
       game_status <- apply_slipstream(game_status)
 
      #EXHAUST
+      max_old_rid <- deck_status[, max(row_id)]
       deck_status <- apply_exhaustion(deck_status, game_status)
 
 
+    #  print(deck_status[row_id > max_old_rid, .N, by = CYCLER_ID][order(CYCLER_ID)])
 
       #RECROD WINNER
       winner_state <- check_winner(game_status, winner_state, turn_id, game_id)
@@ -366,42 +441,42 @@ game_status_data <- list()
       # }
       if (length(cycler_ids) == 0) {
 
-        exh_left <- deck_status[CARD_ID == 1, .(EXHAUST_LEFT = .N), by = CYCLER_ID]
+        exh_left <- deck_status[CARD_ID == 1 & Zone != "Removed", .(EXHAUST_LEFT = .N), by = CYCLER_ID]
 
 
         break()
       }
 
+      TIME_DATA <-  time_phase("TURN", FALSE, TIME_DATA, game_id, turn_id)
 
-
-    # revert_turn <- 8
-    # turn_id <- revert_turn
-    # rev_cards <- played_cards_data[TURN_ID == (revert_turn - 1), .(CYCLER_ID, OPTIONS)]
-    # deck_status <- deck_status_loop[[revert_turn - 1]]
-    # for(cyclers_loop in nrow(rev_cards)) {
-    #   opt_data <- data.table(CARD_ID = rev_cards[CYCLER_ID == cyclers_loop, OPTIONS[[1]]], OPTION = 1:4, CYCLER_ID = cyclers_loop)
-    #   drawn_cards_revert <- deck_status[CYCLER_ID == cyclers_loop & Zone == "Deck"][opt_data, on = .(CYCLER_ID, CARD_ID)][, min(row_id), by = OPTION][, V1]
-    #   deck_status[row_id %in% drawn_cards_revert, Zone := "Hand"]
-    #
-    # }
-    # played_cards_data[TURN_ID == revert_turn, CARD_ID := NA]
-    #   game_status <- turn_game_status[[8]]
-       turn_id <- turn_id + 1
+   turn_id <- turn_id + 1
        print(turn_id)
+
     # #  print(zoom(game_status))
      }
 
     game_status_data[[game_id]] <- turn_game_status
+    deck_status_data[[game_id]] <- deck_status_loop
+    turn_start_deck_status_data[[game_id]] <- turn_deck_start_loop
+  # turn_game_status <-    game_status_data[[3]]
+  #  deck_status_loop <-    deck_status_data[[3]]
+  #  turn_deck_start_loop <-    turn_start_deck_status_data[[3]]
+
     #print(winner_state)
-  #  }
-print("total kesto")
-print(kesto)
+    print(TIME_DATA[DURATION < 1000, .(DUR = mean(DURATION)), by = .(TURN_ID, PHASE)][order(PHASE, TURN_ID)])
+    print(TIME_DATA[DURATION < 1000 & PHASE == "TURN", .(DUR = sum(DURATION)), by = .(GAME_ID, PHASE)][order(PHASE)])
+
     print(winner_state)
 
   #  ssstartPos <- used_startup_data[,. (CYCLER_ID, starting_lane, starting_row)]
   #  join_sinner_pos <- ssstartPos[winner_state, on = "CYCLER_ID"]
   #  full_action <- rbind(full_action, action_data)
-    total_winner <- rbind(total_winner, winner_state)
+    copy_winner <- winner_state
+    copy_winner[, TRACK_ID := track]
+    #copy_winner[, start_order := list(list(starting_cyclers))]
+    copy_winner[, START_POSITION := match(CYCLER_ID, starting_cyclers)]
+    total_winner <- rbind(total_winner, copy_winner)
+
     plot_winner <- total_winner[, mean(POSITION), by = CYCLER_ID][order(CYCLER_ID)]
     # print(ggplot(data=plot_winner, aes(x=CYCLER_ID,  y=V1, fill = as.factor(CYCLER_ID))) +
     #         #geom_line(linetype="dashed", color="blue", size=1.2)+
@@ -411,7 +486,9 @@ print(kesto)
 
     #print(full_action[, .(m)])
     print(total_winner[, mean(POSITION), by = CYCLER_ID][order(V1)])
-   # print(total_winner[, .N, by = .(CYCLER_ID, POSITION)][order(CYCLER_ID)], row.names = FALSE)
+    print(total_winner[, mean(POSITION), by = START_POSITION][order(V1)])
+
+    # print(total_winner[, .N, by = .(CYCLER_ID, POSITION)][order(CYCLER_ID)], row.names = FALSE)
 
     # print(total_winner[CYCLER_ID  %in% c(5,6)])
     #full_action[, .(SLIP = mean(SLIP), BLOCK = mean(BLOCK), EXHAUST = mean(EXHAUST), ASCEND = mean(ASCEND)), by = CYCLER_ID][order(CYCLER_ID)]

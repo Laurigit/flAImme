@@ -8,22 +8,22 @@ update_combinations_with_hidden_input <- function(combinations_data, deck_status
   my_team <- combinations_data#[TEAM_ID == team_id_input]
   aggregate_to_cases <- my_team[, .N, by = .(DECK_LEFT, TRACK_LEFT, NEW_GAME_SLOT_ID, CYCLER_ID, TEAM_ID, MOVEMENT)]
   #DRAW ODDS DISABLED FOR PERFORMANCE
-  if (calc_draw_odds == TRUE) {
-
-    aggregate_to_cases[, DRAW_ODDS := ifelse(TEAM_ID == team_id_input, calculate_draw_distribution_by_turn(CYCLER_ID, play_card(CYCLER_ID,
-                                                                                                                              card_id = NULL,
-                                                                                                                              copy_deck,
-                                                                                                                              game_id = 0,
-                                                                                                                              turn_id = 0,
-                                                                                                                              con = NULL,
-                                                                                                                              card_row_id = FALSE,
-                                                                                                                              MOVEMENT_PLAYED = MOVEMENT,
-                                                                                                                              force = TRUE,
-                                                                                                                              copy = TRUE), how_many_cards = 4, db_res = TRUE), ""),
-                     by = .(DECK_LEFT, TRACK_LEFT, NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT)]
-  } else {
-    aggregate_to_cases[, DRAW_ODDS := ""]
-  }
+  # if (calc_draw_odds == TRUE) {
+  #
+  #   aggregate_to_cases[, DRAW_ODDS := ifelse(TEAM_ID == team_id_input, calculate_draw_distribution_by_turn(CYCLER_ID, play_card(CYCLER_ID,
+  #                                                                                                                             card_id = NULL,
+  #                                                                                                                             copy_deck,
+  #                                                                                                                             game_id = 0,
+  #                                                                                                                             turn_id = 0,
+  #                                                                                                                             con = NULL,
+  #                                                                                                                             card_row_id = FALSE,
+  #                                                                                                                             MOVEMENT_PLAYED = MOVEMENT,
+  #                                                                                                                             force = TRUE,
+  #                                                                                                                             copy = TRUE), how_many_cards = 4, db_res = TRUE), ""),
+  #                    by = .(DECK_LEFT, TRACK_LEFT, NEW_GAME_SLOT_ID, CYCLER_ID, MOVEMENT)]
+  # } else {
+  #   aggregate_to_cases[, DRAW_ODDS := ""]
+  # }
 ##############
 
   aggregate_to_cases_after_calc_with_MOVEMENT <- aggregate_to_cases[, .N, by = .(DECK_LEFT, TRACK_LEFT, DRAW_ODDS, NEW_GAME_SLOT_ID, TEAM_ID, CYCLER_ID)]

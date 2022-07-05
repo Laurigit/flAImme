@@ -136,12 +136,16 @@ loop_rounds <- total_options[, max(draw_round_column)]
  if (nrow(check_if_na) > 0) {browser()}
 
 
+ second_filter_res <- second_filter_res[Turn_to_Draw <= 1]
 
  if (db_res == TRUE) {
 
    movement_string <- paste0(second_filter_res[, paste0(MOVEMENT, collapse = ""), by = Turn_to_Draw][, V1], collapse = ".")
     db_vec <- paste0(paste0(second_filter_res[, Turn_to_Draw], collapse = ""), ";", movement_string)
-    if (db_vec == ";") {db_vec <- ""}
+    if (db_vec == ";") {
+      db_vec <- ""} else {
+       # browser()
+      }
     return(db_vec)
  } else {
    return(sorted_res)
