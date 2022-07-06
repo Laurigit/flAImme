@@ -208,6 +208,8 @@ req(input$join_tournament)
                      ' AND TOURNAMENT_NM = "', joinai[start_loop, TOURNAMENT_NM], '"'), con)
           dbQ(paste0('UPDATE GAME_STATUS SET TURN_ID = ', 0, ' WHERE GAME_ID = ', joinai[start_loop, GAME_ID],
                      ' AND TOURNAMENT_NM = "', joinai[start_loop, TOURNAMENT_NM], '"'), con)
+
+          srv$gs_simple[, TURN_ID := 0]
         }
 
 
@@ -229,6 +231,9 @@ req(input$join_tournament)
         deck_status[, TURN_ID := 1]
         dbWriteTable(con, "DECK_STATUS", deck_status, append = TRUE, row.names = FALSE)
         srv$turn_id <- 1
+
+
+
     }
 
   rel_com_id <- command_rows[1, COMMAND_ID]

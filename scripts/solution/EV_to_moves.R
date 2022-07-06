@@ -40,7 +40,7 @@ EV_to_moves <- function(EV_table, deck_status, turn_start_deck) {
 
   #first_selected_cycler <- EV_OF_PLAYING_FIRST[which.max(V1), CYCLER_ID]
   #WE MIGHT BE CHEATING IN DRAW ODDS. THATS WHY WE CANT USE TTF.
-  first_selected_cycler <- EV_OF_PLAYING_FIRST[, min(CYCLER_ID)]
+  first_selected_cycler <- EV_OF_PLAYING_FIRST[, max(CYCLER_ID)]
   #    p1_data <- check_res2[, ]
 
 

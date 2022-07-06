@@ -13,11 +13,24 @@ req(deck_status_curr_game())
 req(game_status())
 req(input$join_tournament)
 
+
+
+
+#take reactive####### DONT DEL
+game_status_simple()
+########
+
+
+
   deck_status_now <- deck_status_curr_game()[TURN_ID == srv$turn_id & HAND_OPTIONS == 1]
   prev_turn_in_deck <- deck_status_curr_game()[TURN_ID < srv$turn_id, max(TURN_ID)]
   previous_deck <- deck_status_curr_game()[TURN_ID == prev_turn_in_deck & HAND_OPTIONS == 0]
 
 
+   all_teams <- tournament()[TOURNAMENT_NM == input$join_tournament, TEAM_ID]
+  starting_cyclers  <- ADM_CYCLER_INFO[TEAM_ID %in% all_teams, CYCLER_ID]
+  in_game_cyclers <- game_status()[order(-SQUARE_ID)][CYCLER_ID > 0, CYCLER_ID]
+  finished_cyclers <- setdiff(starting_cyclers, in_game_cyclers)
 
   any_bots <- tournament()[PLAYER_TYPE == "AI" & TOURNAMENT_NM == input$join_tournament]
 bots_teams <- any_bots[, TEAM_ID]
@@ -51,12 +64,40 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
     slots_squares <- as.matrix(game_status()[, .(SQUARE_ID, GAME_SLOT_ID)])
     reverse_slots_squares <- slots_squares[nrow(slots_squares):1,]
 
-    calc_ttf_input_all <- ifelse(srv$turn_id >= 5, 0, srv$turn_id)
-    combinations_output <- calc_combinations_data(con, game_status(), previous_deck,
-                                                  pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER, calc_ttf = calc_ttf_input_all)
+   # calc_ttf_input_all <- ifelse(srv$turn_id >= 5, 0, srv$turn_id)
+    calc_ttf_input_all <- 0
+    input_case_count <- 3000
 
-    MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA,  previous_deck)
 
+  if (!exists("ADM_OPTIMAL_MOVES_AGGR") | srv$turn_id == 1) {
+    gs_local <- create_game_status_from_simple(srv$gs_simple, srv$track_id_input, STG_TRACK, STG_TRACK_PIECE)
+    pre_aggr_game_status <- precalc_track(gs_local)
+    track_lefter_select <- paste0('"', pre_aggr_game_status$aggr_to_slots[TRACK_LEFT != "", paste0(TRACK_LEFT, collapse = '", "')], '"')
+    ADM_OPTIMAL_MOVES <- data.table(dbGetQuery(con, paste0('SELECT TRACK_LEFT, DECK_LEFT, TURNS_TO_FINISH, DRAW_ODDS, SLOTS_OVER_FINISH, NEXT_MOVE, FOLLOWING_MOVE,
+                      PRIORITY FROM ADM_OPTIMAL_MOVES WHERE TRACK_LEFT IN (', track_lefter_select, ')')))
+
+
+
+    ADM_OPTIMAL_MOVES_AGGR <<- ADM_OPTIMAL_MOVES[, .(
+
+      TURNS_TO_FINISH  = TURNS_TO_FINISH [which.min(PRIORITY)],
+
+      SLOTS_OVER_FINISH = SLOTS_OVER_FINISH[which.min(PRIORITY)],
+      NEXT_MOVE = NEXT_MOVE[which.min(PRIORITY)],
+      FOLLOWING_MOVE = FOLLOWING_MOVE[which.min(PRIORITY)]),
+
+      by = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
+
+  }
+
+
+    combinations_output <- calc_combinations_data(con, game_status(), previous_deck, deck_status_now,
+                                                  pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER,
+                                                  calc_ttf = calc_ttf_input_all, case_count = input_case_count,
+                                                  hidden_info_teams = 0, input_turn_id =  srv$turn_id,
+                                                  finished_cyclers)
+
+    MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, previous_deck)
 
   for (bot_loop in any_bots[, TEAM_ID]) {
 
@@ -77,22 +118,23 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
 
       #for each bot
 
-  hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations,
-                                                                     deck_status_now, team_id_input = bot_loop, pre_agg_no_list, calc_ttf =  srv$turn_id)
+  # hidden_information_output <- update_combinations_with_hidden_input(MIXED_STRATEGY$combinations,
+  #                                                                    deck_status_now, team_id_input = bot_loop, pre_agg_no_list, calc_ttf =  srv$turn_id)
 
 
 
   bot_config <- NA
-  funcargs <- list(hidden_information_output, deck_status_now,
-                   bot_config, bot_loop, pre_agg_no_list)
-  myfunc <- "ruler_bot"
+
+  funcargs <- list(MIXED_STRATEGY$combinations, deck_status_now,
+                   bot_config, bot_loop, pre_agg_no_list, srv$turn_id)
+  myfunc <- "ttf_botti_ignore_hidden"
   # debug <- finish_rank_bot(hidden_information_output, deck_status_now,
   #                          bot_config, bot_loop, pre_agg_no_list)
 
   res <- do.call(myfunc, funcargs)
   print(res)
 
-  moves <- EV_to_moves(res, deck_status_now)
+  moves <- EV_to_moves(res, deck_status_now, previous_deck)
   print(moves)
   first_cyc <-  moves[FIRST == 1, CYCLER_ID]
   first_move <- moves[FIRST == 1, CARD_ID]
@@ -202,7 +244,7 @@ observe({
         meta_second <- meta_data[, .SD[2], GAME_ID]
         mean_2nd_winner <- meta_second[, mean(TOT_BET)]
 
-        target <- 10 - curr_slot +  1
+        target <- 10 - curr_slot +  3
         if (is.nan(mean_2nd_winner)) {
           mean_2nd_winner <- target
         }
@@ -246,7 +288,7 @@ observe({
               meta_second <- meta_data[, .SD[2], GAME_ID]
               mean_2nd_winner <- meta_second[, mean(TOT_BET)]
 
-              target <- 10 - curr_slot +  1
+              target <- 10 - curr_slot +  3
               if (is.nan(mean_2nd_winner)) {
                 mean_2nd_winner <- target
               }

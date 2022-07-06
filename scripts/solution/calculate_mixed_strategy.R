@@ -16,15 +16,18 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
         #PELKÄSTÄ LIIKKUMISESTA PITÄÄ ANTAA PISTEITÄ MYÖS, vähintääb tie breakeraita varten, jos sama ev muuten
      # join_track_left[, MOVE_DIFF_RELATIVE := MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1), by = case_id]
       cycler_count <- join_track_left[, .N, by = CYCLER_ID][, .N]
-      min_ttf <- join_track_left[, min(TURNS_TO_FINISH)]
+      min_ttf <- join_track_left[, min(TURNS_TO_FINISH)] + 0.01
+      mean_ttf <- join_track_left[, mean(TURNS_TO_FINISH)] + 0.01
+
       join_track_left[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF,
-                              EXHAUST_SCORE = 0,
+                              EXHAUST_SCORE = -1 * EXHAUST * (MOVE_ORDER / cycler_count) * 2 / (min_ttf / 8),
                             #  TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
-                             TTF_SCORE = 0,
+                             TTF_SCORE = (mean_ttf - TURNS_TO_FINISH + SLOTS_OVER_FINISH / 6) * (3 / min_ttf),
                              # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
-                              MOVE_ORDER_SCORE = 0,
-                              OVER_FINISH_SCORE = OVER_FINISH * 1, #NOT MAKE TUU HIGH
-                             SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.1)]
+                              MOVE_ORDER_SCORE = -1 * MOVE_ORDER / cycler_count,
+                              OVER_FINISH_SCORE = OVER_FINISH * 3, #NOT MAKE TUU HIGH
+                            FINISH_RANK_SCORE = FINISH_RANK * (6 / min_ttf),
+                             SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.5 / min_ttf)]
 
       join_track_left[, TOT_SCORE := (MOVE_DIFF_SCORE +
                                         EXHAUST_SCORE +
@@ -32,6 +35,7 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
                                      #   CYC_DIST_SCORE +
                                         MOVE_ORDER_SCORE +
                                         OVER_FINISH_SCORE+
+                                       FINISH_RANK_SCORE +
                                        SLOTS_PROGRESSED_SCORE)]
       #join_track_left[, all_moves := list((list(MOVEMENT))), by = case_id]
       #join_track_left[,  opponent_moves := create_other_moves(all_moves, CYCLER_ID), by = .(case_id, TEAM_ID)]

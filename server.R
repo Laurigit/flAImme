@@ -1,7 +1,7 @@
 
-luettu <- dbSelectAll("ADM_OPTIMAL_MOVES", con)
-
-ADM_OPTIMAL_MOVES <- fix_colnames(luettu)
+# luettu <- dbSelectAll("ADM_OPTIMAL_MOVES", con)
+#
+# ADM_OPTIMAL_MOVES <- fix_colnames(luettu)
 
 
 
@@ -82,7 +82,7 @@ observe({
   tournament_result$data <- tournament_data_reactive()
 })
 
-game_status_simple <-  my_reactivePoll(session, "GAME_STATUS", paste0('SELECT sum(CYCLER_ID) FROM GAME_STATUS'), timeout = 1000, con)
+game_status_simple <-  my_reactivePoll(session, "GAME_STATUS", paste0('SELECT * FROM GAME_STATUS'), timeout = 1000, con)
 
 tournament_result <- reactiveValues(data = NULL)
 

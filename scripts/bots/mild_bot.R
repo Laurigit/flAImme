@@ -1,5 +1,5 @@
-ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
-                         bot_config, bot_team_id, pre_aggr_game_status_input = NULL, turn_id) {
+mild_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
+                      bot_config, bot_team_id, pre_aggr_game_status_input = NULL, turn_id) {
 
   required_data("ADM_CYCLER_INFO")
   ss_info <- ADM_CYCLER_INFO[, .(CYCLER_ID, IS_ROULER = ifelse(CYCLER_TYPE_ID == 1, 1, 0))]
@@ -10,7 +10,7 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
   #team_combinations_data_with_other_player_probs <- hidden_information_output
 
   join_my_ttf <- team_combinations_data_with_other_player_probs
-  min_ttf <- join_my_ttf[, ceiling(mean(TURNS_TO_FINISH))]
+  min_ttf <- join_my_ttf[, ceiling(mean(TURNS_TO_FINISH))] + 0.01
 
   #calc my ev given opponent strategies
 
@@ -46,20 +46,21 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
   cyc_info_to_scoring <- ss_info[join_my_ttf, on = "CYCLER_ID"]
 
   scoring_data <- ss_exh[cyc_info_to_scoring, on = "CYCLER_ID"]#[TEAM_ID == bot_team_id]
-  scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF * 0.2 * pmax(min_ttf - 5, 0.1) - IS_ROULER * MOVE_DIFF * 0.1 * pmax(min_ttf - 5, 0.1),
-                       EXHAUST_SCORE = ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.5 * -0.125 / norm_card_share ^ (1 / 4) +
-                         IS_ROULER * ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.5 * -0.125 / norm_card_share ^ (1 / 4) * 0.25,
-                       #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
-                       TTF_SCORE = (min_ttf - TURNS_TO_FINISH)  * 1 * norm_card_share ^ (1 / 2),
-                       SOF_SCORE = SLOTS_OVER_FINISH  * 0.02 * norm_card_share ^ (1 / 2),
-                       FINISH_RANK_SCORE = FINISH_RANK / pmax(5, MOVE_ORDER + 2) / (min_ttf + 1) * 2  * norm_card_share ^ (1 / 4),
+  mean_ttf <- scoring_data[, mean(TURNS_TO_FINISH)] + 0.01
+
+  scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF,
+                       EXHAUST_SCORE = -1 * EXHAUST * (MOVE_ORDER / total_cyclers) * 2 / (min_ttf / 8),
+                       #  TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
+                       TTF_SCORE = (mean_ttf - TURNS_TO_FINISH + SLOTS_OVER_FINISH / 6) * (3 / min_ttf),
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
-                       MOVE_ORDER_SCORE = - MOVE_ORDER * 0.015 * (17 - min_ttf) - MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
-                       OVER_FINISH_SCORE = OVER_FINISH * 3,
-                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf) + SLOTS_PROGRESSED * 0.002 * (16 - min_ttf) * IS_ROULER)]
+                       MOVE_ORDER_SCORE = -1 * MOVE_ORDER / total_cyclers,
+                       OVER_FINISH_SCORE = OVER_FINISH * 3, #NOT MAKE TUU HIGH
+                       FINISH_RANK_SCORE = FINISH_RANK * (6 / min_ttf),
+                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.5 / min_ttf)]
+
   scoring_data[, TOT_SCORE_MINE := (MOVE_DIFF_SCORE +
                                       EXHAUST_SCORE +
-                                      SOF_SCORE +
+                                    #  SOF_SCORE +
                                       TTF_SCORE +
                                       #   CYC_DIST_SCORE +
                                       FINISH_RANK_SCORE +
@@ -119,7 +120,7 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
                            SLOTS_PROGRESSED_SCORE = sum(SLOTS_PROGRESSED_SCORE * CYCLER_WEIGHT),
                            TTF_SCORE = sum(TTF_SCORE * CYCLER_WEIGHT),
                            TURNS_TO_FINISH = mean(TURNS_TO_FINISH * CYCLER_WEIGHT),
-                           SOF_SCORE = mean(SOF_SCORE * CYCLER_WEIGHT),
+                          # SOF_SCORE = mean(SOF_SCORE * CYCLER_WEIGHT),
                            FINISH_RANK_SCORE = mean(FINISH_RANK_SCORE * CYCLER_WEIGHT),
 
                            #     CYC_DIST_SCORE = sum(CYC_DIST_SCORE),
@@ -137,7 +138,7 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
                               TTF_SCORE = sum(TTF_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
                               TURNS_TO_FINISH = sum(TURNS_TO_FINISH * OPPONENT_PROB) / sum(OPPONENT_PROB),
                               FINISH_RANK_SCORE = sum(FINISH_RANK_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
-                              SOF_SCORE = sum(SOF_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
+                           #   SOF_SCORE = sum(SOF_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
                               #   CYC_DIST_SCORE = mean(CYC_DIST_SCORE),
                               MOVE_ORDER_SCORE = sum(MOVE_ORDER_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB),
                               OVER_FINISH_SCORE = sum(OVER_FINISH_SCORE * OPPONENT_PROB) / sum(OPPONENT_PROB)

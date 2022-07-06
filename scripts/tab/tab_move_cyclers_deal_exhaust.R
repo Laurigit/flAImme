@@ -49,6 +49,12 @@ observe({
 
       deck_status <- play_card(loop_cycler, card_id = card_id_played, deck_status, game_id = -100, turn_id = -100, con = NULL)
     }
+
+    #copy temp position before slipstream
+    # browser()
+    temp_status <- copy(srv$game_status)
+
+
     #slipstream and exhaustion
     srv$game_status <- apply_slipstream(srv$game_status)
 
@@ -86,12 +92,43 @@ observe({
     deck_status <- apply_exhaustion(deck_status, srv$game_status)
 
     #now we can clear finishers
+#    print(zoom(temp_status))
+# print(zoom(srv$game_status))
 
     simple_gs <- srv$game_status[CYCLER_ID > 0, .(CYCLER_ID, SQUARE_ID)]
     simple_gs[, TOURNAMENT_NM := input$join_tournament]
     simple_gs[, GAME_ID := srv$game_id]
     simple_gs[, TURN_ID := srv$turn_id]
     srv$gs_simple <- simple_gs
+
+    sleep_counter <- 0
+    #check if there are any changes
+    # if (!isTRUE(all.equal(temp_status, srv$game_status))) {
+    #   print(all.equal(temp_status, srv$game_status))
+    #   sleep_counter <- sleep_counter + 5
+    # }
+
+    if (temp_status[CYCLER_ID > 0, sum(GAME_SLOT_ID)] != srv$game_status[CYCLER_ID > 0, sum(GAME_SLOT_ID)]) {
+      print(all.equal(temp_status, srv$game_status))
+      sleep_counter <- sleep_counter + 4
+    }
+    if (nrow(finishers) > 0) {
+      sleep_counter <- sleep_counter + 11
+    }
+    if (sleep_counter > 0) {
+
+    #same for temp_status
+    temp_status_simple <- temp_status[CYCLER_ID > 0, .(CYCLER_ID, SQUARE_ID)]
+    temp_status_simple[, TOURNAMENT_NM := input$join_tournament]
+    temp_status_simple[, GAME_ID := srv$game_id]
+    temp_turn <- srv$turn_id - 0.5
+    temp_status_simple[, TURN_ID := temp_turn]
+
+    dbWriteTable(con, "GAME_STATUS", temp_status_simple, row.names = FALSE, append = TRUE)
+    Sys.sleep(sleep_counter)
+
+    }
+
 
     deck_status[, TOURNAMENT_NM := input$join_tournament]
     deck_status[, GAME_ID := srv$game_id]
@@ -100,8 +137,13 @@ observe({
 
     dbWriteTable(con, "DECK_STATUS", deck_status, append = TRUE, row.names = FALSE)
 
-    dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
 
+
+    dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
+    # if (sleep_counter > 0) {
+    #
+    #   dbSendQuery(con, paste0("DELETE FROM GAME_STATUS WHERE TOURNAMENT_NM = \"", input$join_tournament, "\" AND GAME_ID = ", srv$game_id, " AND TURN_ID = \"", temp_turn, "\""))
+    # }
 
     #deal new cards
     cyclers_left <- simple_gs[CYCLER_ID > 0, CYCLER_ID]

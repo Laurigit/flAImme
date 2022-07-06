@@ -49,7 +49,7 @@ finish_rank_bot <- function(team_combinations_data_with_other_player_probs, deck
                        FINISH_RANK_SCORE = FINISH_RANK / pmax(3, MOVE_ORDER) / (TURNS_TO_FINISH + 1) * 5,
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                        MOVE_ORDER_SCORE = - MOVE_ORDER * 0.02 * (18 - min_ttf),
-                       OVER_FINISH_SCORE = OVER_FINISH * 100,
+                       OVER_FINISH_SCORE = OVER_FINISH * 3,
                        SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf))]
 
   scoring_data[, TOT_SCORE := (MOVE_DIFF_SCORE +
@@ -90,8 +90,10 @@ finish_rank_bot <- function(team_combinations_data_with_other_player_probs, deck
   #
   #
   #weight my cyclers based on ttf
-  scoring_data[, CYCLER_WEIGHT := (1 - CYCLER_MEAN_TTF / (sum(CYCLER_MEAN_TTF) + 0.1)), by = .(TEAM_ID, case_id)]
+  scoring_data[, SAFE_CYCLER_MEAN_TTF := CYCLER_MEAN_TTF + 2]
+  scoring_data[, CYCLER_WEIGHT := (1 - (SAFE_CYCLER_MEAN_TTF) / (sum(SAFE_CYCLER_MEAN_TTF) + 0.01)), by = .(TEAM_ID, case_id)]
   scoring_data[, CYCLER_WEIGHT := ifelse(CYCLER_WEIGHT == 0, 1, CYCLER_WEIGHT)]
+
 
   check_res <- scoring_data[, .(TEAM_SCORE = sum(TOT_SCORE * CYCLER_WEIGHT),
                                 MOVE_DIFF_SCORE  = sum(MOVE_DIFF_SCORE * CYCLER_WEIGHT),

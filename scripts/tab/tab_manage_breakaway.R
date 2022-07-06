@@ -50,7 +50,7 @@ if (nrow(new_game_found) > 0) {
     ss_cyc <- srv$gs_simple[order(SQUARE_ID)][, .(CYCLER_ID)]
     ss_cyc[, tie_breaker := seq_len(.N)]
 
-    winner_data <- ba_data[TOURNAMENT_NM == tour_name & GAME_ID == srv$game_id, .(CYCLER_ID, TOTAL_BET = SECOND_BET + FIRST_BET, FIRST_BET, SECOND_BET)][order(-TOTAL_BET)]
+    winner_data <- ba_data[TOURNAMENT_NM == tour_name & GAME_ID == srv$game_id, .(CYCLER_ID, TOTAL_BET = max(SECOND_BET, 2) + max(FIRST_BET, 2), FIRST_BET, SECOND_BET)][order(-TOTAL_BET)]
     join_tiebreaker <- ss_cyc[winner_data, on = "CYCLER_ID"]
 
     #if there are 5 or 6 cyclers, then 2 breaks, otherwise 1

@@ -6,8 +6,8 @@ my_reactivePoll <- function(session, table_name, query, timeout = 1000, con)
   my.dataframe <- reactivePoll(timeout, session,
                                checkFunc = function() {
                                #  query <- paste0("SELECT count(", colname, ") from ",table_name)
-                                 lastFeedback <- as.data.table(dbFetch(dbSendQuery(con, query),
-                                                      n = -1))
+                                 lastFeedback <-suppressWarnings(  as.data.table(dbFetch(dbSendQuery(con, query),
+                                                      n = -1)))
 
                                  # checking logic here
                                  lastFeedback
@@ -17,6 +17,7 @@ my_reactivePoll <- function(session, table_name, query, timeout = 1000, con)
                                valueFunc = function() {
                                  data <-  dbSelectAll(table_name, con)
                                  # value logic here
+
 
                                  data
                                })

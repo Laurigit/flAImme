@@ -15,17 +15,18 @@ move_diff_counter <- 0
 
   game_id <- 1
   #0 means use actual previous exh
-  use_startup_exhaust <- 2
+  use_startup_exhaust <- 0
   start_format <-  "RANDOM"
+#  start_format <- "REVERSED"
 plotting <- TRUE
 
 
   TIME_DATA <- data.table(GAME_ID = as.numeric(), TURN_ID = as.numeric(), PHASE = as.character(), DURATION = as.numeric())
 
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
-  bot_data <- data.table(bot_name = c("next_turn_botti", "ruler_bot", "ttf_botti", "next_turn_botti"), TEAM_ID = c(1, 2 , 3, 4))
+  #bot_data <- data.table(bot_name = c("next_turn_botti", "ruler_bot", "ttf_botti", "next_turn_botti"), TEAM_ID = c(1, 2 , 3, 4, 5))
   bot_data <- data.table(bot_name = c("ruler_bot", "ttf_botti", "ttf_botti"), TEAM_ID = c(2 ,3, 4))
-  bot_data <- data.table(bot_name = c("finish_rank_bot2", "ttf_botti_ignore_hidden", "ttf_botti"), TEAM_ID = c(2, 3, 4))
+  bot_data <- data.table(bot_name = c("finish_rank_bot", "ruler_bot", "ttf_botti_ignore_hidden", "nemesis_bot"), TEAM_ID = c(1, 2, 3, 4))
  # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
@@ -46,8 +47,8 @@ plotting <- TRUE
     turn_deck_start_loop <- NULL
 
   #  track <- sample(c(1,2,3,6,7,19,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
-    #track <- sample(c(12,13,14,15,16,17),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
-    track <- sample(c(1, 2, 3, 5, 6, 19, 20, 7, 36,37,39,40,41,42),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
+    track <- sample(c(12,13,14,15,16,17),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
+    #track <- sample(c(1, 2, 3, 5, 6, 19, 20, 7, 36,37,39,40,41,42),1)#,20,36,37,39,40,41,42),1)#as.integer(runif(1, 12, 17))
     #track <- 12
     print(paste0("track_", track))
 
@@ -60,7 +61,7 @@ plotting <- TRUE
 
 
    # cycler_vector <- c(1,2,3,4,5,6,7,8,9,10,11,12)
-    cycler_vector <- c(5 ,6,7,8)
+    cycler_vector <- c(1,2,3,4,5 ,6,7,8,9,10)
     cycler_ids <- set_startup_formation(cycler_vector, start_format)
 
     #cycler_ids <- (c(1,2,3,4,5,6,7,8,9,10,11,12))
@@ -135,6 +136,22 @@ plotting <- TRUE
     turn_id <- 1
     alotus <- Sys.time()
 
+    #SIMULATE BREAKAWAY
+
+    deck_status <- simulate_breakaway_return_new_deck(game_status, deck_status, 5)
+    bet_winners <- deck_status[Zone == "Removed", .N, CYCLER_ID]
+    betted_cards <- deck_status[Zone == "Removed", .(TOT_BET = sum(MOVEMENT)), by = CYCLER_ID]
+    start_pos <- game_status[CYCLER_ID %in% bet_winners[, CYCLER_ID], .(ORIG_START_POS = GAME_SLOT_ID), by = CYCLER_ID]
+    start_pos[, EXTRA_MOVEMENT := 10 - ORIG_START_POS]
+    joinaa_bw <- betted_cards[start_pos, on = "CYCLER_ID"]
+    joinaa_bw[, OVER_BET := TOT_BET - EXTRA_MOVEMENT]
+    lane_counter <- 0
+    print(betted_cards)
+    for (bet_winner_loop in bet_winners[, CYCLER_ID]) {
+      lane_counter <- lane_counter + 1
+
+      game_status<- set_cycler_position(bet_winner_loop, 10, lane_counter, game_status)
+    }
 
 
     }
@@ -143,6 +160,10 @@ plotting <- TRUE
 
       in_game_cyclers <- game_status[order(-SQUARE_ID)][CYCLER_ID > 0, CYCLER_ID]
       finished_cyclers <- setdiff(starting_cyclers, in_game_cyclers)
+
+
+
+
 
 
 
@@ -196,7 +217,7 @@ plotting <- TRUE
               combinations_output <- calc_combinations_data(con, game_status, turn_start_deck, deck_status,
                                                             pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER,
                                                             calc_ttf = calc_ttf_input_all, case_count = input_case_count,
-                                                            hidden_info_teams = 4, input_turn_id = turn_id,
+                                                            hidden_info_teams = 0, input_turn_id = turn_id,
                                                             finished_cyclers)
               TIME_DATA <-  time_phase("COMB", FALSE, TIME_DATA, game_id, turn_id)
               TIME_DATA <-  time_phase("MIX", TRUE, TIME_DATA, game_id, turn_id)
@@ -263,7 +284,7 @@ plotting <- TRUE
                 funcargs <- list(added_next_move, deck_status,
                                  bot_config, bot_loop, pre_agg_no_list, turn_id)
               }
-              if (bot_loop %in% c(4)) {
+              if (bot_loop %in% c(99)) {
 
                 res_debug_hidden <- ttf_botti_ignore_hidden(hidden_information_output, deck_status,
                                                               bot_config, bot_loop, pre_agg_no_list, turn_id)
@@ -274,7 +295,7 @@ plotting <- TRUE
 
 #
 # #
-             # res_debug <- ttf_botti_ignore_hidden(hidden_information_output, deck_status,
+             # res_debug <- nemesis_bot(hidden_information_output, deck_status,
              #          bot_config, bot_loop, pre_agg_no_list, turn_id)
 
               myfunc <- bot_name
@@ -294,7 +315,7 @@ plotting <- TRUE
                 #  scalued <- check_res2[ ,.(MOVES, EV = round(EV - max(EV), 2),
               moves <- EV_to_moves(res, deck_status, turn_start_deck)
 
-              if (bot_loop == 4) {
+              if (bot_loop == 99) {
               #  browser()
                 print(res[1:min(10, nrow(res)), .(MOVES, EV, MOVE_DIFF_SCORE, EXHAUST_SCORE, TTF_SCORE, TURNS_TO_FINISH, FINISH_RANK_SCORE, MOVE_ORDER_SCORE, OVER_FINISH_SCORE)], row.names = FALSE)#[draw_odds_C1 > 0 & draw_odds_C2 > 0])
               print(res_debug_hidden[1:min(6, nrow(res_debug_hidden)), .(MOVES, EV, MOVE_DIFF_SCORE, EXHAUST_SCORE, TTF_SCORE, TURNS_TO_FINISH, FINISH_RANK_SCORE, MOVE_ORDER_SCORE, OVER_FINISH_SCORE)], row.names = FALSE)#[draw_odds_C1 > 0 & draw_odds_C2 > 0])
@@ -475,8 +496,10 @@ plotting <- TRUE
     copy_winner[, TRACK_ID := track]
     #copy_winner[, start_order := list(list(starting_cyclers))]
     copy_winner[, START_POSITION := match(CYCLER_ID, starting_cyclers)]
-    total_winner <- rbind(total_winner, copy_winner)
+    join_bw_to_winner <- joinaa_bw[copy_winner, on = "CYCLER_ID"]
+    total_winner <- rbind(total_winner, join_bw_to_winner)
 
+#browser()
     plot_winner <- total_winner[, mean(POSITION), by = CYCLER_ID][order(CYCLER_ID)]
     # print(ggplot(data=plot_winner, aes(x=CYCLER_ID,  y=V1, fill = as.factor(CYCLER_ID))) +
     #         #geom_line(linetype="dashed", color="blue", size=1.2)+
@@ -487,13 +510,14 @@ plotting <- TRUE
     #print(full_action[, .(m)])
     print(total_winner[, mean(POSITION), by = CYCLER_ID][order(V1)])
     print(total_winner[, mean(POSITION), by = START_POSITION][order(V1)])
+    print(total_winner[, mean(POSITION), by = OVER_BET][order(V1)])
 
     # print(total_winner[, .N, by = .(CYCLER_ID, POSITION)][order(CYCLER_ID)], row.names = FALSE)
 
     # print(total_winner[CYCLER_ID  %in% c(5,6)])
     #full_action[, .(SLIP = mean(SLIP), BLOCK = mean(BLOCK), EXHAUST = mean(EXHAUST), ASCEND = mean(ASCEND)), by = CYCLER_ID][order(CYCLER_ID)]
   #  print(full_action[, .(
-   #                       SLIP = mean(SLIP_BONUS, na.rm = TRUE), BLOCK = mean(BLOCK_DIFF, na.rm = TRUE), EXHAUST = mean(EXHAUST, na.rm = TRUE),
+   #                       SLIP = mean(SLIP_ttONUS, na.rm = TRUE), BLOCK = mean(BLOCK_DIFF, na.rm = TRUE), EXHAUST = mean(EXHAUST, na.rm = TRUE),
   #                        ASCEND = mean(ASCEND_GAIN, na.rm = TRUE)), by = CYCLER_ID][order(CYCLER_ID)])
 
     turn_id <- 0

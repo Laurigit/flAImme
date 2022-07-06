@@ -54,16 +54,16 @@ ttf_botti_ignore_hidden <- function(team_combinations_data_with_other_player_pro
 
   scoring_data <- ss_exh[cyc_info_to_scoring, on = "CYCLER_ID"]#[TEAM_ID == bot_team_id]
   scoring_data[, MY_TTF := mean(TURNS_TO_FINISH - SLOTS_OVER_FINISH / 10), by = CYCLER_ID]
-
-  scoring_data[, ':=' (MOVE_DIFF_SCORE = (MOVE_DIFF - IS_ROULER * MOVE_DIFF * 0.2)*0.1,
+  mean_ttf <- scoring_data[, mean(TURNS_TO_FINISH)] + 0.01
+  scoring_data[, ':=' (MOVE_DIFF_SCORE = (MOVE_DIFF - IS_ROULER * MOVE_DIFF * 0.2) * 0.1,
                        EXHAUST_SCORE =  (1 - EXHAUST) * max((1 - input_turn_id / 15), 0.01) * (3 - FINISH_RANK + 0.1) / 3,
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
-                       TTF_SCORE = (min_ttf - (TURNS_TO_FINISH - SLOTS_OVER_FINISH / 6)) * 10,
+                       TTF_SCORE = (mean_ttf - (TURNS_TO_FINISH - SLOTS_OVER_FINISH / 6)) * 5,
                        SOF_SCORE = 0,
                        FINISH_RANK_SCORE = FINISH_RANK,
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                        MOVE_ORDER_SCORE = -0.2 * MOVE_ORDER, # 1 - (MOVE_ORDER / total_cyclers) , #- MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
-                       OVER_FINISH_SCORE = OVER_FINISH * 10,
+                       OVER_FINISH_SCORE = OVER_FINISH * 3,
                        SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.1
                        #SOF_NEW_SCORE = (SLOTS_OVER_FINISH_NEW - SLOTS_OVER_FINISH  )  * 0.1 * norm_card_share ^ (1 / 2),
                        #TTF_NEW_SCORE = (TURNS_TO_FINISH - 1 - TURNS_TO_FINISH_NEW)  * 0.5 * norm_card_share ^ (1 / 2),
@@ -130,8 +130,8 @@ ttf_botti_ignore_hidden <- function(team_combinations_data_with_other_player_pro
   #  scoring_data[, MY_RELATIVE_SCORE := ]
   scoring_data[, TOT_SCORE :=  TOT_SCORE_MINE]
   my_data <- scoring_data[TEAM_ID == bot_team_id]
-  my_data[, CYCLER_WEIGHT := (1 - CYCLER_MEAN_TTF / (sum(CYCLER_MEAN_TTF) + 0.5)), by = .(TEAM_ID, case_id)]
-  my_data[, CYCLER_WEIGHT := 0.5]
+  my_data[, SAFE_CYCLER_MEAN_TTF := CYCLER_MEAN_TTF + 2]
+  my_data[, CYCLER_WEIGHT := (1 - (SAFE_CYCLER_MEAN_TTF) / (sum(SAFE_CYCLER_MEAN_TTF) + 0.01)), by = .(TEAM_ID, case_id)]
   my_data[, CYCLER_WEIGHT := ifelse(CYCLER_WEIGHT == 0, 1, CYCLER_WEIGHT)]
 
   check_res <- my_data[, .(TEAM_SCORE = sum(TOT_SCORE * CYCLER_WEIGHT),

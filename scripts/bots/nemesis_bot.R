@@ -1,15 +1,15 @@
 nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
-                           bot_config, bot_team_id, pre_aggr_game_status) {
+                           bot_config, bot_team_id, pre_aggr_game_status, turn_id) {
 
   #team_combinations_data_with_other_player_probs <- hidden_information_output
 
   join_my_ttf <- team_combinations_data_with_other_player_probs
-  min_ttf <- join_my_ttf[, min(TURNS_TO_FINISH)]
+  min_ttf <- join_my_ttf[, min(TURNS_TO_FINISH)] + 0.01
 
   smart_cycler_ids <- join_my_ttf[TEAM_ID == bot_team_id, .N, by = CYCLER_ID][, CYCLER_ID]
 
   #calc my ev given opponent strategies
-  finish_slot <- pre_aggr_game_status$aggr_to_slots[FINISH == 1, GAME_SLOT_ID]
+
 
   #setkeyv sorts cyclers by case_id and new_square
 
@@ -31,7 +31,7 @@ nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_sta
   join_my_ttf[, ':='(RELATIVE_SOF = (SLOTS_OVER_FINISH  - CYCLER_MEAN_SOF))]
   join_my_ttf[, ':=' (SLOTS_PROGRESSED = NEW_GAME_SLOT_ID - curr_pos)]
   join_my_ttf[, ':=' (MOVE_ORDER = seq_len(.N),
-                      MOVE_DIFF_RELATIVE = MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1)), by = case_id]
+                      MOVE_DIFF_RELATIVE = MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 0.99)), by = case_id]
 
 
 
@@ -41,9 +41,10 @@ nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_sta
   # join_track_left[, MOVE_DIFF_RELATIVE := MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1), by = case_id]
 
   #filter_only_my_team_for_scoring
+
   scoring_data <- join_my_ttf[TEAM_ID == bot_team_id]
   scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_RELATIVE * 0.25 * pmax(min_ttf - 4, 0.1),
-                       EXHAUST_SCORE = ((1 + MOVE_ORDER) / total_cyclers) * EXHAUST * pmax(min_ttf - 3, 0) ^ 1.2 * -0.2,
+                       EXHAUST_SCORE = ((1 + MOVE_ORDER) / total_cyclers) * EXHAUST * pmax(min_ttf - 3, 0.1) ^ 1.2 * -0.2,
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
                        TTF_SCORE = RELATIVE_TTF * 5,
                        SOF_SCORE = RELATIVE_SOF,
@@ -88,7 +89,8 @@ nemesis_bot <- function(team_combinations_data_with_other_player_probs, deck_sta
   #
   #
   #weight my cyclers based on ttf
-  scoring_data[, CYCLER_WEIGHT := (1 - CYCLER_MEAN_TTF / (sum(CYCLER_MEAN_TTF) + 0.1)), by = .(TEAM_ID, case_id)]
+  scoring_data[, SAFE_CYCLER_MEAN_TTF := CYCLER_MEAN_TTF + 2]
+  scoring_data[, CYCLER_WEIGHT := (1 - (SAFE_CYCLER_MEAN_TTF) / (sum(SAFE_CYCLER_MEAN_TTF) + 0.01)), by = .(TEAM_ID, case_id)]
   scoring_data[, CYCLER_WEIGHT := ifelse(CYCLER_WEIGHT == 0, 1, CYCLER_WEIGHT)]
 
   check_res <- scoring_data[, .(TEAM_SCORE = sum(TOT_SCORE * CYCLER_WEIGHT),

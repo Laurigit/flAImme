@@ -1,8 +1,13 @@
+#force_key_cols on vektori valituista sarakkeista
+dbIoU <- function(table, data_rows, con, force_key_cols = NULL) {
 
-dbIoU <- function(table, data_rows, con) {
-
-
+if (is.null(force_key_cols)) {
   keyCols <- suppressWarnings( dbQ(paste0("SHOW KEYS FROM ",table, " WHERE Key_name = 'PRIMARY'"), con)[, Column_name])
+
+
+} else {
+  keyCols <- force_key_cols
+}
   #data_rows <- data.table(PELI_ID = 1:6, BETTER_ID = 1:4, ODDS = as.integer(runif(n = 24, min = 0, max = 100)), BET_DT = now() )
 
   #fix quotes to match sql
