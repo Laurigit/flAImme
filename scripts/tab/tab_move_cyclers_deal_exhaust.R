@@ -113,15 +113,18 @@ observe({
       sleep_counter <- sleep_counter + 4
     }
     if (nrow(finishers) > 0) {
-      sleep_counter <- sleep_counter + 11
+      sleep_counter <- sleep_counter + 4
     }
+
+    temp_turn <- srv$turn_id - 0.5
+
     if (sleep_counter > 0) {
 
     #same for temp_status
     temp_status_simple <- temp_status[CYCLER_ID > 0, .(CYCLER_ID, SQUARE_ID)]
     temp_status_simple[, TOURNAMENT_NM := input$join_tournament]
     temp_status_simple[, GAME_ID := srv$game_id]
-    temp_turn <- srv$turn_id - 0.5
+
     temp_status_simple[, TURN_ID := temp_turn]
 
     dbWriteTable(con, "GAME_STATUS", temp_status_simple, row.names = FALSE, append = TRUE)
@@ -140,10 +143,10 @@ observe({
 
 
     dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
-    if (sleep_counter > 0) {
+
 
       dbSendQuery(con, paste0("DELETE FROM GAME_STATUS WHERE TOURNAMENT_NM = \"", input$join_tournament, "\" AND GAME_ID = ", srv$game_id, " AND TURN_ID = \"", temp_turn, "\""))
-    }
+
 
     #deal new cards
     cyclers_left <- simple_gs[CYCLER_ID > 0, CYCLER_ID]
