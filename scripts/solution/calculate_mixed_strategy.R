@@ -4,7 +4,7 @@
 # ijk <- ijk_map(track, STG_TRACK_PIECE, STG_TRACK)
 
 #calculate_mixed_strategy
-calculate_mixed_strategy <- function(combinations_data_input, consensus_config_id = ADM_CONSENSUS_CONFIG, deck_status) {
+calculate_mixed_strategy <- function(combinations_data_input, consensus_config_id = ADM_CONSENSUS_CONFIG, deck_status, input_turn_id = NULL) {
 
   #combinations_data_input <- combinations_output
   join_track_left <- combinations_data_input
@@ -19,15 +19,22 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
       min_ttf <- join_track_left[, min(TURNS_TO_FINISH)] + 0.01
       mean_ttf <- join_track_left[, mean(TURNS_TO_FINISH)] + 0.01
 
-      join_track_left[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF,
-                              EXHAUST_SCORE = -1 * EXHAUST * (MOVE_ORDER / cycler_count) * 2 / (min_ttf / 8),
-                            #  TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
-                             TTF_SCORE = (mean_ttf - TURNS_TO_FINISH + SLOTS_OVER_FINISH / 6) * (3 / min_ttf),
-                             # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
-                              MOVE_ORDER_SCORE = -1 * MOVE_ORDER / cycler_count,
-                              OVER_FINISH_SCORE = OVER_FINISH * 3, #NOT MAKE TUU HIGH
-                            FINISH_RANK_SCORE = FINISH_RANK * (6 / min_ttf),
-                             SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.5 / min_ttf)]
+      join_track_left[, ':=' (MOVE_DIFF_SCORE = (MOVE_DIFF - IS_ROULER * MOVE_DIFF * 0.2) * 0.2,
+                              EXHAUST_SCORE =  (1 - EXHAUST) * max((1 - input_turn_id / 15), 0.01) * (3 - FINISH_RANK + 0.1) / 3,
+                              #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
+                              TTF_SCORE = (mean_ttf - (TURNS_TO_FINISH - SLOTS_OVER_FINISH / 6)) * 3,
+                              SOF_SCORE = 0,
+                              FINISH_RANK_SCORE = FINISH_RANK,
+                              # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
+                              MOVE_ORDER_SCORE = -0.3 * MOVE_ORDER, # 1 - (MOVE_ORDER / total_cyclers) , #- MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
+                              OVER_FINISH_SCORE = OVER_FINISH * 3,
+                              SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.05 * input_turn_id
+                              #SOF_NEW_SCORE = (SLOTS_OVER_FINISH_NEW - SLOTS_OVER_FINISH  )  * 0.1 * norm_card_share ^ (1 / 2),
+                              #TTF_NEW_SCORE = (TURNS_TO_FINISH - 1 - TURNS_TO_FINISH_NEW)  * 0.5 * norm_card_share ^ (1 / 2),
+                              #NEXT_EXHAUST_SCORE = 0.5 * (((NEW_MOVE_ORDER - 1) / total_cyclers) ^ (1.5) * NEXT_EXHAUST * pmax(min_ttf - 5 - FINISH_RANK, 1) ^ 1.5 * -0.15  +
+                              #                               IS_ROULER * ((NEW_MOVE_ORDER - 1) / total_cyclers) ^ (1.5) * NEXT_EXHAUST * pmax(min_ttf - 5 - FINISH_RANK, 1) ^ 1.5 * -0.15 * -0.25),
+                              # NEXT_MOVE_DIFF_SCORE = NEXT_MOVE_DIFF * 0.05 * pmax(min_ttf - 5, 0.1) - IS_ROULER * NEXT_MOVE_DIFF * 0.02 * pmax(min_ttf - 5, 0.1)
+      )]
 
       join_track_left[, TOT_SCORE := (MOVE_DIFF_SCORE +
                                         EXHAUST_SCORE +

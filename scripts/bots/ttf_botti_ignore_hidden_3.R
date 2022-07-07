@@ -1,22 +1,18 @@
-ttf_botti_ignore_hidden_2 <- function(team_combinations_data_with_other_player_probs, deck_status,
+ttf_botti_ignore_hidden_3 <- function(team_combinations_data_with_other_player_probs, deck_status,
                                     bot_config, bot_team_id, pre_aggr_game_status_input = NULL , input_turn_id = NULL) {
 
   required_data("ADM_CYCLER_INFO")
   ss_info <- ADM_CYCLER_INFO[, .(CYCLER_ID, IS_ROULER = ifelse(CYCLER_TYPE_ID == 1, 1, 0))]
 
-
-
+  exh_count <- deck_status[Zone != "Removed", .(card_count = .N, exh_count = sum(CARD_ID == 1)), by = CYCLER_ID]
+  exh_count[, norm_card_share := 1 - exh_count / (card_count + 4)]
+  ss_exh <- exh_count[, .(norm_card_share, CYCLER_ID)]
   #team_combinations_data_with_other_player_probs <- hidden_information_output
 
-  join_my_ttf_cp <- copy(team_combinations_data_with_other_player_probs)
+  join_my_ttf <- copy(team_combinations_data_with_other_player_probs)
   # join_my_ttf[, ':=' (TURNS_TO_FINISH = ifelse(bot_team_id == TEAM_ID & !is.na(TURNS_TO_FINISH_DOD), TURNS_TO_FINISH_DOD, TURNS_TO_FINISH),
   #                     SLOTS_OVER_FINISH = ifelse(bot_team_id == TEAM_ID & !is.na(SLOTS_OVER_FINISH_DOD), SLOTS_OVER_FINISH_DOD, SLOTS_OVER_FINISH))]
-  join_my_ttf_cp[, NINE_COUNT := str_count(DECK_LEFT, pattern = "9") + str_count(DECK_LEFT, pattern = "7")]
-  card_count <- deck_status[Zone != "Removed", .(CARDS_LEFT = .N), by = CYCLER_ID]
-  join_my_ttf <- card_count[join_my_ttf_cp, on = "CYCLER_ID"]
-  #join_my_ttf[, EXTRA_CARDS := max(0, CARDS_LEFT - 4)]
-  #join_my_ttf[, URGENCY := CARDS_LEFT / max(13 - input_turn_id, 1)]
-  #join_my_ttf[, NINE_ALERT_LEVEL := (NINE_COUNT / 3) * URGENCY]
+
   min_ttf <- max(15 - (input_turn_id + 1), 1)
   #min_ttf_new <- join_my_ttf[, ceiling(mean(TURNS_TO_FINISH_NEW))]
   #calc my ev given opponent strategies
@@ -56,20 +52,19 @@ ttf_botti_ignore_hidden_2 <- function(team_combinations_data_with_other_player_p
 
   cyc_info_to_scoring <- ss_info[join_my_ttf, on = "CYCLER_ID"]
 
-  scoring_data <- cyc_info_to_scoring
+  scoring_data <- ss_exh[cyc_info_to_scoring, on = "CYCLER_ID"]#[TEAM_ID == bot_team_id]
   scoring_data[, MY_TTF := mean(TURNS_TO_FINISH - SLOTS_OVER_FINISH / 10), by = CYCLER_ID]
   mean_ttf <- scoring_data[, mean(TURNS_TO_FINISH)] + 0.01
-
-  scoring_data[, ':=' (MOVE_DIFF_SCORE = (MOVE_DIFF - IS_ROULER * MOVE_DIFF * 0.2) * 0.1,
+  scoring_data[, ':=' (MOVE_DIFF_SCORE = (MOVE_DIFF - IS_ROULER * MOVE_DIFF * 0.2) * 0.2,
                        EXHAUST_SCORE =  (1 - EXHAUST) * max((1 - input_turn_id / 15), 0.01) * (3 - FINISH_RANK + 0.1) / 3,
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
-                       TTF_SCORE = (mean_ttf - (TURNS_TO_FINISH - SLOTS_OVER_FINISH / 6)) * 5,
+                       TTF_SCORE = (mean_ttf - (TURNS_TO_FINISH - SLOTS_OVER_FINISH / 6)) * 3,
                        SOF_SCORE = 0,
                        FINISH_RANK_SCORE = FINISH_RANK,
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
-                       MOVE_ORDER_SCORE = -0.2 * MOVE_ORDER, # 1 - (MOVE_ORDER / total_cyclers) , #- MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
+                       MOVE_ORDER_SCORE = -0.3 * MOVE_ORDER, # 1 - (MOVE_ORDER / total_cyclers) , #- MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
                        OVER_FINISH_SCORE = OVER_FINISH * 3,
-                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * ((NINE_COUNT / 3) / max(mean_ttf - 1, 1)) * 0.5 + 0.01
+                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.05 * input_turn_id
                        #SOF_NEW_SCORE = (SLOTS_OVER_FINISH_NEW - SLOTS_OVER_FINISH  )  * 0.1 * norm_card_share ^ (1 / 2),
                        #TTF_NEW_SCORE = (TURNS_TO_FINISH - 1 - TURNS_TO_FINISH_NEW)  * 0.5 * norm_card_share ^ (1 / 2),
                        #NEXT_EXHAUST_SCORE = 0.5 * (((NEW_MOVE_ORDER - 1) / total_cyclers) ^ (1.5) * NEXT_EXHAUST * pmax(min_ttf - 5 - FINISH_RANK, 1) ^ 1.5 * -0.15  +

@@ -107,7 +107,7 @@ print(how_many_more_needed)
                                                   hidden_info_teams = 0, input_turn_id =  srv$turn_id,
                                                   finished_cyclers)
     bot_status_txt$text <- "Long step done"
-    MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, previous_deck)
+    MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, previous_deck, srv$turn_id)
     bot_status_txt$text <- "Mixed strat done"
   for (bot_loop in any_bots[, TEAM_ID]) {
 
@@ -137,7 +137,7 @@ print(how_many_more_needed)
 
   funcargs <- list(MIXED_STRATEGY$combinations, deck_status_now,
                    bot_config, bot_loop, pre_agg_no_list, srv$turn_id)
-  myfunc <- "ttf_botti_ignore_hidden"
+  myfunc <- "ttf_botti_ignore_hidden_3"
   # debug <- finish_rank_bot(hidden_information_output, deck_status_now,
   #                          bot_config, bot_loop, pre_agg_no_list)
 

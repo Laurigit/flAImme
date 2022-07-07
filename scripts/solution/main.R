@@ -26,7 +26,7 @@ plotting <- TRUE
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
   #bot_data <- data.table(bot_name = c("next_turn_botti", "ruler_bot", "ttf_botti", "next_turn_botti"), TEAM_ID = c(1, 2 , 3, 4, 5))
   bot_data <- data.table(bot_name = c("ruler_bot", "ttf_botti", "ttf_botti"), TEAM_ID = c(2 ,3, 4))
-  bot_data <- data.table(bot_name = c("ttf_botti_ignore_hidden_2", "ruler_bot", "ttf_botti_ignore_hidden", "nemesis_bot"), TEAM_ID = c(1, 2, 3, 4))
+  bot_data <- data.table(bot_name = c("ttf_botti_ignore_hidden_2", "ruler_bot", "ttf_botti_ignore_hidden", "nemesis_bot", "ttf_botti_ignore_hidden_3"), TEAM_ID = c(1, 2, 3, 4, 5))
  # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))
@@ -221,7 +221,7 @@ plotting <- TRUE
                                                             finished_cyclers)
               TIME_DATA <-  time_phase("COMB", FALSE, TIME_DATA, game_id, turn_id)
               TIME_DATA <-  time_phase("MIX", TRUE, TIME_DATA, game_id, turn_id)
-             MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, turn_start_deck)
+             MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, turn_start_deck, input_turn_id = turn_id)
              TIME_DATA <-  time_phase("MIX", FALSE, TIME_DATA, game_id, turn_id)
 
              if (plotting == TRUE) {
