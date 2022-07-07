@@ -6,7 +6,8 @@
 
 
 
-observeEvent(srv$turn_id, {
+#observeEvent(srv$turn_id, {
+  observe( {
  #TASKS
 
   required_data(c("STG_TRACK_PIECE", "STG_TRACK", "STG_CYCLER", "ADM_CYCLER_INFO"))
@@ -14,13 +15,6 @@ observeEvent(srv$turn_id, {
 req(deck_status_curr_game())
 req(game_status())
 req(input$join_tournament)
-
-
-
-
-#take reactive####### DONT DEL
-game_status_simple()
-########
 
 
 
@@ -49,7 +43,7 @@ how_many_played <- mf_local[CARD_ID > -1   , .N]
 
 
 how_many_more_needed <- how_manyneeded_total - how_many_played
-
+print(how_many_more_needed)
   if (how_many_more_needed > 0) {
     start_time <- Sys.time()
     #we have cards, calculate common data
