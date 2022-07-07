@@ -1,5 +1,12 @@
 #tab_bot_management
 
+
+bot_status_txt <- reactiveValues(text = "STARTED")
+output$bot_status <- renderUI({
+
+  res <- HTML(bot_status_txt$text)
+})
+
 #check if bots needs to move
 
 #hi bot y, what would you do if combinations_data is this. you are team 1.
@@ -7,6 +14,9 @@
 
 
 #observeEvent(srv$turn_id, {
+
+
+calc_only_once <- reactiveValues(last_calculated_turn = -100)
   observe( {
  #TASKS
 
@@ -45,8 +55,8 @@ how_many_played <- mf_local[CARD_ID > -1   , .N]
 how_many_more_needed <- how_manyneeded_total - how_many_played
 print(how_many_more_needed)
 
-  if (how_many_more_needed > 0 & nrow(deck_status_now) > 0) {
-
+  if (how_many_more_needed > 0 & nrow(deck_status_now) > 0 &  calc_only_once$last_calculated_turn != srv$turn_id) {
+    bot_status_txt$text <- "Calculating"
     start_time <- Sys.time()
     #we have cards, calculate common data
 
@@ -69,6 +79,7 @@ print(how_many_more_needed)
 
 
   if (!exists("ADM_OPTIMAL_MOVES_AGGR") | srv$turn_id == 1) {
+    bot_status_txt$text <- "Loading ADM_OPTIMAL_MOVES"
     gs_local <- create_game_status_from_simple(srv$gs_simple, srv$track_id_input, STG_TRACK, STG_TRACK_PIECE)
     pre_aggr_game_status <- precalc_track(gs_local)
     track_lefter_select <- paste0('"', pre_aggr_game_status$aggr_to_slots[TRACK_LEFT != "", paste0(TRACK_LEFT, collapse = '", "')], '"')
@@ -89,18 +100,18 @@ print(how_many_more_needed)
 
   }
 
-
+    bot_status_txt$text <- "The long step starting"
     combinations_output <- calc_combinations_data(con, game_status(), previous_deck, deck_status_now,
                                                   pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER,
                                                   calc_ttf = calc_ttf_input_all, case_count = input_case_count,
                                                   hidden_info_teams = 0, input_turn_id =  srv$turn_id,
                                                   finished_cyclers)
-
+    bot_status_txt$text <- "Long step done"
     MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, previous_deck)
-
+    bot_status_txt$text <- "Mixed strat done"
   for (bot_loop in any_bots[, TEAM_ID]) {
 
-
+    bot_status_txt$text <- paste0("bot loop ", bot_loop)
 #do I need to play?
     my_cyclers  <- ADM_CYCLER_INFO[TEAM_ID == bot_loop, CYCLER_ID]
     #montako pelattu?
@@ -187,9 +198,14 @@ print(how_many_more_needed)
   end_time <- Sys.time()
   duration <- as.integer(difftime(end_time, start_time, units = "secs"))
   sleep_time <- max(0, 5 - duration)
+  bot_status_txt$text <- paste0("sleeping ", sleep_time)
   Sys.sleep(sleep_time)
+  calc_only_once$last_calculated_turn <- srv$turn_id
+
   }
   }
+  } else {
+    bot_status_txt$text <- paste0("chose not to calculate ", Sys.time())
   }
 
   })

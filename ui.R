@@ -30,7 +30,8 @@ uusi_peli <- dashboardBody(
   tabItems(
     tabItem(tabName = "tab_server",
             fluidPage(
-                  uiOutput({output_id = "join_tournament"})
+                  uiOutput({output_id = "join_tournament"}),
+                  uiOutput("bot_status")
 
             )
     )
