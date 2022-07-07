@@ -26,7 +26,7 @@ plotting <- TRUE
  # bot_data <- data.table(bot_name = c("finish_rank_bot", "ttf_bot", "slots_over_bot"), TEAM_ID = c(2, 3, 4))
   #bot_data <- data.table(bot_name = c("next_turn_botti", "ruler_bot", "ttf_botti", "next_turn_botti"), TEAM_ID = c(1, 2 , 3, 4, 5))
   bot_data <- data.table(bot_name = c("ruler_bot", "ttf_botti", "ttf_botti"), TEAM_ID = c(2 ,3, 4))
-  bot_data <- data.table(bot_name = c("ttf_botti_ignore_hidden_2", "ruler_bot", "ttf_botti_ignore_hidden", "nemesis_bot", "ttf_botti_ignore_hidden_3"), TEAM_ID = c(1, 2, 3, 4, 5))
+  bot_data <- data.table(bot_name = c("ttf_botti_ignore_hidden_2", "finish_rank_bot2", "ttf_botti_ignore_hidden", "nemesis_bot", "ttf_botti_ignore_hidden_3"), TEAM_ID = c(1, 2, 3, 4, 5))
  # bot_data <-  data.table(bot_name = NA, TEAM_ID = NA)
  # bot_data <- data.table(bot_name = c("relative_bot"), TEAM_ID = c(1))
   #bot_data <- data.table(bot_name = c("slots_over_bot"), TEAM_ID = c( 4))

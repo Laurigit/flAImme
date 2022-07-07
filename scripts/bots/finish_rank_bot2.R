@@ -63,7 +63,7 @@ finish_rank_bot2 <- function(team_combinations_data_with_other_player_probs, dec
                        FINISH_RANK_SCORE = (total_cyclers - FINISH_RANK_ALL) * 1,
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                        MOVE_ORDER_SCORE = -0.1 * MOVE_ORDER,# 1 - (MOVE_ORDER / total_cyclers) , #- MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
-                       OVER_FINISH_SCORE = OVER_FINISH * 10,
+                       OVER_FINISH_SCORE = OVER_FINISH * 3,
                        SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.1
                        #SOF_NEW_SCORE = (SLOTS_OVER_FINISH_NEW - SLOTS_OVER_FINISH  )  * 0.1 * norm_card_share ^ (1 / 2),
                        #TTF_NEW_SCORE = (TURNS_TO_FINISH - 1 - TURNS_TO_FINISH_NEW)  * 0.5 * norm_card_share ^ (1 / 2),
