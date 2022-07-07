@@ -4,6 +4,8 @@
 
 #hi bot y, what would you do if combinations_data is this. you are team 1.
 
+
+
 observeEvent(srv$turn_id, {
  #TASKS
 
@@ -49,6 +51,7 @@ how_many_played <- mf_local[CARD_ID > -1   , .N]
 how_many_more_needed <- how_manyneeded_total - how_many_played
 
   if (how_many_more_needed > 0) {
+    start_time <- Sys.time()
     #we have cards, calculate common data
 
     tracki <- tournament_data_reactive()[GAME_ID == srv$game_id, .N, by = TRACK_ID][, TRACK_ID]
@@ -66,7 +69,7 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
 
    # calc_ttf_input_all <- ifelse(srv$turn_id >= 5, 0, srv$turn_id)
     calc_ttf_input_all <- 0
-    input_case_count <- 3000
+    input_case_count <- 4000
 
 
   if (!exists("ADM_OPTIMAL_MOVES_AGGR") | srv$turn_id == 1) {
@@ -185,6 +188,10 @@ how_many_more_needed <- how_manyneeded_total - how_many_played
   #wirte to MOVE_FACT a row per cycler
   #update MOVE_FACT with selections
 
+  end_time <- Sys.time()
+  duration <- as.integer(difftime(end_time, start_time, units = "secs"))
+  sleep_time <- max(0, 5 - duration)
+  Sys.sleep(sleep_time)
   }
   }
   }

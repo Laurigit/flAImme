@@ -140,10 +140,10 @@ observe({
 
 
     dbWriteTable(con, "GAME_STATUS", simple_gs, row.names = FALSE, append = TRUE)
-    # if (sleep_counter > 0) {
-    #
-    #   dbSendQuery(con, paste0("DELETE FROM GAME_STATUS WHERE TOURNAMENT_NM = \"", input$join_tournament, "\" AND GAME_ID = ", srv$game_id, " AND TURN_ID = \"", temp_turn, "\""))
-    # }
+    if (sleep_counter > 0) {
+
+      dbSendQuery(con, paste0("DELETE FROM GAME_STATUS WHERE TOURNAMENT_NM = \"", input$join_tournament, "\" AND GAME_ID = ", srv$game_id, " AND TURN_ID = \"", temp_turn, "\""))
+    }
 
     #deal new cards
     cyclers_left <- simple_gs[CYCLER_ID > 0, CYCLER_ID]
