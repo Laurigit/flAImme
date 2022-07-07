@@ -44,7 +44,9 @@ how_many_played <- mf_local[CARD_ID > -1   , .N]
 
 how_many_more_needed <- how_manyneeded_total - how_many_played
 print(how_many_more_needed)
-  if (how_many_more_needed > 0) {
+
+  if (how_many_more_needed > 0 & nrow(deck_status_now) > 0) {
+
     start_time <- Sys.time()
     #we have cards, calculate common data
 
