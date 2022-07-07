@@ -19,7 +19,7 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
       min_ttf <- join_track_left[, min(TURNS_TO_FINISH)] + 0.01
       mean_ttf <- join_track_left[, mean(TURNS_TO_FINISH)] + 0.01
 
-      join_track_left[, ':=' (MOVE_DIFF_SCORE = (MOVE_DIFF - IS_ROULER * MOVE_DIFF * 0.2) * 0.2,
+      join_track_left[, ':=' (MOVE_DIFF_SCORE = (MOVE_DIFF) * 0.2,
                               EXHAUST_SCORE =  (1 - EXHAUST) * max((1 - input_turn_id / 15), 0.01) * (3 - FINISH_RANK + 0.1) / 3,
                               #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
                               TTF_SCORE = (mean_ttf - (TURNS_TO_FINISH - SLOTS_OVER_FINISH / 6)) * 3,
