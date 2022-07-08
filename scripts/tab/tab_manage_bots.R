@@ -137,7 +137,7 @@ print(how_many_more_needed)
 
   funcargs <- list(MIXED_STRATEGY$combinations, deck_status_now,
                    bot_config, bot_loop, pre_agg_no_list, srv$turn_id)
-  myfunc <- "ttf_botti_ignore_hidden_3"
+  myfunc <- "ttf_botti_ignore_hidden_2"
   # debug <- finish_rank_bot(hidden_information_output, deck_status_now,
   #                          bot_config, bot_loop, pre_agg_no_list)
 
