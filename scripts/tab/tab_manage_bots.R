@@ -109,8 +109,9 @@ print(how_many_more_needed)
     bot_status_txt$text <- "Long step done"
     MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, previous_deck, srv$turn_id)
     bot_status_txt$text <- "Mixed strat done"
+    loopperi <- 0
   for (bot_loop in any_bots[, TEAM_ID]) {
-
+loopperi <- loopperi + 1
     bot_status_txt$text <- paste0("bot loop ", bot_loop)
 #do I need to play?
     my_cyclers  <- ADM_CYCLER_INFO[TEAM_ID == bot_loop, CYCLER_ID]
@@ -120,11 +121,6 @@ print(how_many_more_needed)
     how_manyneeded_total_loop <-  srv$gs_simple[CYCLER_ID %in% my_cyclers, .N]
     how_many_more_needed_loop <- how_manyneeded_total_loop - how_many_played_loop
     if (how_many_more_needed_loop > 0) {
-
-
-
-
-
 
       #for each bot
 
@@ -137,7 +133,12 @@ print(how_many_more_needed)
 
   funcargs <- list(MIXED_STRATEGY$combinations, deck_status_now,
                    bot_config, bot_loop, pre_agg_no_list, srv$turn_id)
-  myfunc <- "ttf_botti_ignore_hidden_2"
+if (loopperi == 1) {
+  myfunc <- "marttibot"
+
+} else {
+  myfunc <- "marttibot"
+}
   # debug <- finish_rank_bot(hidden_information_output, deck_status_now,
   #                          bot_config, bot_loop, pre_agg_no_list)
 
