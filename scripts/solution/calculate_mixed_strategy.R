@@ -4,7 +4,7 @@
 # ijk <- ijk_map(track, STG_TRACK_PIECE, STG_TRACK)
 
 #calculate_mixed_strategy
-calculate_mixed_strategy <- function(combinations_data_input, consensus_config_id = ADM_CONSENSUS_CONFIG, deck_status, input_turn_id = NULL) {
+calculate_mixed_strategy <- function(combinations_data_input, consensus_config_id = ADM_CONSENSUS_CONFIG, deck_status) {
 
   #combinations_data_input <- combinations_output
   join_track_left <- combinations_data_input
@@ -16,25 +16,15 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
         #PELKÄSTÄ LIIKKUMISESTA PITÄÄ ANTAA PISTEITÄ MYÖS, vähintääb tie breakeraita varten, jos sama ev muuten
      # join_track_left[, MOVE_DIFF_RELATIVE := MOVE_DIFF - (sum(MOVE_DIFF) - MOVE_DIFF) / (.N - 1), by = case_id]
       cycler_count <- join_track_left[, .N, by = CYCLER_ID][, .N]
-      min_ttf <- join_track_left[, min(TURNS_TO_FINISH)] + 0.01
-      mean_ttf <- join_track_left[, mean(TURNS_TO_FINISH)] + 0.01
-
-      join_track_left[, ':=' (MOVE_DIFF_SCORE = (MOVE_DIFF) * 0.2,
-                              EXHAUST_SCORE =  (1 - EXHAUST) * max((1 - input_turn_id / 15), 0.01) * (3 - FINISH_RANK + 0.1) / 3,
-                              #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
-                              TTF_SCORE = (mean_ttf - (TURNS_TO_FINISH - SLOTS_OVER_FINISH / 6)) * 3,
-                              SOF_SCORE = 0,
-                              FINISH_RANK_SCORE = FINISH_RANK,
-                              # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
-                              MOVE_ORDER_SCORE = -0.3 * MOVE_ORDER, # 1 - (MOVE_ORDER / total_cyclers) , #- MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
-                              OVER_FINISH_SCORE = OVER_FINISH * 3,
-                              SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.05 * input_turn_id
-                              #SOF_NEW_SCORE = (SLOTS_OVER_FINISH_NEW - SLOTS_OVER_FINISH  )  * 0.1 * norm_card_share ^ (1 / 2),
-                              #TTF_NEW_SCORE = (TURNS_TO_FINISH - 1 - TURNS_TO_FINISH_NEW)  * 0.5 * norm_card_share ^ (1 / 2),
-                              #NEXT_EXHAUST_SCORE = 0.5 * (((NEW_MOVE_ORDER - 1) / total_cyclers) ^ (1.5) * NEXT_EXHAUST * pmax(min_ttf - 5 - FINISH_RANK, 1) ^ 1.5 * -0.15  +
-                              #                               IS_ROULER * ((NEW_MOVE_ORDER - 1) / total_cyclers) ^ (1.5) * NEXT_EXHAUST * pmax(min_ttf - 5 - FINISH_RANK, 1) ^ 1.5 * -0.15 * -0.25),
-                              # NEXT_MOVE_DIFF_SCORE = NEXT_MOVE_DIFF * 0.05 * pmax(min_ttf - 5, 0.1) - IS_ROULER * NEXT_MOVE_DIFF * 0.02 * pmax(min_ttf - 5, 0.1)
-      )]
+      min_ttf <- join_track_left[, min(TURNS_TO_FINISH)]
+      join_track_left[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF,
+                              EXHAUST_SCORE = 0,
+                            #  TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
+                             TTF_SCORE = 0,
+                             # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
+                              MOVE_ORDER_SCORE = 0,
+                              OVER_FINISH_SCORE = OVER_FINISH * 1, #NOT MAKE TUU HIGH
+                             SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.1)]
 
       join_track_left[, TOT_SCORE := (MOVE_DIFF_SCORE +
                                         EXHAUST_SCORE +
@@ -42,7 +32,6 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
                                      #   CYC_DIST_SCORE +
                                         MOVE_ORDER_SCORE +
                                         OVER_FINISH_SCORE+
-                                       FINISH_RANK_SCORE +
                                        SLOTS_PROGRESSED_SCORE)]
       #join_track_left[, all_moves := list((list(MOVEMENT))), by = case_id]
       #join_track_left[,  opponent_moves := create_other_moves(all_moves, CYCLER_ID), by = .(case_id, TEAM_ID)]
