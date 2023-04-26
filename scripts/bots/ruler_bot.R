@@ -1,5 +1,5 @@
 ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
-                         bot_config, bot_team_id, pre_aggr_game_status_input = NULL, turn_id) {
+                         bot_config, bot_team_id, pre_aggr_game_status_input = NULL) {
 
   required_data("ADM_CYCLER_INFO")
   ss_info <- ADM_CYCLER_INFO[, .(CYCLER_ID, IS_ROULER = ifelse(CYCLER_TYPE_ID == 1, 1, 0))]
@@ -28,9 +28,13 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
   #join_my_ttf[, ':=' (CASE_DIFF = sum(TTF_DIFF_OF_MEAN * RELEVANT_OPPONENT), tot_cycs = sum(RELEVANT_OPPONENT)), by = .(case_id)]
   #  join_my_ttf[, ':=' (COMPETITOR_AVG_TTF = (CASE_DIFF - TTF_DIFF_OF_MEAN) / (tot_cycs - 1))]
   setorder(join_my_ttf, case_id, FINISH_ESTIMATE)
-
+  join_my_ttf[, FINISH_RANK := 4 - pmin(seq_len(.N), 4), by = case_id]
   join_my_ttf[, ':='(RELATIVE_TTF = (CYCLER_MEAN_TTF - TURNS_TO_FINISH))]#positive is good
   join_my_ttf[, ':='(RELATIVE_SOF = (SLOTS_OVER_FINISH  - CYCLER_MEAN_SOF))]
+
+
+
+
 
   # join_track_left[, MOVE_ORDER := seq_len(.N), by = case_id]
   setkeyv(join_my_ttf, cols = c("case_id", "TEAM_ID", "CYCLER_ID"))
@@ -55,7 +59,7 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
                        FINISH_RANK_SCORE = FINISH_RANK / pmax(5, MOVE_ORDER + 2) / (min_ttf + 1) * 2  * norm_card_share ^ (1 / 4),
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                        MOVE_ORDER_SCORE = - MOVE_ORDER * 0.015 * (17 - min_ttf) - MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
-                       OVER_FINISH_SCORE = OVER_FINISH * 3,
+                       OVER_FINISH_SCORE = OVER_FINISH * 100,
                        SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf) + SLOTS_PROGRESSED * 0.002 * (16 - min_ttf) * IS_ROULER)]
   scoring_data[, TOT_SCORE_MINE := (MOVE_DIFF_SCORE +
                                       EXHAUST_SCORE +
@@ -109,8 +113,7 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
   #
   #
   #weight my cyclers based on ttf
-  my_data[, SAFE_CYCLER_MEAN_TTF := CYCLER_MEAN_TTF + 2]
-  my_data[, CYCLER_WEIGHT := (1 - (SAFE_CYCLER_MEAN_TTF) / (sum(SAFE_CYCLER_MEAN_TTF) + 0.01)), by = .(TEAM_ID, case_id)]
+  my_data[, CYCLER_WEIGHT := (1 - CYCLER_MEAN_TTF / (sum(CYCLER_MEAN_TTF) + 0.1)), by = .(TEAM_ID, case_id)]
   my_data[, CYCLER_WEIGHT := ifelse(CYCLER_WEIGHT == 0, 1, CYCLER_WEIGHT)]
 
   check_res <- my_data[, .(TEAM_SCORE = sum(TOT_SCORE * CYCLER_WEIGHT),
