@@ -144,6 +144,8 @@ print(how_many_more_needed)
   res <- do.call(myfunc, funcargs)
   print(res)
 
+
+
   moves <- EV_to_moves(res, deck_status_now, previous_deck)
   print(moves)
   first_cyc <-  moves[FIRST == 1, CYCLER_ID]
