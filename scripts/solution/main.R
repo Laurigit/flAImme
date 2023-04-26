@@ -221,7 +221,7 @@ plotting <- TRUE
                                                             finished_cyclers)
               TIME_DATA <-  time_phase("COMB", FALSE, TIME_DATA, game_id, turn_id)
               TIME_DATA <-  time_phase("MIX", TRUE, TIME_DATA, game_id, turn_id)
-             MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, turn_start_deck, input_turn_id = turn_id)
+             MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, turn_start_deck)
              TIME_DATA <-  time_phase("MIX", FALSE, TIME_DATA, game_id, turn_id)
 
              if (plotting == TRUE) {
