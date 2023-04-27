@@ -1,5 +1,5 @@
-finish_rank_bot2 <- function(team_combinations_data_with_other_player_probs, deck_status,
-                      bot_config, bot_team_id, pre_aggr_game_status_input = NULL, input_turn_id = NULL) {
+marttibo <- function(team_combinations_data_with_other_player_probs, deck_status,
+                             bot_config, bot_team_id, pre_aggr_game_status_input = NULL, input_turn_id = NULL) {
 
   required_data("ADM_CYCLER_INFO")
   ss_info <- ADM_CYCLER_INFO[, .(CYCLER_ID, IS_ROULER = ifelse(CYCLER_TYPE_ID == 1, 1, 0))]
@@ -55,16 +55,16 @@ finish_rank_bot2 <- function(team_combinations_data_with_other_player_probs, dec
   scoring_data <- ss_exh[cyc_info_to_scoring, on = "CYCLER_ID"]#[TEAM_ID == bot_team_id]
   # scoring_data[, MY_TTF := mean(TURNS_TO_FINISH - SLOTS_OVER_FINISH / 10), by = CYCLER_ID]
 
-  scoring_data[, ':=' (MOVE_DIFF_SCORE = (MOVE_DIFF - IS_ROULER * MOVE_DIFF) / input_turn_id,
-                       EXHAUST_SCORE =  (1 - EXHAUST) * max((1 - input_turn_id / 15), 0.01) * (3 - FINISH_RANK + 0.1) / 3,
+  scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF / (MOVE_ORDER / 8) * 2,
+                         EXHAUST_SCORE =  EXHAUST * -0.6 + EXHAUST * + 0.3 * IS_ROULE0R  ,
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
-                       TTF_SCORE = (min_ttf - (TURNS_TO_FINISH - SLOTS_OVER_FINISH / 6)) / min_ttf * 0.5,
+                       TTF_SCORE = ifelse(input_turn_id > 7, 1.2, 0),
                        SOF_SCORE = 0,
-                       FINISH_RANK_SCORE = (total_cyclers - FINISH_RANK_ALL) * 3,
+                       FINISH_RANK_SCORE = FINISH_RANK_ALL * - 0.4,
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
-                       MOVE_ORDER_SCORE = -0.1 * MOVE_ORDER,# 1 - (MOVE_ORDER / total_cyclers) , #- MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
+                       MOVE_ORDER_SCORE = -1 * MOVE_ORDER,# 1 - (MOVE_ORDER / total_cyclers) , #- MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
                        OVER_FINISH_SCORE = OVER_FINISH * 3,
-                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.3
+                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.2
                        #SOF_NEW_SCORE = (SLOTS_OVER_FINISH_NEW - SLOTS_OVER_FINISH  )  * 0.1 * norm_card_share ^ (1 / 2),
                        #TTF_NEW_SCORE = (TURNS_TO_FINISH - 1 - TURNS_TO_FINISH_NEW)  * 0.5 * norm_card_share ^ (1 / 2),
                        #NEXT_EXHAUST_SCORE = 0.5 * (((NEW_MOVE_ORDER - 1) / total_cyclers) ^ (1.5) * NEXT_EXHAUST * pmax(min_ttf - 5 - FINISH_RANK, 1) ^ 1.5 * -0.15  +
