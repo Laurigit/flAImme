@@ -107,7 +107,7 @@ print(how_many_more_needed)
                                                   hidden_info_teams = 0, input_turn_id =  srv$turn_id,
                                                   finished_cyclers)
     bot_status_txt$text <- "Long step done"
-    MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, previous_deck, srv$turn_id)
+    MIXED_STRATEGY <- calculate_mixed_strategy(combinations_output, consensus_config_id = NA, previous_deck)
     bot_status_txt$text <- "Mixed strat done"
     loopperi <- 0
   for (bot_loop in any_bots[, TEAM_ID]) {
