@@ -1,5 +1,5 @@
-ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
-                         bot_config, bot_team_id, pre_aggr_game_status_input = NULL, input_turn_id = NULL) {
+ruler_bot_more <- function(team_combinations_data_with_other_player_probs, deck_status,
+                      bot_config, bot_team_id, pre_aggr_game_status_input = NULL, input_turn_id = NULL) {
 
   required_data("ADM_CYCLER_INFO")
   ss_info <- ADM_CYCLER_INFO[, .(CYCLER_ID, IS_ROULER = ifelse(CYCLER_TYPE_ID == 1, 1, 0))]
@@ -50,17 +50,17 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
   cyc_info_to_scoring <- ss_info[join_my_ttf, on = "CYCLER_ID"]
 
   scoring_data <- ss_exh[cyc_info_to_scoring, on = "CYCLER_ID"]#[TEAM_ID == bot_team_id]
-  scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF * 0.2 * pmax(min_ttf - 5, 0.1) - IS_ROULER * MOVE_DIFF * 0.1 * pmax(min_ttf - 5, 0.1),
-                       EXHAUST_SCORE = ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.5 * -0.125 / norm_card_share ^ (1 / 4) +
+  scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF * 0.1 * pmax(min_ttf - 5, 0.1) - IS_ROULER * MOVE_DIFF * 0.05 * pmax(min_ttf - 5, 0.1),
+                       EXHAUST_SCORE = ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.5 * -0.125 / norm_card_share ^ (1 / 4) * 1.25 +
                          IS_ROULER * ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.5 * -0.125 / norm_card_share ^ (1 / 4) * 0.25,
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
                        TTF_SCORE = (min_ttf - TURNS_TO_FINISH)  * 1 * norm_card_share ^ (1 / 2),
                        SOF_SCORE = SLOTS_OVER_FINISH  * 0.02 * norm_card_share ^ (1 / 2),
                        FINISH_RANK_SCORE = FINISH_RANK / pmax(5, MOVE_ORDER + 2) / (min_ttf + 1) * 2  * norm_card_share ^ (1 / 4),
                        # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
-                       MOVE_ORDER_SCORE = - MOVE_ORDER * 0.015 * (17 - min_ttf) - MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.5,
+                       MOVE_ORDER_SCORE = - MOVE_ORDER * 0.015 * (17 - min_ttf)  * 0.5 - MOVE_ORDER * 0.015 * (17 - min_ttf) * IS_ROULER * 0.25,
                        OVER_FINISH_SCORE = OVER_FINISH * 100,
-                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf) + SLOTS_PROGRESSED * 0.002 * (16 - min_ttf) * IS_ROULER)]
+                       SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.003 * (16 - min_ttf) + SLOTS_PROGRESSED * 0.006 * (16 - min_ttf) * IS_ROULER)]
   scoring_data[, TOT_SCORE_MINE := (MOVE_DIFF_SCORE +
                                       EXHAUST_SCORE +
                                       SOF_SCORE +

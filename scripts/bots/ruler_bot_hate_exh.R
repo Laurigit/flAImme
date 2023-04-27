@@ -1,5 +1,5 @@
-ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_status,
-                         bot_config, bot_team_id, pre_aggr_game_status_input = NULL, input_turn_id = NULL) {
+ruler_bot_hate_exh <- function(team_combinations_data_with_other_player_probs, deck_status,
+                      bot_config, bot_team_id, pre_aggr_game_status_input = NULL, input_turn_id = NULL) {
 
   required_data("ADM_CYCLER_INFO")
   ss_info <- ADM_CYCLER_INFO[, .(CYCLER_ID, IS_ROULER = ifelse(CYCLER_TYPE_ID == 1, 1, 0))]
@@ -50,9 +50,9 @@ ruler_bot <- function(team_combinations_data_with_other_player_probs, deck_statu
   cyc_info_to_scoring <- ss_info[join_my_ttf, on = "CYCLER_ID"]
 
   scoring_data <- ss_exh[cyc_info_to_scoring, on = "CYCLER_ID"]#[TEAM_ID == bot_team_id]
-  scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF * 0.2 * pmax(min_ttf - 5, 0.1) - IS_ROULER * MOVE_DIFF * 0.1 * pmax(min_ttf - 5, 0.1),
-                       EXHAUST_SCORE = ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.5 * -0.125 / norm_card_share ^ (1 / 4) +
-                         IS_ROULER * ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf - 4, 0) ^ 1.5 * -0.125 / norm_card_share ^ (1 / 4) * 0.25,
+  scoring_data[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF * 0.2 * pmax(min_ttf, 0.1) - IS_ROULER * MOVE_DIFF * 0.1 * pmax(min_ttf, 0.1),
+                       EXHAUST_SCORE = 3 * ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf, 1) ^ 2 * -0.125 / norm_card_share ^ (1 / 4) +
+                         3 * IS_ROULER * ((MOVE_ORDER - 0.25) / total_cyclers) ^ (1.5) * EXHAUST * pmax(min_ttf, 1) ^ 2 * -0.125 / norm_card_share ^ (1 / 4) * 0.25,
                        #   TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
                        TTF_SCORE = (min_ttf - TURNS_TO_FINISH)  * 1 * norm_card_share ^ (1 / 2),
                        SOF_SCORE = SLOTS_OVER_FINISH  * 0.02 * norm_card_share ^ (1 / 2),

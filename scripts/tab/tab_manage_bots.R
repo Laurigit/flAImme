@@ -75,7 +75,6 @@ print(how_many_more_needed)
 
    # calc_ttf_input_all <- ifelse(srv$turn_id >= 5, 0, srv$turn_id)
     calc_ttf_input_all <- 0
-    input_case_count <- 4000
 
 
   if (!exists("ADM_OPTIMAL_MOVES_AGGR") | srv$turn_id == 1) {
@@ -99,7 +98,8 @@ print(how_many_more_needed)
       by = .(TRACK_LEFT, DECK_LEFT, DRAW_ODDS)]
 
   }
-
+    input_case_count <- 4000
+    input_case_count <- 3000 * pmax(( srv$turn_id - 4), 1) ^ (4 / 5)
     bot_status_txt$text <- "The long step starting"
     combinations_output <- calc_combinations_data(con, game_status(), previous_deck, deck_status_now,
                                                   pre_agg_no_list, matr_ijk, reverse_slots_squares, slip_map_matrix, STG_CYCLER,
@@ -265,7 +265,7 @@ observe({
         meta_second <- meta_data[, .SD[2], GAME_ID]
         mean_2nd_winner <- meta_second[, mean(TOT_BET)]
 
-        target <- 10 - curr_slot +  3
+        target <- 10 - curr_slot +  4
         if (is.nan(mean_2nd_winner)) {
           mean_2nd_winner <- target
         }

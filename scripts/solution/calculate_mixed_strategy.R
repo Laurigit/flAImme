@@ -6,6 +6,7 @@
 #calculate_mixed_strategy
 calculate_mixed_strategy <- function(combinations_data_input, consensus_config_id = ADM_CONSENSUS_CONFIG, deck_status) {
 
+
   #combinations_data_input <- combinations_output
   join_track_left <- combinations_data_input
       #join_track_left[, TTF_RELATIVE := min(TURNS_TO_FINISH) - TURNS_TO_FINISH, by = case_id]
@@ -103,7 +104,7 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
 
       combs <- deck_status[Zone != "Removed", .N, .(CYCLER_ID, MOVEMENT)][, .N]
 
-      iteration_limit <- max(min(50, ceiling(400 / combs)), 5)
+      iteration_limit <- max(min(50, ceiling(400 / combs)), 5) * pmax(11 - min_ttf, 1) ^ (1 / 2)
       #gamma goes down first and then starts increasing. At which iteration, we are on bottom?
       bottom_iteration <- 4
       var_threshold <- 0.01
