@@ -19,12 +19,13 @@ calculate_mixed_strategy <- function(combinations_data_input, consensus_config_i
       cycler_count <- join_track_left[, .N, by = CYCLER_ID][, .N]
       min_ttf <- join_track_left[, min(TURNS_TO_FINISH)]
       join_track_left[, ':=' (MOVE_DIFF_SCORE = MOVE_DIFF_RELATIVE * 0.25 * pmax(min_ttf - 4, 0.1),
-                              EXHAUST_SCORE = (1 + MOVE_ORDER / cycler_count) * EXHAUST * pmax(min_ttf - 3, 0) ^ 1.2 * -0.2,
+                              EXHAUST_SCORE = (MOVE_ORDER / cycler_count) * EXHAUST * pmax(min_ttf - 3, 0) * -0.3,
                             #  TTF_SCORE = RELATIVE_TTF * 20 * ((total_cyclers - max(MOVE_ORDER, 4)) / total_cyclers),
                              TTF_SCORE = (CYCLER_MEAN_TTF - TURNS_TO_FINISH)  * 5,
                              # CYC_DIST_SCORE = DIST_TO_TEAM * - 0.03 * pmax(TURNS_TO_FINISH - 3, 0),
                               MOVE_ORDER_SCORE = -MOVE_ORDER * 0.02 * (22 - min_ttf),
-                              OVER_FINISH_SCORE = OVER_FINISH * 1, #NOT MAKE TUU HIGH
+                               FINISH_RANK_SCORE = FINISH_RANK,
+                              OVER_FINISH_SCORE = OVER_FINISH, #NOT MAKE TUU HIGH
                              SLOTS_PROGRESSED_SCORE = SLOTS_PROGRESSED * 0.001 * (16 - min_ttf))]
 
       join_track_left[, TOT_SCORE := (MOVE_DIFF_SCORE +
